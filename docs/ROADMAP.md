@@ -71,3 +71,17 @@ Scope:
 - `v1.x` contract stability freeze across `001`–`003` database migrations (SQLite, PostgreSQL, and MariaDB parity), `theme.json` Exclusive Active Theme manifests (`coded` & `visual`), native Hooks & Filters API, `query_entries` + `use cache` invalidation, `grab mcp` CMS tool schemas, and `--read-only` container deployment.
 - Full `v1.0.0` end-to-end production hardening & release verification (`tests/release_v100_test.py`): fresh clean SQLite install (`001 -> 002 -> 003` & direct `003`), `seed.grab`, `/setup` lock, full content/decimal/media/taxonomy/301-history/menu/cache/MCP/exclusive-theme-switch lifecycle, repo-wide `grab check` + canonical `grab format`, and zero wrapper-`<div>` validation.
 - Hardened `--read-only` Docker Compose / Grisp production deployment template (`deploy/docker-compose.yml` + `deploy/README.md`) with scoped writable `storage/`, `uploads/`, and `/static/grex/` mounts (`--allow-scripts`, `--allow-env`, `--allow-write`, `--workers` scaling docs), zero-secrets Git hygiene, and `docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`.
+
+---
+
+## `v1.1.0` — SEO Redirect Manager & Groxy AI Content/SEO Assist
+
+**Status:** Planned (Specification Pending Approval)
+
+Scope:
+- **SEO Redirect Manager (`/admin/redirects`):**
+  - Capability-gated admin UI and `/api/admin/redirects` CRUD endpoints (`X-CSRF-Token` + RBAC) to inspect all automatic `301 Moved Permanently` redirects generated from `slug_history` on slug renames.
+  - Create, edit, toggle, and delete custom manual `301` / `302` redirects with strict cycle/loop prevention, reserved path protection (`/admin`, `/api`, `/static`, `/_health`, `/_ready`), and instant `use cache` invalidation.
+- **Built-In Per-Entry & Per-Image Groxy AI SEO Assist Toggle (`groxy_assist_enabled`):**
+  - Native toggle baked into every content type editor (Posts, Products, Pages, Custom Types) and every Media Library image item.
+  - When toggled ON, clicking **Publish** (via a non-blocking `content:after_publish` hook) or clicking **Audit with Groxy** dispatches structured entry + media context through `grab mcp` so **Groxy AI** audits headings, search intent, semantic entity coverage, meta title/description, product descriptions, internal linking, and missing WCAG AA image `alt` text—returning safe, reviewable suggestions/draft diffs without silently overwriting live human copy.
