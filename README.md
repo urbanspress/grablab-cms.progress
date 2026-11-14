@@ -10,11 +10,11 @@
 
 ## Ecosystem Position
 
-1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js`)
-2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms`) — **`v1.0.0` Production CMS Release**
-3. **Step 3 — Grex Theme Builder:** Ready next (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
-4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai`) — Autonomous MCP design & CMS agent
-5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard`) — Desktop VPS control panel & 1-click installer
+1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js.in.progress` / `urbanspress/grex-js.stable`)
+2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.in.progress` / `urbanspress/grablab-cms.stable`) — **`v1.0.0` Production CMS Release**
+3. **Step 3 — Grex Theme Builder:** Active (`urbanspress/grex-builder.in.progress` / `urbanspress/grex-builder.stable`) — Installable Visual Theme & Page/Theme Studio
+4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai.in.progress` / `urbanspress/groxy-ai.stable`) — Autonomous MCP design & CMS agent
+5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard.in.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel & 1-click installer
 
 ## Quickstart (`v1.0.0` on `GRAB v1.1.0`)
 

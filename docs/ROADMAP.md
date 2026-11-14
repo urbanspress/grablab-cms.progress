@@ -1,6 +1,6 @@
 # GrabLab CMS Roadmap
 
-**Repository:** `urbanspress/grablab-cms`  
+**Repositories:** `urbanspress/grablab-cms.in.progress` (active development) / `urbanspress/grablab-cms.stable` (verified releases)  
 **Platform Runtimes:** GRAB `v1.1.0` + Grex JS `v1.0.0`
 
 **Status Labels:**

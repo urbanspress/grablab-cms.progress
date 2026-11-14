@@ -1,6 +1,6 @@
 # GrabLab CMS Engineering Instructions (`AGENTS.md`)
 
-**Repository:** `urbanspress/grablab-cms` (`C:\Development\grablab-cms`)  
+**Repositories:** `urbanspress/grablab-cms.in.progress` (active development) / `urbanspress/grablab-cms.stable` (verified releases) (`C:\Development\grablab-cms`)  
 **Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS built on **GRAB `v1.0.1`** and **Grex JS `v1.0.0`**.
 
 ---
@@ -35,8 +35,12 @@ NEVER mark a milestone or implementation task complete until:
 
 ---
 
-## Release Assets & Plain-English Guides
-- Every milestone release (`v0.1.0`, `v0.2.0`, …, `v1.0.0`) MUST generate a plain-English walkthrough PDF (`docs/releases/pdf/GrabLab-<tag>-Guide.pdf`) explaining what was built, how it works for site owners and designers, and how to run it.
+## Two-Repository Workflow & Release Protection
+- **Repository Roles:**
+  - `origin` (`https://github.com/urbanspress/grablab-cms.in.progress.git`): Active development repository for ongoing work, specifications, and in-progress milestone commits.
+  - `stable` (`https://github.com/urbanspress/grablab-cms.stable.git`): Production release repository for 100% verified milestone releases only.
+- **Strict `stable` Protection:** All AI agents and models MUST push work-in-progress commits, drafts, and specs ONLY to `origin` (`urbanspress/grablab-cms.in.progress`). Pushing to `stable` (`urbanspress/grablab-cms.stable`) is strictly forbidden unless the milestone is 100% `Complete` in `docs/ROADMAP.md`, all verification gates pass 100%, and `HANDOFF.md` records no pending milestone tasks.
+- **Synchronized Releases & Assets:** Whenever a completed milestone (`v0.1.0`, `v0.2.0`, …, `v1.0.0`) is promoted to `stable`, push `main` and annotated version tags in ascending chronological order to both `origin` and `stable`, generate the plain-English walkthrough PDF (`docs/releases/pdf/GrabLab-<tag>-Guide.pdf`), and publish/attach matching GitHub Releases and assets to **both** repositories (`urbanspress/grablab-cms.in.progress` and `urbanspress/grablab-cms.stable`).
 - Do not commit, push, or tag a release without explicit owner approval.
 
 ---
