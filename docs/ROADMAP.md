@@ -45,7 +45,7 @@ Scope:
 Scope:
 - `users`, `sessions`, and role/capability tables (`admin`, `editor`, `author`, `viewer`) with secure password hashing and session cookies (`HttpOnly`, `SameSite=Lax`, `Secure`).
 - CSRF-protected Admin Dashboard built with `.grab.html` and `Grex JS v1.0.0` reactive components (`ForEach`, `Form`, `Tabs`, `Modal`, `createTheme`).
-- **1-Click Theme / Grex Switcher:** Visual Themes dashboard allowing site owners to switch between installed coded themes and the **Grex Builder** visual theme with instant atomic deactivation of the prior theme.
+- **1-Click Theme / Grex Switcher:** Visual Themes dashboard allowing site owners to switch between installed coded themes and the **Grex Theme Builder** visual theme with instant atomic deactivation of the prior theme.
 - Content editor, custom type/field manager, and permalink/redirect inspector.
 
 ---

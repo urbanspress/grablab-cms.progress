@@ -14,7 +14,7 @@
 GrabLab CMS `v0.1.0` establishes the foundational data model, content-type/custom-field registry, WordPress-style pretty permalink router with automatic `301` redirect history, and the **Exclusive Active Theme** manifest contract (`theme.json`).
 
 1. **Zero-Plugin Core:** All CMS capabilities live directly in core `.grab` modules. There is no plugin loader, no runtime code evaluation, and no third-party hook injection.
-2. **Exclusive Active Theme Ownership:** Only **one** theme is active at any time. Activating a theme atomically deactivates the prior theme and grants 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the active theme—whether it is a coded `.grab`/`.grab.html` theme or the installable **Grex Builder** visual theme (`Step 3`).
+2. **Exclusive Active Theme Ownership:** Only **one** theme is active at any time. Activating a theme atomically deactivates the prior theme and grants 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the active theme—whether it is a coded `.grab`/`.grab.html` theme or the installable **Grex Theme Builder** visual theme (`Step 3`).
 3. **External Platform Runtimes:** GrabLab consumes `GRAB v1.0.1` and `Grex JS v1.0.0` as already-unlocked external runtimes without duplicating core Go compiler code or `grex-js` source modules.
 4. **Security & Precision:** Mandatory prepared SQL (`use data`), exact `GrabInteger`/`GrabDecimal` types (no float coercion for currency or IDs), `use cache` deterministic invalidation, and `--read-only` container compatibility.
 

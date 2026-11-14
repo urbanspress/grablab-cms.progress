@@ -16,7 +16,7 @@ Never touch or duplicate core Go compiler internals or `grex-js` source code ins
 
 ## 2. Exclusive Active Theme Ownership & Safe Theme Import
 - **Single Active Theme Invariant:** Exactly **one** theme is active at any time (stored atomically in site settings + `use cache`).
-- **Automatic Deactivation on Switch:** Activating any theme—whether a coded `.grab`/`.grab.html` theme or the installable **Grex Builder** visual theme (`grex-builder`)—MUST atomically deactivate the previous theme and hand **100% exclusive template rendering control** (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the newly active theme.
+- **Automatic Deactivation on Switch:** Activating any theme—whether a coded `.grab`/`.grab.html` theme or the installable **Grex Theme Builder** visual theme (`grex-builder`)—MUST atomically deactivate the previous theme and hand **100% exclusive template rendering control** (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the newly active theme.
 - **No Theme Fighting:** Inactive themes have zero active routes, zero injected stylesheets, and zero active hooks.
 - **Safe Theme Import (`themes/<slug>/theme.json`):**
   - Theme ZIP/directory imports MUST validate `theme.json` strictly before registration.

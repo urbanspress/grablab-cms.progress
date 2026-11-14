@@ -5,7 +5,7 @@
 ## Why GrabLab CMS?
 
 - **Zero-Plugin Core:** Every essential CMS feature—custom content types, custom fields, pretty permalinks, automatic 301 redirect history, media library, roles/capabilities, menus, hooks/filters, and query loops—lives natively in core `.grab` modules. No third-party plugin bloat or mystery shortcodes.
-- **Exclusive Active Theme Architecture:** Import coded themes (`.grab` + `.grab.html` + `Grex JS v1.0.0`) or install the **Grex Builder** visual theme. Exactly **one** theme is active at a time; activating a new theme automatically deactivates the prior theme and hands 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the active theme.
+- **Exclusive Active Theme Architecture:** Import coded themes (`.grab` + `.grab.html` + `Grex JS v1.0.0`) or install the **Grex Theme Builder** visual theme. Exactly **one** theme is active at a time; activating a new theme automatically deactivates the prior theme and hands 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the active theme.
 - **Security & Speed by Default:** Built on GRAB 1.0's prepared SQL (`use data`), Redis/memory caching (`use cache`), in-memory SHA-256 asset fingerprinting (`server.asset`), context-aware `.grab.html` escaping, and `--read-only` container compatibility.
 
 ## Ecosystem Position
