@@ -1,6 +1,6 @@
 # GrabLab CMS v0.4 Specification (`GRABLAB-SPEC-004`)
 
-**Status:** Draft / In Review (Approved milestone target; awaiting owner approval before implementation)  
+**Status:** Complete (`v0.4.0`)  
 **Target Milestone:** `grablab-cms v0.4.0`  
 **Owner:** Project Owner (`urbanspress`) · **Author:** Google Antigravity  
 **Platform Baseline:** GRAB `v1.1.0` (`use data`, `use cache`, `use crypto`, `use env`, `use server`, `server.asset`, `grab serve --allow-write --allow-scripts`, `grab mcp`) & Grex JS `v1.0.0` (`grex.elements.json`, `auditAccessibility`, `createTheme`, `createClassManager`, `ForEach`, `useQuery`, `Form`, `Input`, `Select`, `Nav`, `Modal`)

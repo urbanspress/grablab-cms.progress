@@ -188,7 +188,12 @@ function mountSidebarNav(activePath, role) {
   const items = [
     { href: "/admin", text: "Overview" },
     { href: "/admin/entries", text: "Entries & Redirects" },
+    { href: "/admin/media", text: "Media Library" },
   ];
+  if (role === "admin" || role === "editor") {
+    items.push({ href: "/admin/menus", text: "Navigation Menus" });
+    items.push({ href: "/admin/taxonomies", text: "Taxonomies" });
+  }
   if (role === "admin") {
     items.push({ href: "/admin/types", text: "Content Types" });
     items.push({ href: "/admin/themes", text: "Themes & Grex" });
@@ -311,6 +316,10 @@ function mountEntries(root, api, role) {
     id: "entry-custom-fields",
     props: { name: "custom_fields_json", type: "textarea", label: "Custom Fields JSON", value: "{}" },
   });
+  const termIdsInput = Input({
+    id: "entry-term-ids",
+    props: { name: "term_ids", label: "Term IDs (comma-separated, optional)", placeholder: "e.g. 1, 2" },
+  });
 
   const submitLabel = signal("Create Entry");
   const submitBtn = el("button", { type: "submit" }, "Create Entry");
@@ -325,7 +334,17 @@ function mountEntries(root, api, role) {
     bodyInput.value.set("");
     metaTitleInput.value.set("");
     cfJsonInput.value.set("{}");
+    termIdsInput.value.set("");
   });
+
+  const parseTermIdsCsv = (rawCsv) => {
+    const clean = (rawCsv || "").trim();
+    if (!clean) return [];
+    return clean
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isInteger(n) && n > 0);
+  };
 
   const editorForm = Form({
     props: {
@@ -344,6 +363,7 @@ function mountEntries(root, api, role) {
             return;
           }
         }
+        const termIds = parseTermIdsCsv(termIdsInput.value.peek());
         try {
           const id = editingId.peek();
           if (id) {
@@ -354,6 +374,7 @@ function mountEntries(root, api, role) {
               body_html: bodyInput.value.peek(),
               meta_title: metaTitleInput.value.peek(),
               custom_fields: cfObj,
+              ...(termIdsInput.value.peek().trim() ? { term_ids: termIds } : {}),
             });
             okSig.set("Entry updated (301 redirect recorded if published slug changed).");
           } else {
@@ -365,11 +386,13 @@ function mountEntries(root, api, role) {
               body_html: bodyInput.value.peek(),
               meta_title: metaTitleInput.value.peek(),
               custom_fields: cfObj,
+              term_ids: termIds,
             });
             okSig.set("Entry created.");
           }
           editingId.set(null);
           submitLabel.set("Create Entry");
+          termIdsInput.value.set("");
           invalidateQueries(["entries", "redirects", "overview"]);
         } catch (err) {
           errSig.set(err.message || "Failed to save entry.");
@@ -384,6 +407,7 @@ function mountEntries(root, api, role) {
       bodyInput.element,
       metaTitleInput.element,
       cfJsonInput.element,
+      termIdsInput.element,
       el("section", { class: "cms-row" }),
     ],
   });
@@ -1033,6 +1057,727 @@ function mountSettings(root, api) {
   root.appendChild(tabs.element);
 }
 
+function mountMedia(root, api, role) {
+  const errSig = signal("");
+  const okSig = signal("");
+  const mimeFilter = signal("");
+  const mediaQuery = useQuery(api, "/api/admin/media", { tags: ["media"] });
+
+  root.appendChild(makeAlert(errSig, false));
+  root.appendChild(makeAlert(okSig, true));
+
+  const uploadOpen = signal(false);
+  const openUploadBtn = el("button", { type: "button", class: "cms-btn" }, "Upload Media Asset");
+  openUploadBtn.addEventListener("click", () => uploadOpen.set(true));
+
+  const fileInput = el("input", {
+    id: "media-file-input",
+    type: "file",
+    accept: "image/png,image/jpeg,image/webp,image/gif,application/pdf",
+    required: "required",
+  });
+  const fileLabel = el("label", { for: "media-file-input", class: "cms-label-block" }, "Select File (PNG, JPEG, WebP, GIF, or PDF — SVG/Executables Blocked)");
+  const fileSection = el("section", { class: "grex-input" });
+  fileSection.appendChild(fileLabel);
+  fileSection.appendChild(fileInput);
+
+  const altIn = Input({ id: "media-alt", props: { name: "alt_text", label: "Alternative Text (WCAG AA Required for Images)", placeholder: "Describe image meaning for screen readers" } });
+  const decCheck = el("input", { id: "media-decorative", type: "checkbox" });
+  const decLabel = el("label", { for: "media-decorative", class: "cms-row" });
+  decLabel.appendChild(decCheck);
+  decLabel.appendChild(el("span", {}, "Purely decorative image (sets alt=\"\" and aria-hidden=\"true\")"));
+  const capIn = Input({ id: "media-caption", props: { name: "caption", label: "Caption (Optional)" } });
+  const closeUploadBtn = el("button", { type: "button", class: "cms-btn-secondary" }, "Cancel");
+  closeUploadBtn.addEventListener("click", () => uploadOpen.set(false));
+
+  const uploadForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        const f = fileInput.files && fileInput.files[0];
+        if (!f) {
+          errSig.set("Please choose a PNG, JPEG, WebP, GIF, or PDF file.");
+          return;
+        }
+        const isImg = (f.type || "").startsWith("image/");
+        const altVal = altIn.value.peek().trim();
+        const isDec = Boolean(decCheck.checked);
+        if (isImg && !altVal && !isDec) {
+          errSig.set("WCAG AA requires non-empty Alt Text or checking Purely Decorative before uploading an image.");
+          return;
+        }
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.onerror = () => reject(new Error("Failed to read file."));
+            reader.readAsDataURL(f);
+          });
+          await api.post("/api/admin/media/upload", {
+            original_name: f.name,
+            mime_type: f.type || "application/octet-stream",
+            data_base64: dataUrl,
+            alt_text: altVal,
+            is_decorative: isDec,
+            caption: capIn.value.peek().trim(),
+          });
+          uploadOpen.set(false);
+          fileInput.value = "";
+          altIn.value.set("");
+          capIn.value.set("");
+          decCheck.checked = false;
+          okSig.set(`Uploaded "${f.name}" securely.`);
+          invalidateQueries(["media"]);
+        } catch (err) {
+          errSig.set(err.message || "Upload failed.");
+        }
+      },
+    },
+    children: [fileSection, altIn.element, decLabel, capIn.element, el("section", { class: "cms-row" }, undefined)],
+  });
+  uploadForm.element.lastChild.appendChild(el("button", { type: "submit" }, "Verify & Upload"));
+  uploadForm.element.lastChild.appendChild(closeUploadBtn);
+
+  const uploadModal = Modal({
+    id: "upload-media-modal",
+    props: { open: uploadOpen, title: "Upload Media Asset" },
+    children: [uploadForm.element],
+  });
+
+  const editOpen = signal(false);
+  const editTargetId = signal(null);
+  const editAltIn = Input({ id: "edit-media-alt", props: { name: "alt_text", label: "Alternative Text" } });
+  const editDecChk = el("input", { id: "edit-media-dec", type: "checkbox" });
+  const editDecLbl = el("label", { for: "edit-media-dec", class: "cms-row" });
+  editDecLbl.appendChild(editDecChk);
+  editDecLbl.appendChild(el("span", {}, "Decorative image"));
+  const editCapIn = Input({ id: "edit-media-cap", props: { name: "caption", label: "Caption" } });
+  const editCloseBtn = el("button", { type: "button", class: "cms-btn-secondary" }, "Cancel");
+  editCloseBtn.addEventListener("click", () => editOpen.set(false));
+
+  const editForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        try {
+          await api.patch(`/api/admin/media/${editTargetId.peek()}`, {
+            alt_text: editAltIn.value.peek().trim(),
+            is_decorative: Boolean(editDecChk.checked),
+            caption: editCapIn.value.peek().trim(),
+          });
+          editOpen.set(false);
+          okSig.set("Updated media accessibility metadata.");
+          invalidateQueries(["media"]);
+        } catch (err) {
+          errSig.set(err.message || "Update failed.");
+        }
+      },
+    },
+    children: [editAltIn.element, editDecLbl, editCapIn.element, el("section", { class: "cms-row" })],
+  });
+  editForm.element.lastChild.appendChild(el("button", { type: "submit" }, "Save Metadata"));
+  editForm.element.lastChild.appendChild(editCloseBtn);
+
+  const editModal = Modal({
+    id: "edit-media-modal",
+    props: { open: editOpen, title: "Edit Media Metadata" },
+    children: [editForm.element],
+  });
+
+  const filterSel = Select({
+    id: "media-mime-filter",
+    props: {
+      name: "mime_filter",
+      label: "Filter Asset Type",
+      value: mimeFilter,
+      options: [
+        { value: "", label: "All Media" },
+        { value: "image/", label: "Images Only" },
+        { value: "application/pdf", label: "PDF Documents" },
+      ],
+    },
+  });
+
+  const listCard = el("section", { class: "cms-card" });
+  const headRow = el("section", { class: "cms-row" });
+  headRow.appendChild(el("h2", {}, "Uploaded Media Assets"));
+  headRow.appendChild(openUploadBtn);
+  listCard.appendChild(headRow);
+  listCard.appendChild(filterSel.element);
+
+  const gridUl = el("ul", { class: "cms-media-grid" });
+  listCard.appendChild(gridUl);
+
+  const filteredItems = signal([]);
+  effect(() => {
+    const all = mediaQuery.data.get()?.media || [];
+    const pref = mimeFilter.get();
+    filteredItems.set(pref ? all.filter((m) => (m.mime_type || "").startsWith(pref)) : all);
+  });
+
+  ForEach({
+    parent: gridUl,
+    items: filteredItems,
+    key: (m) => m.id,
+    empty: () => el("li", { class: "cms-muted" }, "No media assets uploaded yet."),
+    render: (mSig) => {
+      const li = el("li", { class: "cms-card" });
+      const titleEl = el("h3");
+      const metaEl = el("p", { class: "cms-muted" });
+      const altBadge = el("span", { class: "cms-badge" });
+      const urlCode = el("p", { class: "cms-code-line" });
+      const actRow = el("section", { class: "cms-row" });
+      const editBtn = el("button", { type: "button", class: "cms-btn-secondary" }, "Edit Alt / Caption");
+      const delBtn = el("button", { type: "button", class: "cms-btn-danger" }, "Delete");
+      actRow.appendChild(editBtn);
+      actRow.appendChild(delBtn);
+
+      editBtn.addEventListener("click", () => {
+        const m = mSig.peek();
+        editTargetId.set(m.id);
+        editAltIn.value.set(m.alt_text || "");
+        editDecChk.checked = Boolean(m.is_decorative);
+        editCapIn.value.set(m.caption || "");
+        editOpen.set(true);
+      });
+
+      delBtn.addEventListener("click", async () => {
+        const m = mSig.peek();
+        errSig.set("");
+        okSig.set("");
+        try {
+          await api.delete(`/api/admin/media/${m.id}`);
+          okSig.set(`Deleted "${m.original_name}".`);
+          invalidateQueries(["media"]);
+        } catch (err) {
+          errSig.set(err.message || "Delete failed.");
+        }
+      });
+
+      effect(() => {
+        const m = mSig.get();
+        setSafeText(titleEl, m.original_name);
+        const dims = m.width && m.height ? `${m.width}x${m.height} px · ` : "";
+        setSafeText(metaEl, `${m.mime_type} · ${dims}${m.byte_size} bytes`);
+        setSafeText(urlCode, m.url);
+        if (m.is_decorative) {
+          setSafeText(altBadge, "Decorative (aria-hidden)");
+          altBadge.setAttribute("class", "cms-badge cms-badge-muted");
+        } else if (m.alt_text) {
+          setSafeText(altBadge, `Alt: ${m.alt_text}`);
+          altBadge.setAttribute("class", "cms-badge cms-badge-ok");
+        } else {
+          setSafeText(altBadge, m.mime_type === "application/pdf" ? "Document (PDF)" : "Missing Alt");
+          altBadge.setAttribute("class", "cms-badge cms-badge-muted");
+        }
+      });
+
+      li.appendChild(titleEl);
+      li.appendChild(metaEl);
+      li.appendChild(altBadge);
+      li.appendChild(urlCode);
+      li.appendChild(actRow);
+      return li;
+    },
+  });
+
+  const stack = el("section", { class: "cms-stack" });
+  stack.appendChild(listCard);
+  stack.appendChild(uploadModal.element);
+  stack.appendChild(editModal.element);
+  root.appendChild(stack);
+}
+
+function mountMenus(root, api) {
+  const errSig = signal("");
+  const okSig = signal("");
+  const menusQuery = useQuery(api, "/api/admin/menus", { tags: ["menus"] });
+  const entriesQuery = useQuery(api, "/api/entries", { tags: ["entries"] });
+
+  root.appendChild(makeAlert(errSig, false));
+  root.appendChild(makeAlert(okSig, true));
+
+  const selectedMenuId = signal(null);
+  const workingItems = signal([]);
+  const dragFromIdx = signal(null);
+
+  const flattenTree = (nodes, depth = 1, parentKey = "") => {
+    const out = [];
+    for (const n of nodes || []) {
+      const ck = `item_${n.id}`;
+      out.push({
+        client_id: ck,
+        parent_key: parentKey,
+        depth,
+        label: n.label,
+        link_type: n.link_type,
+        entry_id: n.entry_id || null,
+        external_url: n.external_url || "",
+        target_blank: Boolean(n.target_blank),
+        css_class: n.css_class || "",
+      });
+      if (n.children && n.children.length > 0) {
+        out.push(...flattenTree(n.children, depth + 1, ck));
+      }
+    }
+    return out;
+  };
+
+  effect(() => {
+    const menus = menusQuery.data.get()?.menus || [];
+    if (menus.length > 0 && !selectedMenuId.peek()) {
+      selectedMenuId.set(menus[0].id);
+      workingItems.set(flattenTree(menus[0].items || []));
+    } else if (selectedMenuId.peek()) {
+      const cur = menus.find((m) => m.id === selectedMenuId.peek());
+      if (cur && workingItems.peek().length === 0) {
+        workingItems.set(flattenTree(cur.items || []));
+      }
+    }
+  });
+
+  const newSlugIn = Input({ id: "menu-new-slug", props: { name: "slug", label: "Menu Slug", required: true, placeholder: "footer-nav" } });
+  const newNameIn = Input({ id: "menu-new-name", props: { name: "name", label: "Menu Name", required: true, placeholder: "Footer Links" } });
+  const newLocSel = Select({
+    id: "menu-new-loc",
+    props: {
+      name: "location",
+      label: "Theme Location",
+      value: signal(""),
+      options: [
+        { value: "", label: "Unassigned" },
+        { value: "primary", label: "Primary Navigation (primary)" },
+        { value: "footer", label: "Footer Links (footer)" },
+        { value: "mobile", label: "Mobile Drawer (mobile)" },
+      ],
+    },
+  });
+  const createMenuForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        if (!newSlugIn.validate() || !newNameIn.validate()) return;
+        try {
+          const res = await api.post("/api/admin/menus", {
+            slug: newSlugIn.value.peek(),
+            name: newNameIn.value.peek(),
+            location: newLocSel.value.peek() || null,
+          });
+          newSlugIn.value.set("");
+          newNameIn.value.set("");
+          okSig.set(`Created menu "${res.menu.name}".`);
+          selectedMenuId.set(res.menu.id);
+          workingItems.set([]);
+          invalidateQueries(["menus"]);
+        } catch (err) {
+          errSig.set(err.message || "Failed to create menu.");
+        }
+      },
+    },
+    children: [newSlugIn.element, newNameIn.element, newLocSel.element, el("button", { type: "submit" }, "Create Menu")],
+  });
+
+  const createCard = el("section", { class: "cms-card" });
+  createCard.appendChild(el("h2", {}, "Create Menu"));
+  createCard.appendChild(createMenuForm.element);
+
+  const menuSel = Select({
+    id: "menu-active-select",
+    props: {
+      name: "menu_id",
+      label: "Select Menu to Edit",
+      value: signal(""),
+      options: () => (menusQuery.data.get()?.menus || []).map((m) => ({ value: String(m.id), label: `${m.name} (${m.location || "unassigned"})` })),
+    },
+  });
+  effect(() => {
+    const mid = selectedMenuId.get();
+    if (mid) menuSel.value.set(String(mid));
+  });
+  menuSel.element.querySelector("select").addEventListener("change", (ev) => {
+    const idNum = parseInt(ev.target.value, 10);
+    const menus = menusQuery.data.get()?.menus || [];
+    const found = menus.find((m) => m.id === idNum);
+    selectedMenuId.set(idNum);
+    workingItems.set(found ? flattenTree(found.items || []) : []);
+  });
+
+  const slotSel = Select({
+    id: "menu-slot-select",
+    props: {
+      name: "slot_location",
+      label: "Assign Theme Location",
+      value: signal(""),
+      options: [
+        { value: "", label: "Unassigned" },
+        { value: "primary", label: "primary (Header)" },
+        { value: "footer", label: "footer (Footer)" },
+        { value: "mobile", label: "mobile (Drawer)" },
+      ],
+    },
+  });
+  const assignSlotBtn = el("button", { type: "button", class: "cms-btn-secondary" }, "Assign Location Atomically");
+  assignSlotBtn.addEventListener("click", async () => {
+    const mid = selectedMenuId.peek();
+    if (!mid) return;
+    errSig.set("");
+    okSig.set("");
+    try {
+      await api.put(`/api/admin/menus/${mid}`, { location: slotSel.value.peek() || null });
+      okSig.set("Updated exclusive theme menu location.");
+      invalidateQueries(["menus"]);
+    } catch (err) {
+      errSig.set(err.message || "Failed to assign location.");
+    }
+  });
+
+  const addLblIn = Input({ id: "mi-label", props: { name: "label", label: "Link Label", required: true, placeholder: "Docs" } });
+  const linkTypeSel = Select({
+    id: "mi-type",
+    props: {
+      name: "link_type",
+      label: "Link Type",
+      value: signal("entry"),
+      options: [
+        { value: "entry", label: "Dynamic Published Entry" },
+        { value: "external", label: "External URL (https:// or http://)" },
+      ],
+    },
+  });
+  const entryPickSel = Select({
+    id: "mi-entry",
+    props: {
+      name: "entry_id",
+      label: "Target Entry (Permalink Auto-Resolved)",
+      value: signal(""),
+      options: () => (entriesQuery.data.get()?.entries || []).map((e) => ({ value: String(e.id), label: `${e.title} (${e.full_path})` })),
+    },
+  });
+  const extUrlIn = Input({ id: "mi-ext-url", props: { name: "external_url", label: "External URL", placeholder: "https://grab-lang.org" } });
+
+  const addItemBtn = el("button", { type: "button" }, "Add Item to Builder");
+  addItemBtn.addEventListener("click", () => {
+    errSig.set("");
+    if (!addLblIn.validate()) return;
+    const lt = linkTypeSel.value.peek();
+    const cur = [...workingItems.peek()];
+    const cid = `new_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    if (lt === "entry") {
+      const eid = parseInt(entryPickSel.value.peek(), 10);
+      if (!Number.isInteger(eid) || eid < 1) {
+        errSig.set("Please select an entry.");
+        return;
+      }
+      cur.push({ client_id: cid, parent_key: "", depth: 1, label: addLblIn.value.peek().trim(), link_type: "entry", entry_id: eid, external_url: "", target_blank: false, css_class: "" });
+    } else {
+      const u = extUrlIn.value.peek().trim();
+      if (!u.toLowerCase().startsWith("https://") && !u.toLowerCase().startsWith("http://")) {
+        errSig.set("External URL must start with https:// or http://.");
+        return;
+      }
+      cur.push({ client_id: cid, parent_key: "", depth: 1, label: addLblIn.value.peek().trim(), link_type: "external", entry_id: null, external_url: u, target_blank: true, css_class: "" });
+    }
+    addLblIn.value.set("");
+    extUrlIn.value.set("");
+    workingItems.set(cur);
+  });
+
+  const recomputeParentsFromDepth = (list) => {
+    const stackAtDepth = {};
+    return list.map((it) => {
+      const d = Math.max(1, Math.min(4, it.depth || 1));
+      const pKey = d > 1 ? stackAtDepth[d - 1] || "" : "";
+      const effDepth = pKey ? d : 1;
+      stackAtDepth[effDepth] = it.client_id;
+      return { ...it, depth: effDepth, parent_key: pKey };
+    });
+  };
+
+  const reorderItem = (idx, dir) => {
+    const arr = [...workingItems.peek()];
+    const nextIdx = idx + dir;
+    if (nextIdx < 0 || nextIdx >= arr.length) return;
+    const [moved] = arr.splice(idx, 1);
+    arr.splice(nextIdx, 0, moved);
+    workingItems.set(recomputeParentsFromDepth(arr));
+  };
+
+  const changeDepth = (idx, delta) => {
+    const arr = [...workingItems.peek()];
+    if (idx === 0 && delta > 0) return;
+    const target = { ...arr[idx] };
+    const nextD = Math.max(1, Math.min(4, (target.depth || 1) + delta));
+    if (idx > 0 && nextD > (arr[idx - 1].depth || 1) + 1) return;
+    target.depth = nextD;
+    arr[idx] = target;
+    workingItems.set(recomputeParentsFromDepth(arr));
+  };
+
+  const itemsUl = el("ul", { class: "cms-list", "aria-label": "Menu Items Order and Nesting Builder" });
+  effect(() => {
+    const arr = workingItems.get();
+    itemsUl.replaceChildren();
+    if (arr.length === 0) {
+      itemsUl.appendChild(el("li", { class: "cms-muted" }, "No items yet. Add items above and reorder with drag-and-drop or keyboard controls."));
+      return;
+    }
+    arr.forEach((it, idx) => {
+      const li = el("li", {
+        class: `cms-card cms-menu-item cms-menu-depth-${it.depth || 1}`,
+        draggable: "true",
+      });
+      li.addEventListener("dragstart", () => dragFromIdx.set(idx));
+      li.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        li.classList.add("cms-drop-target");
+      });
+      li.addEventListener("dragleave", () => li.classList.remove("cms-drop-target"));
+      li.addEventListener("drop", (ev) => {
+        ev.preventDefault();
+        li.classList.remove("cms-drop-target");
+        const from = dragFromIdx.peek();
+        if (from !== null && from !== idx) {
+          const next = [...workingItems.peek()];
+          const [moved] = next.splice(from, 1);
+          next.splice(idx, 0, moved);
+          workingItems.set(recomputeParentsFromDepth(next));
+        }
+        dragFromIdx.set(null);
+      });
+
+      const row = el("section", { class: "cms-row" });
+      const info = el("section");
+      const ttl = el("strong");
+      setSafeText(ttl, `${it.label}`);
+      const sub = el("p", { class: "cms-muted" });
+      setSafeText(sub, `Depth ${it.depth || 1}/4 · ${it.link_type === "entry" ? `Entry #${it.entry_id}` : it.external_url}`);
+      info.appendChild(ttl);
+      info.appendChild(sub);
+
+      const ctrls = el("section", { class: "cms-topbar-right" });
+      const upBtn = el("button", { type: "button", class: "cms-btn-secondary", "aria-label": `Move ${it.label} up` }, "Up");
+      const dnBtn = el("button", { type: "button", class: "cms-btn-secondary", "aria-label": `Move ${it.label} down` }, "Down");
+      const inBtn = el("button", { type: "button", class: "cms-btn-secondary", "aria-label": `Indent ${it.label}` }, "Indent");
+      const outBtn = el("button", { type: "button", class: "cms-btn-secondary", "aria-label": `Outdent ${it.label}` }, "Outdent");
+      const rmBtn = el("button", { type: "button", class: "cms-btn-danger", "aria-label": `Remove ${it.label}` }, "Remove");
+
+      upBtn.addEventListener("click", () => reorderItem(idx, -1));
+      dnBtn.addEventListener("click", () => reorderItem(idx, 1));
+      inBtn.addEventListener("click", () => changeDepth(idx, 1));
+      outBtn.addEventListener("click", () => changeDepth(idx, -1));
+      rmBtn.addEventListener("click", () => {
+        const next = [...workingItems.peek()];
+        next.splice(idx, 1);
+        workingItems.set(recomputeParentsFromDepth(next));
+      });
+
+      ctrls.appendChild(upBtn);
+      ctrls.appendChild(dnBtn);
+      ctrls.appendChild(inBtn);
+      ctrls.appendChild(outBtn);
+      ctrls.appendChild(rmBtn);
+      row.appendChild(info);
+      row.appendChild(ctrls);
+      li.appendChild(row);
+      itemsUl.appendChild(li);
+    });
+  });
+
+  const saveTreeBtn = el("button", { type: "button" }, "Save Menu Hierarchy");
+  saveTreeBtn.addEventListener("click", async () => {
+    const mid = selectedMenuId.peek();
+    if (!mid) return;
+    errSig.set("");
+    okSig.set("");
+    try {
+      const normalized = recomputeParentsFromDepth(workingItems.peek());
+      await api.put(`/api/admin/menus/${mid}/items`, { items: normalized });
+      okSig.set("Saved menu order and nested hierarchy (max depth 4 validated).");
+      invalidateQueries(["menus"]);
+    } catch (err) {
+      errSig.set(err.message || "Failed to save menu items.");
+    }
+  });
+
+  const builderCard = el("section", { class: "cms-card" });
+  builderCard.appendChild(el("h2", {}, "Menu Order & Nesting Builder"));
+  builderCard.appendChild(menuSel.element);
+  builderCard.appendChild(slotSel.element);
+  builderCard.appendChild(assignSlotBtn);
+  builderCard.appendChild(addLblIn.element);
+  builderCard.appendChild(linkTypeSel.element);
+  builderCard.appendChild(entryPickSel.element);
+  builderCard.appendChild(extUrlIn.element);
+  builderCard.appendChild(addItemBtn);
+  builderCard.appendChild(itemsUl);
+  builderCard.appendChild(saveTreeBtn);
+
+  const stack = el("section", { class: "cms-stack" });
+  stack.appendChild(builderCard);
+  stack.appendChild(createCard);
+  root.appendChild(stack);
+}
+
+function mountTaxonomies(root, api) {
+  const errSig = signal("");
+  const okSig = signal("");
+  const taxQuery = useQuery(api, "/api/admin/taxonomies", { tags: ["taxonomies"] });
+
+  root.appendChild(makeAlert(errSig, false));
+  root.appendChild(makeAlert(okSig, true));
+
+  const tSlugIn = Input({ id: "tax-slug", props: { name: "slug", label: "Taxonomy Slug", required: true, placeholder: "topic" } });
+  const tSingIn = Input({ id: "tax-sing", props: { name: "label_singular", label: "Singular Label", required: true, placeholder: "Topic" } });
+  const tPlurIn = Input({ id: "tax-plur", props: { name: "label_plural", label: "Plural Label", required: true, placeholder: "Topics" } });
+  const tArchIn = Input({ id: "tax-arch", props: { name: "archive_slug", label: "Archive URL Prefix", required: true, placeholder: "topic" } });
+  const tHierChk = el("input", { id: "tax-hier", type: "checkbox" });
+  const tHierLbl = el("label", { for: "tax-hier", class: "cms-row" });
+  tHierLbl.appendChild(tHierChk);
+  tHierLbl.appendChild(el("span", {}, "Hierarchical taxonomy (supports parent/child terms)"));
+  const tCtsIn = Input({ id: "tax-cts", props: { name: "content_types", label: "Attached Content Types (CSV)", value: "post" } });
+
+  const createTaxForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        if (!tSlugIn.validate() || !tSingIn.validate() || !tPlurIn.validate() || !tArchIn.validate()) return;
+        const cts = tCtsIn.value.peek().split(",").map((s) => s.trim()).filter(Boolean);
+        try {
+          await api.post("/api/admin/taxonomies", {
+            slug: tSlugIn.value.peek(),
+            label_singular: tSingIn.value.peek(),
+            label_plural: tPlurIn.value.peek(),
+            archive_slug: tArchIn.value.peek(),
+            is_hierarchical: Boolean(tHierChk.checked),
+            content_type_slugs: cts,
+          });
+          tSlugIn.value.set("");
+          tSingIn.value.set("");
+          tPlurIn.value.set("");
+          tArchIn.value.set("");
+          okSig.set("Custom taxonomy created.");
+          invalidateQueries(["taxonomies"]);
+        } catch (err) {
+          errSig.set(err.message || "Failed to create taxonomy.");
+        }
+      },
+    },
+    children: [tSlugIn.element, tSingIn.element, tPlurIn.element, tArchIn.element, tHierLbl, tCtsIn.element, el("button", { type: "submit" }, "Create Taxonomy")],
+  });
+
+  const taxSelect = Select({
+    id: "term-tax-select",
+    props: {
+      name: "taxonomy_slug",
+      label: "Target Taxonomy",
+      value: signal("category"),
+      options: () => (taxQuery.data.get()?.taxonomies || []).map((t) => ({ value: t.slug, label: `${t.label_plural} (/${t.archive_slug}/:slug)` })),
+    },
+  });
+  const termSlugIn = Input({ id: "term-slug", props: { name: "slug", label: "Term Slug", required: true, placeholder: "tutorials" } });
+  const termNameIn = Input({ id: "term-name", props: { name: "name", label: "Term Name", required: true, placeholder: "Tutorials" } });
+  const termParentSel = Select({
+    id: "term-parent",
+    props: {
+      name: "parent_id",
+      label: "Parent Term (Hierarchical Only)",
+      value: signal(""),
+      options: () => {
+        const all = taxQuery.data.get()?.taxonomies || [];
+        const cur = all.find((t) => t.slug === taxSelect.value.get());
+        const opts = [{ value: "", label: "None (Top Level)" }];
+        if (cur && cur.is_hierarchical) {
+          for (const tm of cur.terms || []) {
+            opts.push({ value: String(tm.id), label: tm.name });
+          }
+        }
+        return opts;
+      },
+    },
+  });
+  const termDescIn = Input({ id: "term-desc", props: { name: "description", label: "Archive Description" } });
+
+  const createTermForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        if (!termSlugIn.validate() || !termNameIn.validate()) return;
+        const pid = termParentSel.value.peek();
+        try {
+          await api.post(`/api/admin/taxonomies/${taxSelect.value.peek()}/terms`, {
+            slug: termSlugIn.value.peek(),
+            name: termNameIn.value.peek(),
+            parent_id: pid ? parseInt(pid, 10) : null,
+            description: termDescIn.value.peek(),
+          });
+          termSlugIn.value.set("");
+          termNameIn.value.set("");
+          termDescIn.value.set("");
+          okSig.set("Term added.");
+          invalidateQueries(["taxonomies"]);
+        } catch (err) {
+          errSig.set(err.message || "Failed to add term.");
+        }
+      },
+    },
+    children: [taxSelect.element, termSlugIn.element, termNameIn.element, termParentSel.element, termDescIn.element, el("button", { type: "submit" }, "Add Term")],
+  });
+
+  const taxUl = el("ul", { class: "cms-list" });
+  const taxItems = signal([]);
+  effect(() => taxItems.set(taxQuery.data.get()?.taxonomies || []));
+  ForEach({
+    parent: taxUl,
+    items: taxItems,
+    key: (t) => t.slug,
+    render: (tSig) => {
+      const li = el("li", { class: "cms-card" });
+      const title = el("h3");
+      const meta = el("p", { class: "cms-muted" });
+      const termList = el("p");
+      effect(() => {
+        const t = tSig.get();
+        setSafeText(title, `${t.label_plural} (${t.slug})`);
+        setSafeText(meta, `Archive: /${t.archive_slug}/:slug · ${t.is_hierarchical ? "Hierarchical" : "Flat"} · Types: ${(t.content_type_slugs || []).join(", ")}`);
+        const tSummary = (t.terms || []).map((tm) => `#${tm.id} ${tm.name} (/${t.archive_slug}/${tm.slug})`).join(" · ") || "No terms yet";
+        setSafeText(termList, tSummary);
+      });
+      li.appendChild(title);
+      li.appendChild(meta);
+      li.appendChild(termList);
+      return li;
+    },
+  });
+
+  const listCard = el("section", { class: "cms-card" });
+  listCard.appendChild(el("h2", {}, "Registered Taxonomies & Terms"));
+  listCard.appendChild(taxUl);
+
+  const termCard = el("section", { class: "cms-card" });
+  termCard.appendChild(el("h2", {}, "Add Term"));
+  termCard.appendChild(createTermForm.element);
+
+  const taxCard = el("section", { class: "cms-card" });
+  taxCard.appendChild(el("h2", {}, "Create Custom Taxonomy"));
+  taxCard.appendChild(createTaxForm.element);
+
+  const stack = el("section", { class: "cms-stack" });
+  stack.appendChild(listCard);
+  stack.appendChild(termCard);
+  stack.appendChild(taxCard);
+  root.appendChild(stack);
+}
+
 function wireLogout(api) {
   const btn = document.getElementById("admin-logout-btn");
   if (!btn) return;
@@ -1072,6 +1817,12 @@ function boot() {
     mountOverview(root, api);
   } else if (page === "entries") {
     mountEntries(root, api, role);
+  } else if (page === "media") {
+    mountMedia(root, api, role);
+  } else if (page === "menus") {
+    mountMenus(root, api);
+  } else if (page === "taxonomies") {
+    mountTaxonomies(root, api);
   } else if (page === "types") {
     mountTypes(root, api);
   } else if (page === "themes") {

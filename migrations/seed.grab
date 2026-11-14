@@ -30,6 +30,20 @@ set update_theme to data.prepare using db, "UPDATE themes SET name = :name, vers
 set count_users to data.prepare using db, "SELECT count(*) AS total FROM users", record {params: record {}, columns: record {total: "integer"}}
 set insert_user to data.prepare using db, "INSERT INTO users (email, display_name, role, password_hash, email_verified, is_active, created_at, updated_at) VALUES (:email, :display_name, :role, :password_hash, :email_verified, :is_active, :created_at, :updated_at)", record {params: record {email: "text", display_name: "text", role: "text", password_hash: record {type: "text", nullable: yes}, email_verified: "integer", is_active: "integer", created_at: "text", updated_at: "text"}, columns: record {}}
 
+set find_taxonomy to data.prepare using db, "SELECT id FROM taxonomies WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer"}}
+set insert_taxonomy to data.prepare using db, "INSERT INTO taxonomies (slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at) VALUES (:slug, :label_singular, :label_plural, :is_hierarchical, :archive_slug, :content_type_slugs_json, :is_system, :created_at)", record {params: record {slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}, columns: record {}}
+
+set find_term to data.prepare using db, "SELECT id FROM terms WHERE taxonomy_id = :taxonomy_id AND slug = :slug", record {params: record {taxonomy_id: "integer", slug: "text"}, columns: record {id: "integer"}}
+set insert_term to data.prepare using db, "INSERT INTO terms (taxonomy_id, parent_id, slug, name, description, sort_order, created_at, updated_at) VALUES (:taxonomy_id, :parent_id, :slug, :name, :description, :sort_order, :created_at, :updated_at)", record {params: record {taxonomy_id: "integer", parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", created_at: "text", updated_at: "text"}, columns: record {}}
+
+set find_entry_term to data.prepare using db, "SELECT entry_id FROM entry_terms WHERE entry_id = :entry_id AND term_id = :term_id", record {params: record {entry_id: "integer", term_id: "integer"}, columns: record {entry_id: "integer"}}
+set insert_entry_term to data.prepare using db, "INSERT INTO entry_terms (entry_id, term_id, created_at) VALUES (:entry_id, :term_id, :created_at)", record {params: record {entry_id: "integer", term_id: "integer", created_at: "text"}, columns: record {}}
+
+set count_menus to data.prepare using db, "SELECT count(*) AS total FROM menus", record {params: record {}, columns: record {total: "integer"}}
+set find_menu_by_slug to data.prepare using db, "SELECT id FROM menus WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer"}}
+set insert_menu to data.prepare using db, "INSERT INTO menus (slug, name, location, created_at, updated_at) VALUES (:slug, :name, :location, :created_at, :updated_at)", record {params: record {slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
+set insert_menu_item to data.prepare using db, "INSERT INTO menu_items (menu_id, parent_id, label, link_type, entry_id, external_url, target_blank, css_class, sort_order, created_at, updated_at) VALUES (:menu_id, :parent_id, :label, :link_type, :entry_id, :external_url, :target_blank, :css_class, :sort_order, :created_at, :updated_at)", record {params: record {menu_id: "integer", parent_id: record {type: "integer", nullable: yes}, label: "text", link_type: "text", entry_id: record {type: "integer", nullable: yes}, external_url: record {type: "text", nullable: yes}, target_blank: "integer", css_class: "text", sort_order: "integer", created_at: "text", updated_at: "text"}, columns: record {}}
+
 set starter_manifest_raw to files.read_text using "themes/default-starter/theme.json"
 set starter_manifest to json.parse using starter_manifest_raw
 
@@ -119,5 +133,45 @@ try
 catch seed_user_err
 end
 
+set cat_tax_row to data.one using find_taxonomy, record {slug: "category"}, tx
+if cat_tax_row is nothing
+  call data.execute using insert_taxonomy, record {slug: "category", label_singular: "Category", label_plural: "Categories", is_hierarchical: 1, archive_slug: "category", content_type_slugs_json: "[\"post\"]", is_system: 1, created_at: now_iso}, tx
+  set cat_tax_row to data.one using find_taxonomy, record {slug: "category"}, tx
+end
+
+set tag_tax_row to data.one using find_taxonomy, record {slug: "post_tag"}, tx
+if tag_tax_row is nothing
+  call data.execute using insert_taxonomy, record {slug: "post_tag", label_singular: "Tag", label_plural: "Tags", is_hierarchical: 0, archive_slug: "tag", content_type_slugs_json: "[\"post\"]", is_system: 1, created_at: now_iso}, tx
+end
+
+if cat_tax_row is not nothing
+  set uncat_row to data.one using find_term, record {taxonomy_id: cat_tax_row.id, slug: "uncategorized"}, tx
+  if uncat_row is nothing
+    call data.execute using insert_term, record {taxonomy_id: cat_tax_row.id, parent_id: nothing, slug: "uncategorized", name: "Uncategorized", description: "Default post category", sort_order: 1, created_at: now_iso, updated_at: now_iso}, tx
+    set uncat_row to data.one using find_term, record {taxonomy_id: cat_tax_row.id, slug: "uncategorized"}, tx
+  end
+  set hello_seeded to data.one using find_entry, record {full_path: "/blog/hello-world"}, tx
+  if hello_seeded is not nothing and uncat_row is not nothing
+    set existing_et to data.one using find_entry_term, record {entry_id: hello_seeded.id, term_id: uncat_row.id}, tx
+    if existing_et is nothing
+      call data.execute using insert_entry_term, record {entry_id: hello_seeded.id, term_id: uncat_row.id, created_at: now_iso}, tx
+    end
+  end
+end
+
+set menu_cnt_row to data.one using count_menus, record {}, tx
+if menu_cnt_row is not nothing and menu_cnt_row.total is 0
+  call data.execute using insert_menu, record {slug: "main-nav", name: "Main Navigation", location: "primary", created_at: now_iso, updated_at: now_iso}, tx
+  set main_menu_row to data.one using find_menu_by_slug, record {slug: "main-nav"}, tx
+  if main_menu_row is not nothing
+    call data.execute using insert_menu_item, record {menu_id: main_menu_row.id, parent_id: nothing, label: "Home", link_type: "external", entry_id: nothing, external_url: "/", target_blank: 0, css_class: "", sort_order: 1, created_at: now_iso, updated_at: now_iso}, tx
+    call data.execute using insert_menu_item, record {menu_id: main_menu_row.id, parent_id: nothing, label: "Blog", link_type: "external", entry_id: nothing, external_url: "/blog", target_blank: 0, css_class: "", sort_order: 2, created_at: now_iso, updated_at: now_iso}, tx
+    set about_seeded to data.one using find_entry, record {full_path: "/about"}, tx
+    if about_seeded is not nothing
+      call data.execute using insert_menu_item, record {menu_id: main_menu_row.id, parent_id: nothing, label: "About", link_type: "entry", entry_id: about_seeded.id, external_url: nothing, target_blank: 0, css_class: "", sort_order: 3, created_at: now_iso, updated_at: now_iso}, tx
+    end
+  end
+end
+
 call data.commit using tx
-show "GrabLab CMS v0.3.0 seed completed."
+show "GrabLab CMS v0.4.0 seed completed."

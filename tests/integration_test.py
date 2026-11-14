@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-GrabLab CMS v0.3.0 Comprehensive Integration Test Suite
+GrabLab CMS v0.4.0 Comprehensive Integration Test Suite
 Tests:
 1. grab check & grab format parity on all .grab and .grab.html files (including admin Grex views)
-2. Database schema v0.1 -> v0.3 upgrade & fresh migration idempotency + v0.3 seed
+2. Database schema v0.1 -> v0.3 -> v0.4 upgrade & fresh migration idempotency + v0.4 seed (SQLite/MariaDB/Postgres parity)
 3. Initial /setup lock, native argon2id auth, HttpOnly SameSite=Lax cookies, session rotation & logout
 4. Brute-force protection via use cache (cache.limit -> 429 Too Many Requests + epoch reset)
 5. CSRF protection (X-CSRF-Token) & RBAC enforcement (admin, editor, author, viewer)
@@ -13,6 +13,10 @@ Tests:
 8. Pretty permalink resolution, 301 redirects & loop-free slug revert, XSS escaping, CSP headers
 9. 1-click exclusive theme switching (/api/admin/themes/activate), Grex visual mode, zero-<div> HTML
 10. Native hooks/filters priority ordering & Query Loop cache invalidation
+11. v0.4.0 Media Library & Safe Upload Pipeline (magic-byte sniffing, SVG/HTML rejection, path traversal, dimensions, WCAG alt, hardening headers)
+12. v0.4.0 Navigation Menus (atomic slot assignment, depth<=4/cycle check, URL allowlist, auto permalink resolution, semantic <nav>)
+13. v0.4.0 Taxonomies, Hierarchical Terms, Query Loop filter_by_term & pretty archive routes (/category/:slug, /tag/:slug, /:archive/:slug)
+14. v0.4.0 Capability-gated grab mcp CMS tools (JSON-RPC & REST, draft-only create_entry_draft, Grex + auditAccessibility 422 gate, zero secrets)
 """
 
 import base64
@@ -24,11 +28,13 @@ import os
 import shutil
 import socket
 import sqlite3
+import struct
 import subprocess
 import tempfile
 import threading
 import time
 import urllib.parse
+import zlib
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_GRAB = (
@@ -195,7 +201,7 @@ def start_mock_oauth_server():
 
 
 def test_checks_and_formatting():
-    print("[1/10] Running grab check and grab format verification...")
+    print("[1/13] Running grab check and grab format verification...")
     grab_files = [
         "migrations/001_schema.grab",
         "migrations/001_schema_postgres.grab",
@@ -203,6 +209,9 @@ def test_checks_and_formatting():
         "migrations/002_auth_schema.grab",
         "migrations/002_auth_schema_postgres.grab",
         "migrations/002_auth_schema_mariadb.grab",
+        "migrations/003_v04_schema.grab",
+        "migrations/003_v04_schema_postgres.grab",
+        "migrations/003_v04_schema_mariadb.grab",
         "migrations/seed.grab",
     ]
     for gf in grab_files:
@@ -251,19 +260,30 @@ def test_checks_and_formatting():
 
 
 def test_migrations_and_seed():
-    print("[2/10] Testing v0.1->v0.3 upgrade migration, fresh v0.3 migration, and idempotent seed...")
+    print("[2/13] Testing v0.1->v0.3->v0.4 upgrade migration, fresh v0.4 migration, dialect parity, and idempotent seed...")
     for suffix in ("", "-journal", "-wal", "-shm"):
         p = DB_PATH + suffix
         if os.path.exists(p):
             os.remove(p)
 
-    # 1) Upgrade path: v0.1 -> v0.3
+    # Clean uploads dir before baseline
+    up_dir = os.path.join(ROOT, "uploads")
+    os.makedirs(up_dir, exist_ok=True)
+    for fn in os.listdir(up_dir):
+        if fn != ".gitkeep":
+            fp = os.path.join(up_dir, fn)
+            if os.path.isfile(fp):
+                os.remove(fp)
+
+    # 1) Upgrade path: v0.1 -> v0.3 -> v0.4
     m1 = run_cmd(["migrate", "--db-config", "grab.data.json", "--allow-db", "main:migrate", "migrations/001_schema.grab"])
     assert "applied: [1]" in m1.stdout, f"Expected v0.1 applied: {m1.stdout}"
     m2 = run_cmd(["migrate", "--db-config", "grab.data.json", "--allow-db", "main:migrate", "migrations/002_auth_schema.grab"])
     assert "applied: [2]" in m2.stdout, f"Expected v0.3 upgrade [2] applied: {m2.stdout}"
-    m3 = run_cmd(["migrate", "--db-config", "grab.data.json", "--allow-db", "main:migrate", "migrations/002_auth_schema.grab"])
-    assert "applied: []" in m3.stdout, f"Expected idempotent second run: {m3.stdout}"
+    m3 = run_cmd(["migrate", "--db-config", "grab.data.json", "--allow-db", "main:migrate", "migrations/003_v04_schema.grab"])
+    assert "applied: [3]" in m3.stdout, f"Expected v0.4 upgrade [3] applied: {m3.stdout}"
+    m4 = run_cmd(["migrate", "--db-config", "grab.data.json", "--allow-db", "main:migrate", "migrations/003_v04_schema.grab"])
+    assert "applied: []" in m4.stdout, f"Expected idempotent v0.4 run: {m4.stdout}"
 
     # 2) Fresh install path in isolated temp db
     fresh_dir = os.path.join(ROOT, "storage", "_fresh_test")
@@ -272,25 +292,45 @@ def test_migrations_and_seed():
         cfg_path = os.path.join(fresh_dir, "data.json")
         with open(cfg_path, "w", encoding="utf-8") as cf:
             json.dump({"connections": {"main": {"driver": "sqlite", "path": "fresh.db"}}}, cf)
-        mf = run_cmd(["migrate", "--db-config", cfg_path, "--allow-db", "main:migrate", "migrations/002_auth_schema.grab"])
-        assert "applied: [1, 2]" in mf.stdout, f"Expected fresh [1, 2] applied: {mf.stdout}"
+        mf = run_cmd(["migrate", "--db-config", cfg_path, "--allow-db", "main:migrate", "migrations/003_v04_schema.grab"])
+        assert "applied: [1, 2, 3]" in mf.stdout, f"Expected fresh [1, 2, 3] applied: {mf.stdout}"
     finally:
         shutil.rmtree(fresh_dir, ignore_errors=True)
 
-    # Seed main DB
+    # 3) Schema parity check across MariaDB and PostgreSQL v0.4 migration files
+    for fname in ("migrations/003_v04_schema_mariadb.grab", "migrations/003_v04_schema_postgres.grab"):
+        txt = open(os.path.join(ROOT, fname), encoding="utf-8").read()
+        for tbl in ("media", "menus", "menu_items", "taxonomies", "terms", "entry_terms"):
+            assert f"CREATE TABLE IF NOT EXISTS {tbl}" in txt, f"Missing {tbl} in {fname}"
+
+    # 4) Seed main DB twice (idempotent) & verify v0.4 defaults
     s1 = run_cmd(["run", "--db-config", "grab.data.json", "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
     assert "seed completed" in s1.stdout
     s2 = run_cmd(["run", "--db-config", "grab.data.json", "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
     assert "seed completed" in s2.stdout
-    print("  OK: Upgrade & fresh migrations and seed verified.")
+
+    con = sqlite3.connect(DB_PATH)
+    tax_slugs = {r[0] for r in con.execute("SELECT slug FROM taxonomies").fetchall()}
+    assert {"category", "post_tag"}.issubset(tax_slugs), f"Missing built-in taxonomies: {tax_slugs}"
+    term_slugs = {r[0] for r in con.execute("SELECT slug FROM terms").fetchall()}
+    assert "uncategorized" in term_slugs
+    menu_rows = con.execute("SELECT slug, location FROM menus").fetchall()
+    assert ("main-nav", "primary") in menu_rows
+    con.close()
+    print("  OK: Upgrade & fresh v0.4 migrations, MariaDB/PostgreSQL parity, and seed verified.")
 
 
-def start_server(port, oauth_port):
+def start_server(port, oauth_port, upload_dir=None, max_upload_bytes=None):
     log_path = os.path.join(ROOT, "storage", "test_server.log")
     log_file = open(log_path, "w", encoding="utf-8")
     env = os.environ.copy()
     env["GRABLAB_MASTER_KEY"] = TEST_MASTER_KEY
     env["GRABLAB_OAUTH_TEST_BASE_URL"] = f"http://127.0.0.1:{oauth_port}"
+    write_dir = upload_dir or "uploads"
+    if upload_dir:
+        env["GRABLAB_UPLOAD_DIR"] = upload_dir
+    if max_upload_bytes is not None:
+        env["GRABLAB_MAX_UPLOAD_BYTES"] = str(max_upload_bytes)
     proc = subprocess.Popen(
         [
             GRAB_BIN,
@@ -298,6 +338,8 @@ def start_server(port, oauth_port):
             "--addr",
             f"127.0.0.1:{port}",
             "--allow-scripts",
+            "--max-body-bytes",
+            "15728640",
             "--db-config",
             "grab.data.json",
             "--allow-db",
@@ -309,11 +351,13 @@ def start_server(port, oauth_port):
             "--allow-cache",
             "cms:limit",
             "--allow-env",
-            "GRABLAB_MASTER_KEY,GRABLAB_OAUTH_TEST_BASE_URL",
+            "GRABLAB_MASTER_KEY,GRABLAB_OAUTH_TEST_BASE_URL,GRABLAB_UPLOAD_DIR,GRABLAB_MAX_UPLOAD_BYTES",
             "--allow-net",
             f"127.0.0.1:{oauth_port}",
             "--allow-read",
             ".",
+            "--allow-write",
+            write_dir,
             "--static",
             "public",
             "src/app.grab",
@@ -560,17 +604,24 @@ def run_http_tests(port, oauth_port, oauth_state):
     assert st == 200
     print("  OK: CSRF protection and viewer/author/editor/admin capability enforcement verified.")
 
-    print("[6/10] Verifying authenticated Grex JS v1.0.0 admin dashboard routes...")
-    for adm_path in ("/admin", "/admin/entries", "/admin/types", "/admin/themes", "/admin/settings"):
+    print("[6/13] Verifying authenticated Grex JS v1.0.0 admin dashboard routes (including v0.4 panels)...")
+    for adm_path in ("/admin", "/admin/entries", "/admin/media", "/admin/menus", "/admin/taxonomies", "/admin/types", "/admin/themes", "/admin/settings"):
         st, hdrs, _, html, _ = admin.request("GET", adm_path)
         assert st == 200, f"Expected 200 on {adm_path}, got {st}"
         assert "<div" not in html.lower(), f"Prohibited wrapper <div> on {adm_path}"
         assert 'name="grablab-csrf"' in html and "/static/grex/grex.js" in html and "/static/admin/admin.js" in html
         assert "no-store" in hdrs.get("cache-control", "")
+    # RBAC checks for v0.4 admin routes
+    assert viewer.request("GET", "/admin/media")[0] == 403
+    assert author1.request("GET", "/admin/media")[0] == 200
+    assert author1.request("GET", "/admin/menus")[0] == 403
+    assert author1.request("GET", "/admin/taxonomies")[0] == 403
+    assert editor.request("GET", "/admin/menus")[0] == 200
+    assert editor.request("GET", "/admin/taxonomies")[0] == 200
     # Unknown admin subpath returns 404 when authenticated
     st, _, _, _, _ = admin.request("GET", "/admin/nonexistent-panel")
     assert st == 404
-    print("  OK: Semantic Grex admin routes verified with zero <div> tags.")
+    print("  OK: Semantic Grex admin routes + v0.4 RBAC verified with zero <div> tags.")
 
     print("[7/10] Testing disabled-by-default OAuth2/PKCE, AES-256-GCM secrets, & S256 social login flow...")
     # Step A: Disabled by default -> zero social buttons, /start 404, 0 outbound calls
@@ -810,6 +861,281 @@ def run_http_tests(port, oauth_port, oauth_state):
     assert st == 200 and q3["cache"]["hit"] is False and q3["pagination"]["total_items"] == 2
     print("  OK: 1-click exclusive theme switching, hooks isolation, and Query Loop cache invalidation verified.")
 
+    run_v04_tests(port, admin, editor, author1, author2, viewer)
+
+
+def make_test_png(width=4, height=3):
+    def chunk(tag, data):
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    raw_rows = b"".join(b"\x00" + (b"\x10\x80\xc0" * width) for _ in range(height))
+    idat = zlib.compress(raw_rows)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+def run_v04_tests(port, admin, editor, author1, author2, viewer):
+    print("[10/13] Testing v0.4.0 Media Library & Safe Upload Pipeline...")
+    png_bytes = make_test_png(12, 8)
+    png_b64 = base64.b64encode(png_bytes).decode("ascii")
+
+    # Viewer forbidden & missing CSRF rejected
+    assert viewer.request("POST", "/api/admin/media/upload", {"filename": "v.png", "mime_type": "image/png", "data_base64": png_b64, "alt_text": "no"})[0] == 403
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "v.png", "mime_type": "image/png", "data_base64": png_b64, "alt_text": "no"}, send_csrf=False)[0] == 403
+
+    # Reject missing alt text on images (422)
+    st, _, _, _, js = author1.request("POST", "/api/admin/media/upload", {
+        "original_name": "hero.png", "mime_type": "image/png", "data_base64": png_b64, "alt_text": "", "is_decorative": False
+    })
+    assert st == 422 and js["error"] == "alt_text_required", f"Expected 422 alt_text_required, got {st} {js}"
+
+    # Reject SVG & spoofed .png with HTML/SVG payload (415)
+    svg_b64 = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>').decode("ascii")
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "bad.svg", "mime_type": "image/svg+xml", "data_base64": svg_b64, "alt_text": "bad"})[0] == 415
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "spoof.png", "mime_type": "image/png", "data_base64": svg_b64, "alt_text": "bad"})[0] == 415
+
+    # Reject corrupt/truncated PNG (400)
+    corrupt_png_b64 = base64.b64encode(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x05corrupt").decode("ascii")
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "broken.png", "mime_type": "image/png", "data_base64": corrupt_png_b64, "alt_text": "broken"})[0] == 400
+
+    # Reject path traversal filenames (400)
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "../../etc/passwd", "mime_type": "image/png", "data_base64": png_b64, "alt_text": "x"})[0] == 400
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "..\\evil.png", "mime_type": "image/png", "data_base64": png_b64, "alt_text": "x"})[0] == 400
+
+    # Reject > 10 MiB payload limit cleanly (413)
+    oversize_b64 = "A" * 14000004
+    assert author1.request("POST", "/api/admin/media/upload", {"filename": "huge.png", "mime_type": "image/png", "data_base64": oversize_b64, "alt_text": "big"})[0] == 413
+
+    # Valid PNG upload by author1 (also verify alias /api/media/upload works cleanly)
+    st, _, _, _, m_up = author1.request("POST", "/api/media/upload", {
+        "original_name": "Product Banner.png",
+        "mime_type": "image/png",
+        "data_base64": "data:image/png;base64," + png_b64,
+        "alt_text": "Teal grablab showcase banner",
+        "caption": "Hero banner",
+    })
+    assert st == 201, f"Expected 201 upload, got {st} {m_up}"
+    media1 = m_up["media"]
+    assert media1["mime_type"] == "image/png" and media1["width"] == 12 and media1["height"] == 8
+    assert media1["filename"].endswith(".png") and len(media1["filename"]) == 36
+    assert os.path.exists(os.path.join(ROOT, "uploads", media1["filename"] + ".b64"))
+
+    # Valid PDF upload + decorative GIF upload
+    pdf_b64 = base64.b64encode(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n").decode("ascii")
+    st, _, _, _, m_pdf = editor.request("POST", "/api/admin/media/upload", {
+        "filename": "guide.pdf", "mime_type": "application/pdf", "data_base64": pdf_b64
+    })
+    assert st == 201 and m_pdf["media"]["width"] is None
+
+    gif_b64 = base64.b64encode(b"GIF89a\x02\x00\x02\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x02\x00\x02\x00\x00\x02\x02D\x01\x00;").decode("ascii")
+    st, _, _, _, m_gif = author1.request("POST", "/api/admin/media/upload", {
+        "filename": "spacer.gif", "mime_type": "image/gif", "data_base64": gif_b64, "alt_text": "", "is_decorative": True
+    })
+    assert st == 201 and m_gif["media"]["is_decorative"] is True and m_gif["media"]["width"] == 2
+
+    # Safe media serving headers, ETag / 304, & unknown filename 404
+    st, hdrs, _, body, _ = http_req(port, "GET", media1["url"])
+    assert st == 200
+    assert hdrs.get("content-type") == "image/png"
+    assert hdrs.get("x-content-type-options") == "nosniff"
+    assert "immutable" in hdrs.get("cache-control", "")
+    assert hdrs.get("etag")
+    assert http_req(port, "GET", media1["url"], headers={"If-None-Match": hdrs["etag"]})[0] == 304
+    assert http_req(port, "GET", f"/media/{media1['id']}/wrong-name.png")[0] == 404
+
+    # Ownership enforcement: author2 cannot PATCH/DELETE author1's media; editor CAN update
+    assert author2.request("PATCH", f"/api/admin/media/{media1['id']}", {"alt_text": "Hijacked"})[0] == 403
+    assert author2.request("DELETE", f"/api/admin/media/{media1['id']}")[0] == 403
+    assert editor.request("PATCH", f"/api/admin/media/{media1['id']}", {"alt_text": "Updated teal showcase banner"})[0] == 200
+    assert author1.request("DELETE", f"/api/admin/media/{m_gif['media']['id']}")[0] == 200
+    print("  OK: Media magic-byte sniffing, SVG/traversal/422-alt blocks, dimensions, ETag/nosniff, & ownership verified.")
+
+    print("[11/13] Testing v0.4.0 Navigation Menus, Atomic Slot Assignment, & Semantic <nav> Rendering...")
+    # Seeded primary menu works on GET /api/menus/primary and renders in GET / without wrapper <div>
+    st, _, _, _, pm = http_req(port, "GET", "/api/menus/primary")
+    assert st == 200 and pm["menu"]["slug"] == "main-nav"
+    st, _, _, home_html, _ = http_req(port, "GET", "/")
+    assert st == 200 and "<nav" in home_html and 'aria-current="page"' in home_html and "<div" not in home_html.lower()
+
+    # Author forbidden on menu management
+    assert author1.request("POST", "/api/admin/menus", {"slug": "no-auth", "name": "No", "location": "footer"})[0] == 403
+
+    # Create footer menu & new primary menu -> verify atomic location takeover & cache invalidation
+    st, _, _, _, m_foot = editor.request("POST", "/api/admin/menus", {"slug": "footer-nav", "name": "Footer Links", "location": "footer"})
+    assert st == 201
+    st, _, _, _, m_alt = editor.request("POST", "/api/admin/menus", {"slug": "alt-nav", "name": "Custom Header Nav", "location": "primary"})
+    assert st == 201
+    alt_id = m_alt["menu"]["id"]
+    st, _, _, _, pm2 = http_req(port, "GET", "/api/menus/primary")
+    assert st == 200 and pm2["menu"]["slug"] == "alt-nav"
+
+    # Reject javascript:/data:// protocol external URLs, cycle, and depth > 4
+    assert editor.request("POST", f"/api/admin/menus/{alt_id}/items", {
+        "label": "XSS", "link_type": "external", "external_url": "javascript:alert(1)"
+    })[0] == 400
+    assert editor.request("POST", f"/api/admin/menus/{alt_id}/items", {
+        "label": "ProtoRel", "link_type": "external", "external_url": "//evil.example/phish"
+    })[0] == 400
+    assert editor.request("PUT", f"/api/admin/menus/{alt_id}/items", {"items": [
+        {"client_id": "a", "parent_key": "b", "label": "A", "link_type": "external", "external_url": "https://example.com"},
+        {"client_id": "b", "parent_key": "a", "label": "B", "link_type": "external", "external_url": "https://example.com/b"},
+    ]})[0] == 400
+    assert editor.request("PUT", f"/api/admin/menus/{alt_id}/items", {"items": [
+        {"client_id": "d1", "parent_key": "", "label": "L1", "link_type": "external", "external_url": "https://example.com/1"},
+        {"client_id": "d2", "parent_key": "d1", "label": "L2", "link_type": "external", "external_url": "https://example.com/2"},
+        {"client_id": "d3", "parent_key": "d2", "label": "L3", "link_type": "external", "external_url": "https://example.com/3"},
+        {"client_id": "d4", "parent_key": "d3", "label": "L4", "link_type": "external", "external_url": "https://example.com/4"},
+        {"client_id": "d5", "parent_key": "d4", "label": "L5", "link_type": "external", "external_url": "https://example.com/5"},
+    ]})[0] == 400
+
+    # Create target entry -> link in alt-nav -> rename entry slug -> menu auto-resolves new full_path!
+    st, _, _, _, m_entry_res = editor.request("POST", "/api/entries", {
+        "content_type": "post", "slug": "menu-target", "title": "Menu Target", "status": "published", "body_html": "Target body"
+    })
+    assert st == 201
+    target_eid = m_entry_res["entry"]["id"]
+    st, _, _, m_put_raw, m_put_res = editor.request("PUT", f"/api/admin/menus/{alt_id}/items", {"items": [
+        {"client_id": "home", "parent_key": "", "label": "Home", "link_type": "external", "external_url": "/"},
+        {"client_id": "targ", "parent_key": "home", "label": "Target", "link_type": "entry", "entry_id": target_eid},
+        {"client_id": "ext", "parent_key": "", "label": "GRAB Docs", "link_type": "external", "external_url": "https://grab-lang.org", "target_blank": True},
+    ]})
+    assert st == 200, f"PUT menu items failed: {st} {m_put_raw} {m_put_res}"
+    st, _, _, _, pm3 = http_req(port, "GET", "/api/menus/primary")
+    assert pm3["menu"]["items"][0]["children"][0]["url"] == "/blog/menu-target"
+
+    # Rename entry slug -> menu cache invalidated & resolved URL updates automatically!
+    assert editor.request("PUT", f"/api/entries/{target_eid}", {"slug": "menu-target-v2"})[0] == 200
+    st, _, _, _, pm4 = http_req(port, "GET", "/api/menus/primary")
+    assert pm4["menu"]["items"][0]["children"][0]["url"] == "/blog/menu-target-v2"
+    st, _, _, home_nav_html, _ = http_req(port, "GET", "/")
+    assert 'href="/blog/menu-target-v2"' in home_nav_html and "<div" not in home_nav_html.lower()
+    print("  OK: Menus atomic slot assignment, cycle/depth-4/URL validation, slug auto-resolution, & <nav> verified.")
+
+    print("[12/13] Testing v0.4.0 Taxonomies, Terms, query_entries filter_by_term & Archives...")
+    # Reserved prefix & content-type archive_slug collisions -> 409 Conflict
+    assert editor.request("POST", "/api/admin/taxonomies", {
+        "slug": "admin-tax", "label_singular": "X", "label_plural": "Xs", "archive_slug": "media"
+    })[0] == 409
+    assert editor.request("POST", "/api/admin/taxonomies", {
+        "slug": "blog-tax", "label_singular": "B", "label_plural": "Bs", "archive_slug": "blog"
+    })[0] == 409
+
+    # Create hierarchical custom taxonomy `topic` + parent term `grab` + child term `cms`
+    st, _, _, _, tx_res = editor.request("POST", "/api/admin/taxonomies", {
+        "slug": "topic", "label_singular": "Topic", "label_plural": "Topics",
+        "is_hierarchical": True, "archive_slug": "topic", "content_type_slugs": ["post"]
+    })
+    assert st == 201
+    st, _, _, _, t_par = editor.request("POST", "/api/admin/taxonomies/topic/terms", {"slug": "grab", "name": "GRAB Language"})
+    assert st == 201
+    grab_tid = t_par["term"]["id"]
+    st, _, _, _, t_ch = editor.request("POST", "/api/admin/taxonomies/topic/terms", {"slug": "cms", "name": "CMS Architecture", "parent_id": grab_tid})
+    assert st == 201
+    cms_tid = t_ch["term"]["id"]
+
+    # Flat taxonomy `post_tag` must reject parent_id (400)
+    st, _, _, _, t_tag1 = editor.request("POST", "/api/admin/taxonomies/post_tag/terms", {"slug": "v04", "name": "v0.4"})
+    assert st == 201
+    assert editor.request("POST", "/api/admin/taxonomies/post_tag/terms", {"slug": "subtag", "name": "Subtag", "parent_id": t_tag1["term"]["id"]})[0] == 400
+
+    # Query empty child archive, then assign target entry -> verify cache invalidation & include_children expansion
+    q_empty1 = http_req(port, "GET", "/api/query?taxonomy=topic&term_slug=grab&include_children=true")[4]
+    assert q_empty1["pagination"]["total_items"] == 0 and q_empty1["cache"]["hit"] is False
+    q_empty2 = http_req(port, "GET", "/api/query?taxonomy=topic&term_slug=grab&include_children=true")[4]
+    assert q_empty2["cache"]["hit"] is True
+
+    st, _, _, _, _ = editor.request("PUT", f"/api/admin/entries/{target_eid}/terms", {"term_ids": [cms_tid, t_tag1["term"]["id"]]})
+    assert st == 200
+    q_after = http_req(port, "GET", "/api/query?taxonomy=topic&term_slug=grab&include_children=true")[4]
+    assert q_after["cache"]["hit"] is False and q_after["pagination"]["total_items"] == 1
+    assert q_after["items"][0]["id"] == target_eid
+    q_strict = http_req(port, "GET", "/api/query?taxonomy=topic&term_slug=grab&include_children=false")[4]
+    assert q_strict["pagination"]["total_items"] == 0
+
+    # Public archive routes (/category/uncategorized, /topic/cms, /tag/v04, 404 unknown)
+    for ok_arch, expect_txt in (("/category/uncategorized", "Hello, GrabLab CMS"), ("/topic/cms", "Menu Target"), ("/tag/v04", "Menu Target")):
+        st, _, _, html, _ = http_req(port, "GET", ok_arch)
+        assert st == 200 and expect_txt in html and "<div" not in html.lower(), f"Failed archive {ok_arch}: {st}"
+    assert http_req(port, "GET", "/category/missing-term-xyz")[0] == 404
+    print("  OK: Taxonomies, reserved prefix 409, include_children, query cache invalidation, & archives verified.")
+
+    print("[13/13] Testing v0.4.0 Capability-Gated grab mcp CMS Tools & Grex/WCAG AI Guardrails...")
+    # Mint MCP Bearer tokens for admin, author1, viewer
+    admin_mcp = admin.request("POST", "/api/auth/mcp-token", {})[4]["token"]
+    author_mcp = author1.request("POST", "/api/auth/mcp-token", {})[4]["token"]
+    viewer_mcp = viewer.request("POST", "/api/auth/mcp-token", {})[4]["token"]
+
+    def mcp_call(tok, tool_name, args=None):
+        hdrs = {"Authorization": f"Bearer {tok}"} if tok else {}
+        return http_req(port, "POST", f"/api/mcp/tools/{tool_name}", {"arguments": args or {}}, headers=hdrs)
+
+    # Unauthenticated & viewer RBAC denials
+    assert mcp_call("", "list_content_types")[0] == 401
+    assert mcp_call(viewer_mcp, "list_content_types")[0] == 403
+    assert mcp_call(viewer_mcp, "create_entry_draft", {"content_type": "post", "slug": "v-draft", "title": "V"})[0] == 403
+    assert mcp_call(viewer_mcp, "query_entries", {"status": "draft"})[0] == 403
+    assert mcp_call(viewer_mcp, "list_media")[0] == 403
+    assert mcp_call(viewer_mcp, "list_menus")[0] == 403
+
+    # JSON-RPC initialize & tools/list
+    st, _, _, _, rpc_init = http_req(port, "POST", "/api/mcp", {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}, headers={"Authorization": f"Bearer {admin_mcp}"})
+    assert st == 200 and rpc_init["result"]["serverInfo"]["name"] == "grablab-cms-mcp"
+    st, _, _, _, rpc_list = http_req(port, "POST", "/api/mcp", {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}, headers={"Authorization": f"Bearer {admin_mcp}"})
+    assert {t["name"] for t in rpc_list["result"]["tools"]} == {"list_content_types", "query_entries", "create_entry_draft", "update_entry_layout", "list_media", "list_menus"}
+
+    # Read tools omit all secrets
+    for tname in ("list_content_types", "query_entries", "list_media", "list_menus"):
+        st, _, _, raw_body, _ = mcp_call(admin_mcp, tname, {})
+        assert st == 200
+        for secret_key in ("password_hash", "csrf_secret", "client_secret", TEST_MASTER_KEY):
+            assert secret_key not in raw_body, f"Secret leaked in {tname}"
+
+    # create_entry_draft ALWAYS forces status='draft' even if status='published' passed
+    st, _, _, _, draft_res = mcp_call(author_mcp, "create_entry_draft", {
+        "content_type": "post",
+        "slug": "ai-mcp-draft",
+        "title": "AI Draft Post",
+        "status": "published",
+        "term_ids": [cms_tid],
+    })
+    assert st == 201 and draft_res["entry"]["status"] == "draft" and draft_res["status_enforced"] == "draft"
+    ai_entry_id = draft_res["entry"]["id"]
+
+    # update_entry_layout MUST reject: wrapper <div>, <script>, javascript: URL, missing alt, skipped heading h1->h3
+    bad_layout = {
+        "element": "Section",
+        "tag": "div",
+        "children": [
+            {"element": "Heading", "props": {"level": 1, "text": "Intro"}},
+            {"element": "Heading", "props": {"level": 3, "text": "Skipped H2"}},
+            {"element": "Image", "props": {"src": f"/media/{media1['id']}/{media1['filename']}"}},
+            {"element": "Link", "props": {"href": "javascript:alert(1)", "text": "Bad Link"}},
+            {"element": "Text", "props": {"text": "<script>evil()</script>"}},
+        ],
+    }
+    st, _, _, bad_raw, bad_res = mcp_call(author_mcp, "update_entry_layout", {"entry_id": ai_entry_id, "layout": bad_layout})
+    assert st == 422 and isinstance(bad_res, dict) and bad_res.get("error") == "grex_validation_failed", f"got {st}: {bad_raw} {bad_res}"
+    rules_hit = {v["rule"] for v in bad_res["violations"]}
+    assert {"no-wrapper-div", "a11y-heading-order", "a11y-image-alt", "url-protocol-check", "csp-safe"}.issubset(rules_hit), f"Missing violations: {rules_hit}"
+
+    # Ownership check: author1 cannot update editor's entry layout
+    assert mcp_call(author_mcp, "update_entry_layout", {"entry_id": target_eid, "layout": {"element": "Heading", "props": {"level": 1, "text": "Hijack"}}})[0] == 403
+
+    # Valid semantic WCAG AA layout succeeds
+    good_layout = {
+        "element": "Section",
+        "tag": "article",
+        "children": [
+            {"element": "Heading", "props": {"level": 1, "text": "Accessible AI Showcase"}},
+            {"element": "Heading", "props": {"level": 2, "text": "Media Section"}},
+            {"element": "Image", "props": {"media_id": media1["id"]}},
+            {"element": "Text", "props": {"text": "Built cleanly with Grex JS and WCAG AA validation."}},
+        ],
+    }
+    st, _, _, good_raw, good_res = mcp_call(author_mcp, "update_entry_layout", {"entry_id": ai_entry_id, "layout": good_layout})
+    assert st == 200 and isinstance(good_res, dict) and "<article>" in good_res.get("body_html", "") and "<h1>Accessible AI Showcase</h1>" in good_res.get("body_html", "") and "<div" not in good_res.get("body_html", "").lower(), f"good_layout failed: {st} {good_raw} {good_res}"
+    print("  OK: grab mcp CMS tools, Bearer RBAC, draft enforcement, Grex + WCAG AA 422 gate, & secret safety verified.")
+
 
 def main():
     test_checks_and_formatting()
@@ -830,9 +1156,9 @@ def main():
         if os.path.exists(log_path):
             os.remove(log_path)
 
-    print("[10/10] Restoring clean migrated & seeded storage/grablab.db baseline...")
+    print("[13/13] Restoring clean migrated & seeded storage/grablab.db baseline...")
     test_migrations_and_seed()
-    print("\nALL GRABLAB CMS v0.3.0 INTEGRATION TESTS PASSED (100%)!")
+    print("\nALL GRABLAB CMS v0.4.0 INTEGRATION TESTS PASSED (100%)!")
 
 
 if __name__ == "__main__":

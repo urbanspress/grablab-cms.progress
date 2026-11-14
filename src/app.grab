@@ -91,7 +91,53 @@ set stmt_get_oauth_account to data.prepare using db, "SELECT id, user_id, provid
 set stmt_insert_oauth_account to data.prepare using db, "INSERT INTO oauth_accounts (user_id, provider, provider_user_id, provider_email, created_at, updated_at) VALUES (:user_id, :provider, :provider_user_id, :provider_email, :created_at, :updated_at)", record {params: record {user_id: "integer", provider: "text", provider_user_id: "text", provider_email: "text", created_at: "text", updated_at: "text"}, columns: record {}}
 set stmt_update_oauth_account to data.prepare using db, "UPDATE oauth_accounts SET provider_email = :provider_email, updated_at = :updated_at WHERE id = :id", record {params: record {provider_email: "text", updated_at: "text", id: "integer"}, columns: record {}}
 
-set stmts to record {db: db, cms_cache: cms_cache, get_setting: stmt_get_setting, list_settings: stmt_list_settings, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, list_types: stmt_list_types, get_type_by_slug: stmt_get_type_by_slug, get_type_by_id: stmt_get_type_by_id, get_type_by_archive: stmt_get_type_by_archive, insert_type: stmt_insert_type, list_fields_by_type: stmt_list_fields_by_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, list_entries: stmt_list_entries, list_entries_by_author: stmt_list_entries_by_author, list_published_entries: stmt_list_published_entries, list_published_by_type: stmt_list_published_by_type, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, get_published_entry_by_path: stmt_get_published_entry_by_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, delete_entry_by_id: stmt_delete_entry_by_id, count_entries_filtered: stmt_count_entries_filtered, query_published_at_desc: stmt_query_published_at_desc, query_published_at_asc: stmt_query_published_at_asc, query_created_at_desc: stmt_query_created_at_desc, query_created_at_asc: stmt_query_created_at_asc, query_updated_at_desc: stmt_query_updated_at_desc, query_updated_at_asc: stmt_query_updated_at_asc, query_title_desc: stmt_query_title_desc, query_title_asc: stmt_query_title_asc, query_id_desc: stmt_query_id_desc, query_id_asc: stmt_query_id_asc, find_redirect_by_old_path: stmt_find_redirect_by_old_path, list_redirects: stmt_list_redirects, delete_redirect_by_old_path: stmt_delete_redirect_by_old_path, delete_redirects_by_entry_id: stmt_delete_redirects_by_entry_id, insert_redirect: stmt_insert_redirect, list_themes: stmt_list_themes, get_theme_by_slug: stmt_get_theme_by_slug, get_active_theme: stmt_get_active_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, deactivate_all_themes: stmt_deactivate_all_themes, activate_theme_slug: stmt_activate_theme_slug, count_users: stmt_count_users, list_users: stmt_list_users, get_user_by_id: stmt_get_user_by_id, get_user_by_email: stmt_get_user_by_email, insert_user: stmt_insert_user, update_user: stmt_update_user, update_user_login: stmt_update_user_login, update_user_password: stmt_update_user_password, get_session_with_user: stmt_get_session_with_user, insert_session: stmt_insert_session, touch_session: stmt_touch_session, delete_session_by_id: stmt_delete_session_by_id, delete_session_by_token: stmt_delete_session_by_token, delete_sessions_by_user: stmt_delete_sessions_by_user, delete_expired_sessions: stmt_delete_expired_sessions, get_oauth_account: stmt_get_oauth_account, insert_oauth_account: stmt_insert_oauth_account, update_oauth_account: stmt_update_oauth_account}
+set stmt_count_media to data.prepare using db, "SELECT count(*) AS total FROM media WHERE (:mime_filter = '' OR mime_type LIKE :mime_like)", record {params: record {mime_filter: "text", mime_like: "text"}, columns: record {total: "integer"}}
+set stmt_list_media to data.prepare using db, "SELECT id, filename, original_name, storage_path, mime_type, byte_size, width, height, alt_text, is_decorative, caption, sha256_hex, uploader_id, created_at, updated_at FROM media WHERE (:mime_filter = '' OR mime_type LIKE :mime_like) ORDER BY id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {mime_filter: "text", mime_like: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", filename: "text", original_name: "text", storage_path: "text", mime_type: "text", byte_size: "integer", width: record {type: "integer", nullable: yes}, height: record {type: "integer", nullable: yes}, alt_text: "text", is_decorative: "integer", caption: "text", sha256_hex: "text", uploader_id: record {type: "integer", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_media_by_id to data.prepare using db, "SELECT id, filename, original_name, storage_path, mime_type, byte_size, width, height, alt_text, is_decorative, caption, sha256_hex, uploader_id, created_at, updated_at FROM media WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", filename: "text", original_name: "text", storage_path: "text", mime_type: "text", byte_size: "integer", width: record {type: "integer", nullable: yes}, height: record {type: "integer", nullable: yes}, alt_text: "text", is_decorative: "integer", caption: "text", sha256_hex: "text", uploader_id: record {type: "integer", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_media_by_filename to data.prepare using db, "SELECT id, filename, original_name, storage_path, mime_type, byte_size, width, height, alt_text, is_decorative, caption, sha256_hex, uploader_id, created_at, updated_at FROM media WHERE filename = :filename", record {params: record {filename: "text"}, columns: record {id: "integer", filename: "text", original_name: "text", storage_path: "text", mime_type: "text", byte_size: "integer", width: record {type: "integer", nullable: yes}, height: record {type: "integer", nullable: yes}, alt_text: "text", is_decorative: "integer", caption: "text", sha256_hex: "text", uploader_id: record {type: "integer", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_insert_media to data.prepare using db, "INSERT INTO media (filename, original_name, storage_path, mime_type, byte_size, width, height, alt_text, is_decorative, caption, sha256_hex, uploader_id, created_at, updated_at) VALUES (:filename, :original_name, :storage_path, :mime_type, :byte_size, :width, :height, :alt_text, :is_decorative, :caption, :sha256_hex, :uploader_id, :created_at, :updated_at)", record {params: record {filename: "text", original_name: "text", storage_path: "text", mime_type: "text", byte_size: "integer", width: record {type: "integer", nullable: yes}, height: record {type: "integer", nullable: yes}, alt_text: "text", is_decorative: "integer", caption: "text", sha256_hex: "text", uploader_id: record {type: "integer", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
+set stmt_update_media to data.prepare using db, "UPDATE media SET alt_text = :alt_text, is_decorative = :is_decorative, caption = :caption, updated_at = :updated_at WHERE id = :id", record {params: record {alt_text: "text", is_decorative: "integer", caption: "text", updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_delete_media to data.prepare using db, "DELETE FROM media WHERE id = :id", record {params: record {id: "integer"}, columns: record {}}
+
+set stmt_list_menus to data.prepare using db, "SELECT id, slug, name, location, created_at, updated_at FROM menus ORDER BY id ASC", record {params: record {}, columns: record {id: "integer", slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_menu_by_id to data.prepare using db, "SELECT id, slug, name, location, created_at, updated_at FROM menus WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_menu_by_slug to data.prepare using db, "SELECT id, slug, name, location, created_at, updated_at FROM menus WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer", slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_menu_by_location to data.prepare using db, "SELECT id, slug, name, location, created_at, updated_at FROM menus WHERE location = :location", record {params: record {location: "text"}, columns: record {id: "integer", slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_insert_menu to data.prepare using db, "INSERT INTO menus (slug, name, location, created_at, updated_at) VALUES (:slug, :name, :location, :created_at, :updated_at)", record {params: record {slug: "text", name: "text", location: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
+set stmt_clear_menu_location to data.prepare using db, "UPDATE menus SET location = NULL, updated_at = :updated_at WHERE location = :location", record {params: record {updated_at: "text", location: "text"}, columns: record {}}
+set stmt_update_menu to data.prepare using db, "UPDATE menus SET name = :name, location = :location, updated_at = :updated_at WHERE id = :id", record {params: record {name: "text", location: record {type: "text", nullable: yes}, updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_delete_menu to data.prepare using db, "DELETE FROM menus WHERE id = :id", record {params: record {id: "integer"}, columns: record {}}
+
+set stmt_list_menu_items_by_menu to data.prepare using db, "SELECT mi.id, mi.menu_id, mi.parent_id, mi.label, mi.link_type, mi.entry_id, mi.external_url, mi.target_blank, mi.css_class, mi.sort_order, mi.created_at, mi.updated_at, e.full_path AS entry_full_path, e.status AS entry_status, e.title AS entry_title FROM menu_items mi LEFT JOIN entries e ON e.id = mi.entry_id WHERE mi.menu_id = :menu_id ORDER BY mi.sort_order ASC, mi.id ASC", record {params: record {menu_id: "integer"}, columns: record {id: "integer", menu_id: "integer", parent_id: record {type: "integer", nullable: yes}, label: "text", link_type: "text", entry_id: record {type: "integer", nullable: yes}, external_url: record {type: "text", nullable: yes}, target_blank: "integer", css_class: "text", sort_order: "integer", created_at: "text", updated_at: "text", entry_full_path: record {type: "text", nullable: yes}, entry_status: record {type: "text", nullable: yes}, entry_title: record {type: "text", nullable: yes}}}
+set stmt_get_menu_item_by_id to data.prepare using db, "SELECT id, menu_id, parent_id, label, link_type, entry_id, external_url, target_blank, css_class, sort_order, created_at, updated_at FROM menu_items WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", menu_id: "integer", parent_id: record {type: "integer", nullable: yes}, label: "text", link_type: "text", entry_id: record {type: "integer", nullable: yes}, external_url: record {type: "text", nullable: yes}, target_blank: "integer", css_class: "text", sort_order: "integer", created_at: "text", updated_at: "text"}}
+set stmt_insert_menu_item to data.prepare using db, "INSERT INTO menu_items (menu_id, parent_id, label, link_type, entry_id, external_url, target_blank, css_class, sort_order, created_at, updated_at) VALUES (:menu_id, :parent_id, :label, :link_type, :entry_id, :external_url, :target_blank, :css_class, :sort_order, :created_at, :updated_at)", record {params: record {menu_id: "integer", parent_id: record {type: "integer", nullable: yes}, label: "text", link_type: "text", entry_id: record {type: "integer", nullable: yes}, external_url: record {type: "text", nullable: yes}, target_blank: "integer", css_class: "text", sort_order: "integer", created_at: "text", updated_at: "text"}, columns: record {}}
+set stmt_update_menu_item to data.prepare using db, "UPDATE menu_items SET parent_id = :parent_id, label = :label, link_type = :link_type, entry_id = :entry_id, external_url = :external_url, target_blank = :target_blank, css_class = :css_class, sort_order = :sort_order, updated_at = :updated_at WHERE id = :id", record {params: record {parent_id: record {type: "integer", nullable: yes}, label: "text", link_type: "text", entry_id: record {type: "integer", nullable: yes}, external_url: record {type: "text", nullable: yes}, target_blank: "integer", css_class: "text", sort_order: "integer", updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_delete_menu_items_by_menu to data.prepare using db, "DELETE FROM menu_items WHERE menu_id = :menu_id", record {params: record {menu_id: "integer"}, columns: record {}}
+set stmt_delete_menu_item_by_id to data.prepare using db, "DELETE FROM menu_items WHERE id = :id", record {params: record {id: "integer"}, columns: record {}}
+
+set stmt_list_taxonomies to data.prepare using db, "SELECT id, slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at FROM taxonomies ORDER BY id ASC", record {params: record {}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}}
+set stmt_get_taxonomy_by_id to data.prepare using db, "SELECT id, slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at FROM taxonomies WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}}
+set stmt_get_taxonomy_by_slug to data.prepare using db, "SELECT id, slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at FROM taxonomies WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}}
+set stmt_get_taxonomy_by_archive to data.prepare using db, "SELECT id, slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at FROM taxonomies WHERE archive_slug = :archive_slug", record {params: record {archive_slug: "text"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}}
+set stmt_insert_taxonomy to data.prepare using db, "INSERT INTO taxonomies (slug, label_singular, label_plural, is_hierarchical, archive_slug, content_type_slugs_json, is_system, created_at) VALUES (:slug, :label_singular, :label_plural, :is_hierarchical, :archive_slug, :content_type_slugs_json, :is_system, :created_at)", record {params: record {slug: "text", label_singular: "text", label_plural: "text", is_hierarchical: "integer", archive_slug: "text", content_type_slugs_json: "text", is_system: "integer", created_at: "text"}, columns: record {}}
+set stmt_update_taxonomy to data.prepare using db, "UPDATE taxonomies SET label_singular = :label_singular, label_plural = :label_plural, content_type_slugs_json = :content_type_slugs_json WHERE id = :id", record {params: record {label_singular: "text", label_plural: "text", content_type_slugs_json: "text", id: "integer"}, columns: record {}}
+set stmt_delete_taxonomy to data.prepare using db, "DELETE FROM taxonomies WHERE id = :id", record {params: record {id: "integer"}, columns: record {}}
+
+set stmt_list_terms_by_tax to data.prepare using db, "SELECT id, taxonomy_id, parent_id, slug, name, description, sort_order, created_at, updated_at FROM terms WHERE taxonomy_id = :taxonomy_id ORDER BY sort_order ASC, name ASC, id ASC", record {params: record {taxonomy_id: "integer"}, columns: record {id: "integer", taxonomy_id: "integer", parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", created_at: "text", updated_at: "text"}}
+set stmt_get_term_by_id to data.prepare using db, "SELECT t.id, t.taxonomy_id, t.parent_id, t.slug, t.name, t.description, t.sort_order, t.created_at, t.updated_at, tx.slug AS taxonomy_slug, tx.archive_slug AS taxonomy_archive_slug, tx.is_hierarchical FROM terms t JOIN taxonomies tx ON tx.id = t.taxonomy_id WHERE t.id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", taxonomy_id: "integer", parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", created_at: "text", updated_at: "text", taxonomy_slug: "text", taxonomy_archive_slug: "text", is_hierarchical: "integer"}}
+set stmt_get_term_by_tax_slug to data.prepare using db, "SELECT t.id, t.taxonomy_id, t.parent_id, t.slug, t.name, t.description, t.sort_order, t.created_at, t.updated_at, tx.slug AS taxonomy_slug, tx.archive_slug AS taxonomy_archive_slug, tx.is_hierarchical FROM terms t JOIN taxonomies tx ON tx.id = t.taxonomy_id WHERE t.taxonomy_id = :taxonomy_id AND t.slug = :slug", record {params: record {taxonomy_id: "integer", slug: "text"}, columns: record {id: "integer", taxonomy_id: "integer", parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", created_at: "text", updated_at: "text", taxonomy_slug: "text", taxonomy_archive_slug: "text", is_hierarchical: "integer"}}
+set stmt_insert_term to data.prepare using db, "INSERT INTO terms (taxonomy_id, parent_id, slug, name, description, sort_order, created_at, updated_at) VALUES (:taxonomy_id, :parent_id, :slug, :name, :description, :sort_order, :created_at, :updated_at)", record {params: record {taxonomy_id: "integer", parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", created_at: "text", updated_at: "text"}, columns: record {}}
+set stmt_update_term to data.prepare using db, "UPDATE terms SET parent_id = :parent_id, slug = :slug, name = :name, description = :description, sort_order = :sort_order, updated_at = :updated_at WHERE id = :id", record {params: record {parent_id: record {type: "integer", nullable: yes}, slug: "text", name: "text", description: "text", sort_order: "integer", updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_delete_term to data.prepare using db, "DELETE FROM terms WHERE id = :id", record {params: record {id: "integer"}, columns: record {}}
+
+set stmt_list_entry_terms to data.prepare using db, "SELECT et.entry_id, et.term_id, t.slug AS term_slug, t.name AS term_name, t.parent_id, tx.id AS taxonomy_id, tx.slug AS taxonomy_slug, tx.label_singular AS taxonomy_label, tx.archive_slug AS taxonomy_archive_slug FROM entry_terms et JOIN terms t ON t.id = et.term_id JOIN taxonomies tx ON tx.id = t.taxonomy_id WHERE et.entry_id = :entry_id ORDER BY tx.id ASC, t.sort_order ASC, t.id ASC", record {params: record {entry_id: "integer"}, columns: record {entry_id: "integer", term_id: "integer", term_slug: "text", term_name: "text", parent_id: record {type: "integer", nullable: yes}, taxonomy_id: "integer", taxonomy_slug: "text", taxonomy_label: "text", taxonomy_archive_slug: "text"}}
+set stmt_delete_entry_terms_by_entry to data.prepare using db, "DELETE FROM entry_terms WHERE entry_id = :entry_id", record {params: record {entry_id: "integer"}, columns: record {}}
+set stmt_insert_entry_term to data.prepare using db, "INSERT INTO entry_terms (entry_id, term_id, created_at) VALUES (:entry_id, :term_id, :created_at)", record {params: record {entry_id: "integer", term_id: "integer", created_at: "text"}, columns: record {}}
+
+set stmt_count_entries_by_term to data.prepare using db, "SELECT count(DISTINCT e.id) AS total FROM entries e INNER JOIN entry_terms et ON et.entry_id = e.id WHERE et.term_id IN (:t0, :t1, :t2, :t3, :t4, :t5, :t6, :t7, :t8, :t9, :t10, :t11, :t12, :t13, :t14, :t15) AND (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status)", record {params: record {t0: "integer", t1: "integer", t2: "integer", t3: "integer", t4: "integer", t5: "integer", t6: "integer", t7: "integer", t8: "integer", t9: "integer", t10: "integer", t11: "integer", t12: "integer", t13: "integer", t14: "integer", t15: "integer", filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text"}, columns: record {total: "integer"}}
+set stmt_query_entries_by_term to data.prepare using db, "SELECT DISTINCT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id INNER JOIN entry_terms et ON et.entry_id = e.id WHERE et.term_id IN (:t0, :t1, :t2, :t3, :t4, :t5, :t6, :t7, :t8, :t9, :t10, :t11, :t12, :t13, :t14, :t15) AND (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY COALESCE(e.published_at, e.created_at) DESC, e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {t0: "integer", t1: "integer", t2: "integer", t3: "integer", t4: "integer", t5: "integer", t6: "integer", t7: "integer", t8: "integer", t9: "integer", t10: "integer", t11: "integer", t12: "integer", t13: "integer", t14: "integer", t15: "integer", filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+
+set stmts to record {db: db, cms_cache: cms_cache, get_setting: stmt_get_setting, list_settings: stmt_list_settings, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, list_types: stmt_list_types, get_type_by_slug: stmt_get_type_by_slug, get_type_by_id: stmt_get_type_by_id, get_type_by_archive: stmt_get_type_by_archive, insert_type: stmt_insert_type, list_fields_by_type: stmt_list_fields_by_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, list_entries: stmt_list_entries, list_entries_by_author: stmt_list_entries_by_author, list_published_entries: stmt_list_published_entries, list_published_by_type: stmt_list_published_by_type, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, get_published_entry_by_path: stmt_get_published_entry_by_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, delete_entry_by_id: stmt_delete_entry_by_id, count_entries_filtered: stmt_count_entries_filtered, query_published_at_desc: stmt_query_published_at_desc, query_published_at_asc: stmt_query_published_at_asc, query_created_at_desc: stmt_query_created_at_desc, query_created_at_asc: stmt_query_created_at_asc, query_updated_at_desc: stmt_query_updated_at_desc, query_updated_at_asc: stmt_query_updated_at_asc, query_title_desc: stmt_query_title_desc, query_title_asc: stmt_query_title_asc, query_id_desc: stmt_query_id_desc, query_id_asc: stmt_query_id_asc, find_redirect_by_old_path: stmt_find_redirect_by_old_path, list_redirects: stmt_list_redirects, delete_redirect_by_old_path: stmt_delete_redirect_by_old_path, delete_redirects_by_entry_id: stmt_delete_redirects_by_entry_id, insert_redirect: stmt_insert_redirect, list_themes: stmt_list_themes, get_theme_by_slug: stmt_get_theme_by_slug, get_active_theme: stmt_get_active_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, deactivate_all_themes: stmt_deactivate_all_themes, activate_theme_slug: stmt_activate_theme_slug, count_users: stmt_count_users, list_users: stmt_list_users, get_user_by_id: stmt_get_user_by_id, get_user_by_email: stmt_get_user_by_email, insert_user: stmt_insert_user, update_user: stmt_update_user, update_user_login: stmt_update_user_login, update_user_password: stmt_update_user_password, get_session_with_user: stmt_get_session_with_user, insert_session: stmt_insert_session, touch_session: stmt_touch_session, delete_session_by_id: stmt_delete_session_by_id, delete_session_by_token: stmt_delete_session_by_token, delete_sessions_by_user: stmt_delete_sessions_by_user, delete_expired_sessions: stmt_delete_expired_sessions, get_oauth_account: stmt_get_oauth_account, insert_oauth_account: stmt_insert_oauth_account, update_oauth_account: stmt_update_oauth_account, count_media: stmt_count_media, list_media: stmt_list_media, get_media_by_id: stmt_get_media_by_id, get_media_by_filename: stmt_get_media_by_filename, insert_media: stmt_insert_media, update_media: stmt_update_media, delete_media: stmt_delete_media, list_menus: stmt_list_menus, get_menu_by_id: stmt_get_menu_by_id, get_menu_by_slug: stmt_get_menu_by_slug, get_menu_by_location: stmt_get_menu_by_location, insert_menu: stmt_insert_menu, clear_menu_location: stmt_clear_menu_location, update_menu: stmt_update_menu, delete_menu: stmt_delete_menu, list_menu_items_by_menu: stmt_list_menu_items_by_menu, get_menu_item_by_id: stmt_get_menu_item_by_id, insert_menu_item: stmt_insert_menu_item, update_menu_item: stmt_update_menu_item, delete_menu_items_by_menu: stmt_delete_menu_items_by_menu, delete_menu_item_by_id: stmt_delete_menu_item_by_id, list_taxonomies: stmt_list_taxonomies, get_taxonomy_by_id: stmt_get_taxonomy_by_id, get_taxonomy_by_slug: stmt_get_taxonomy_by_slug, get_taxonomy_by_archive: stmt_get_taxonomy_by_archive, insert_taxonomy: stmt_insert_taxonomy, update_taxonomy: stmt_update_taxonomy, delete_taxonomy: stmt_delete_taxonomy, list_terms_by_tax: stmt_list_terms_by_tax, get_term_by_id: stmt_get_term_by_id, get_term_by_tax_slug: stmt_get_term_by_tax_slug, insert_term: stmt_insert_term, update_term: stmt_update_term, delete_term: stmt_delete_term, list_entry_terms: stmt_list_entry_terms, delete_entry_terms_by_entry: stmt_delete_entry_terms_by_entry, insert_entry_term: stmt_insert_entry_term, count_entries_by_term: stmt_count_entries_by_term, query_entries_by_term: stmt_query_entries_by_term}
 
 # ==============================================================================
 # Shared Helpers: Normalization, Identifier & URL Safety, Escaping
@@ -165,6 +211,15 @@ make is_reserved_path using raw_path
     give back yes
   end
   if p is "/static" or (text.starts_with using p, "/static/")
+    give back yes
+  end
+  if p is "/media" or (text.starts_with using p, "/media/")
+    give back yes
+  end
+  if p is "/login" or (text.starts_with using p, "/login/") or p is "/logout" or (text.starts_with using p, "/logout/")
+    give back yes
+  end
+  if p is "/setup" or (text.starts_with using p, "/setup/") or p is "/search" or (text.starts_with using p, "/search/")
     give back yes
   end
   if p is "/_health" or p is "/_ready" or p is "/robots.txt" or p is "/sitemap.xml" or p is "/favicon.ico"
@@ -354,7 +409,7 @@ make role_has_capability using role, cap
     give back yes
   end
   if role is "editor"
-    set editor_caps to ["admin:access", "entries:read", "entries:create", "entries:update:own", "entries:update:any", "entries:publish", "entries:delete:own", "entries:delete:any"]
+    set editor_caps to ["admin:access", "entries:read", "entries:read_all", "entries:create", "entries:update:own", "entries:update:any", "entries:publish", "entries:delete:own", "entries:delete:any", "media:read", "media:upload", "media:update_own", "media:update_any", "media:delete_own", "media:delete_any", "menus:manage", "taxonomies:manage"]
     for each item in editor_caps
       if item is cap
         give back yes
@@ -363,7 +418,7 @@ make role_has_capability using role, cap
     give back no
   end
   if role is "author"
-    set author_caps to ["admin:access", "entries:read", "entries:create", "entries:update:own", "entries:delete:own"]
+    set author_caps to ["admin:access", "entries:read", "entries:create", "entries:update:own", "entries:delete:own", "media:read", "media:upload", "media:update_own", "media:delete_own"]
     for each item in author_caps
       if item is cap
         give back yes
@@ -527,8 +582,7 @@ make is_session_expired using expires_at_iso, now_rec
   end
 end
 
-make resolve_session using stmts, req
-  set raw_token to extract_cookie using req, "grablab_session"
+make resolve_session_token using stmts, raw_token
   if raw_token is ""
     give back nothing
   end
@@ -553,6 +607,23 @@ make resolve_session using stmts, req
     call data.execute using stmts.touch_session, record {expires_at: next_exp.iso, last_seen_at: now_rec.iso, id: row.session_id}
   end
   give back row
+end
+
+make resolve_session using stmts, req
+  set raw_token to extract_cookie using req, "grablab_session"
+  give back resolve_session_token using stmts, raw_token
+end
+
+make extract_bearer_token using req
+  set auth_hdr to text.trim using (get_req_header using req, "authorization")
+  if (text.length using auth_hdr) is greater than 7
+    set prefix to text.lower using (text.join using (collections.slice using (text.split using auth_hdr, ""), 0, 7), "")
+    if prefix is "bearer "
+      set tok to text.trim using (text.join using (collections.slice using (text.split using auth_hdr, ""), 7, (text.length using auth_hdr)), "")
+      give back tok
+    end
+  end
+  give back ""
 end
 
 make create_rotated_session using stmts, req, user_id, old_token_hash
@@ -1694,6 +1765,17 @@ make bump_query_cache_epochs using stmts, type_slug
   end
 end
 
+make invalidate_menu_caches using stmts, location
+  if location is not nothing and location is not ""
+    call cache.delete using stmts.cms_cache, ("menu:loc:" joined with location)
+  otherwise
+    call cache.delete using stmts.cms_cache, "menu:loc:primary"
+    call cache.delete using stmts.cms_cache, "menu:loc:footer"
+    call cache.delete using stmts.cms_cache, "menu:loc:mobile"
+  end
+  call bump_cache_epoch using stmts, "cache_epoch:menu"
+end
+
 make invalidate_route_caches using stmts, path_a, path_b, type_slug
   if path_a is not ""
     call cache.delete using stmts.cms_cache, ("route:" joined with path_a)
@@ -1701,10 +1783,12 @@ make invalidate_route_caches using stmts, path_a, path_b, type_slug
   if path_b is not ""
     call cache.delete using stmts.cms_cache, ("route:" joined with path_b)
   end
+  call cache.delete using stmts.cms_cache, "route:/"
   if type_slug is not ""
     call cache.delete using stmts.cms_cache, ("archive:" joined with type_slug)
   end
   call cache.delete using stmts.cms_cache, "home_entries"
+  call invalidate_menu_caches using stmts, ""
   call bump_query_cache_epochs using stmts, type_slug
 end
 
@@ -1910,7 +1994,7 @@ make execute_filter_handler using handler_name, val, ctx
     if args.is_public
       set st to "published"
     end
-    give back record {content_type: args.content_type, status: st, field_key: args.field_key, field_op: args.field_op, field_value: args.field_value, sort_by: args.sort_by, sort_dir: args.sort_dir, page: p, per_page: pp, is_public: args.is_public}
+    give back record {content_type: args.content_type, status: st, field_key: args.field_key, field_op: args.field_op, field_value: args.field_value, term_taxonomy: args.term_taxonomy, term_slug: args.term_slug, term_id: args.term_id, include_children: args.include_children, search: args.search, sort_by: args.sort_by, sort_dir: args.sort_dir, page: p, per_page: pp, is_public: args.is_public}
   end
 
   if handler_name is "theme_query_defaults"
@@ -2101,7 +2185,64 @@ make normalize_query_args using raw_map, is_public
     end
   end
 
-  give back record {ok: yes, args: (record {content_type: ct, status: status, field_key: field_key, field_op: field_op, field_value: field_value, sort_by: sort_by, sort_dir: sort_dir, page: page, per_page: per_page, is_public: is_public}), error: ""}
+  set term_taxonomy to ""
+  set term_slug to ""
+  set term_id to 0
+  set include_children to no
+
+  if has_map_key using raw_map, "term_id"
+    set tid_raw to text.trim using (text.from using (raw_map at "term_id"))
+    if tid_raw is not "" and tid_raw is not "0"
+      try
+        set term_id to text.to_integer using tid_raw
+      catch err
+        give back record {ok: no, args: nothing, error: "term_id must be an integer"}
+      end
+    end
+  end
+  if has_map_key using raw_map, "taxonomy"
+    set term_taxonomy to normalize_slug using (text.from using (raw_map at "taxonomy"))
+  end
+  if has_map_key using raw_map, "term_slug"
+    set term_slug to normalize_slug using (text.from using (raw_map at "term_slug"))
+  end
+  if has_map_key using raw_map, "include_children"
+    set ic_raw to text.lower using (text.trim using (text.from using (raw_map at "include_children")))
+    if ic_raw is "yes" or ic_raw is "true" or ic_raw is "1"
+      set include_children to yes
+    end
+  end
+  if has_map_key using raw_map, "filter_by_term"
+    set fbt to raw_map at "filter_by_term"
+    if fbt is not nothing
+      if fbt has "term_id"
+        try
+          set term_id to text.to_integer using (text.from using (fbt at "term_id"))
+        catch err
+          give back record {ok: no, args: nothing, error: "filter_by_term.term_id must be an integer"}
+        end
+      end
+      if fbt has "taxonomy"
+        set term_taxonomy to normalize_slug using (text.from using (fbt at "taxonomy"))
+      end
+      if fbt has "term_slug"
+        set term_slug to normalize_slug using (text.from using (fbt at "term_slug"))
+      end
+      if fbt has "include_children"
+        set fbt_ic to text.lower using (text.trim using (text.from using (fbt at "include_children")))
+        if fbt_ic is "yes" or fbt_ic is "true" or fbt_ic is "1"
+          set include_children to yes
+        end
+      end
+    end
+  end
+
+  set search_q to ""
+  if has_map_key using raw_map, "search"
+    set search_q to text.trim using (text.from using (raw_map at "search"))
+  end
+
+  give back record {ok: yes, args: (record {content_type: ct, status: status, field_key: field_key, field_op: field_op, field_value: field_value, term_taxonomy: term_taxonomy, term_slug: term_slug, term_id: term_id, include_children: include_children, search: search_q, sort_by: sort_by, sort_dir: sort_dir, page: page, per_page: per_page, is_public: is_public}), error: ""}
 end
 
 make select_query_stmt using stmts, sort_by, sort_dir
@@ -2190,6 +2331,94 @@ make compute_total_pages using total_items, per_page
   give back pages
 end
 
+make collect_term_filter_ids using stmts, term_taxonomy, term_slug, term_id, include_children
+  if term_id is less than 1 and term_taxonomy is "" and term_slug is ""
+    give back record {active: no, ids: []}
+  end
+  set root_term to nothing
+  if term_id is greater than 0
+    set root_term to data.one using stmts.get_term_by_id, record {id: term_id}
+  otherwise
+    if term_taxonomy is "" or term_slug is ""
+      give back record {active: yes, ids: []}
+    end
+    set tax_row to data.one using stmts.get_taxonomy_by_slug, record {slug: term_taxonomy}
+    if tax_row is nothing
+      give back record {active: yes, ids: []}
+    end
+    set root_term to data.one using stmts.get_term_by_tax_slug, record {taxonomy_id: tax_row.id, slug: term_slug}
+  end
+  if root_term is nothing
+    give back record {active: yes, ids: []}
+  end
+
+  set out_ids to [root_term.id]
+  if (not include_children) or (root_term.is_hierarchical is not 1)
+    give back record {active: yes, ids: out_ids}
+  end
+
+  set all_terms to data.query using stmts.list_terms_by_tax, record {taxonomy_id: root_term.taxonomy_id}
+  set frontier to [root_term.id]
+  set seen to collections.put using {}, (text.from using root_term.id), yes
+  set depth to 0
+  while depth is less than 8 and (collections.length using frontier) is greater than 0
+    set next_frontier to []
+    for each t in all_terms
+      if t.parent_id is not nothing
+        set pid_str to text.from using t.parent_id
+        set tid_str to text.from using t.id
+        set is_parent_in_frontier to no
+        for each fid in frontier
+          if (text.from using fid) is pid_str
+            set is_parent_in_frontier to yes
+          end
+        end
+        if is_parent_in_frontier and (not (has_map_key using seen, tid_str))
+          set seen to collections.put using seen, tid_str, yes
+          set out_ids to collections.append using out_ids, t.id
+          set next_frontier to collections.append using next_frontier, t.id
+        end
+      end
+    end
+    set frontier to next_frontier
+    set depth to depth plus 1
+  end
+  give back record {active: yes, ids: out_ids}
+end
+
+make matches_search_text using row, search_q
+  if search_q is ""
+    give back yes
+  end
+  set ql to text.lower using search_q
+  if text.contains using (text.lower using row.title), ql
+    give back yes
+  end
+  if text.contains using (text.lower using row.body_html), ql
+    give back yes
+  end
+  if text.contains using (text.lower using row.slug), ql
+    give back yes
+  end
+  give back no
+end
+
+make build_term_in_params using ids, filter_type, ct_id, filter_status, st_val, limit_rows, offset_rows
+  set first_id to ids at 0
+  set p_list to []
+  set idx to 0
+  set n_ids to collections.length using ids
+  while idx is less than 16
+    if idx is less than n_ids
+      set p_list to collections.append using p_list, (ids at idx)
+    otherwise
+      set p_list to collections.append using p_list, first_id
+    end
+    set idx to idx plus 1
+  end
+  give back record {t0: (p_list at 0), t1: (p_list at 1), t2: (p_list at 2), t3: (p_list at 3), t4: (p_list at 4), t5: (p_list at 5), t6: (p_list at 6), t7: (p_list at 7), t8: (p_list at 8), t9: (p_list at 9), t10: (p_list at 10), t11: (p_list at 11), t12: (p_list at 12), t13: (p_list at 13), t14: (p_list at 14), t15: (p_list at 15), filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: limit_rows, offset_rows: offset_rows}
+end
+
 make query_entries using stmts, theme, registry, raw_map, is_public
   set norm_res to normalize_query_args using raw_map, is_public
   if not norm_res.ok
@@ -2204,7 +2433,11 @@ make query_entries using stmts, theme, registry, raw_map, is_public
     set ct_epoch to get_cache_epoch using stmts, ("cache_epoch:type:" joined with args.content_type)
   end
   set epoch_tag to (text.from using t_epoch) joined with ":" joined with (text.from using g_epoch) joined with ":" joined with (text.from using ct_epoch)
-  set cache_key to "query:" joined with epoch_tag joined with ":" joined with theme.slug joined with ":" joined with args.content_type joined with ":" joined with args.status joined with ":" joined with args.sort_by joined with ":" joined with args.sort_dir joined with ":" joined with (text.from using args.page) joined with ":" joined with (text.from using args.per_page) joined with ":" joined with args.field_key joined with ":" joined with args.field_op joined with ":" joined with args.field_value
+  set ic_flag to "0"
+  if args.include_children
+    set ic_flag to "1"
+  end
+  set cache_key to "query:" joined with epoch_tag joined with ":" joined with theme.slug joined with ":" joined with args.content_type joined with ":" joined with args.status joined with ":" joined with args.sort_by joined with ":" joined with args.sort_dir joined with ":" joined with (text.from using args.page) joined with ":" joined with (text.from using args.per_page) joined with ":" joined with args.field_key joined with ":" joined with args.field_op joined with ":" joined with args.field_value joined with ":t:" joined with args.term_taxonomy joined with ":" joined with args.term_slug joined with ":" joined with (text.from using args.term_id) joined with ":" joined with ic_flag joined with ":q:" joined with args.search
 
   set cached to cache.get using stmts.cms_cache, cache_key
   if cached.found
@@ -2232,36 +2465,76 @@ make query_entries using stmts, theme, registry, raw_map, is_public
     set st_val to ""
   end
 
+  set term_filter to collect_term_filter_ids using stmts, args.term_taxonomy, args.term_slug, args.term_id, args.include_children
+  if term_filter.active and (collections.length using term_filter.ids) is 0
+    set empty_res to record {items: [], pagination: (record {page: args.page, per_page: args.per_page, total_items: 0, total_pages: 0, has_prev: no, has_next: no})}
+    call cache.set using stmts.cms_cache, cache_key, empty_res, 120000
+    give back record {ok: yes, data: (record {items: [], pagination: empty_res.pagination, cache: (record {hit: no, epoch: epoch_tag, key: cache_key})}), error: ""}
+  end
+
   set stmt to select_query_stmt using stmts, args.sort_by, args.sort_dir
   set items to []
   set total_items to 0
 
-  if args.field_key is ""
-    set cnt_row to data.one using stmts.count_entries_filtered, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val}
-    if cnt_row is not nothing
-      set total_items to cnt_row.total
-    end
-    set offset_val to (args.page minus 1) times args.per_page
-    set rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: args.per_page, offset_rows: offset_val}
-    for each row in rows
-      set items to collections.append using items, (format_query_item using row)
+  if term_filter.active
+    set tid_slice to collections.slice using term_filter.ids, 0, (math.min using 16, (collections.length using term_filter.ids))
+    if args.field_key is "" and args.search is "" and (collections.length using term_filter.ids) is at most 16
+      set tp_count to build_term_in_params using tid_slice, filter_type, ct_id, filter_status, st_val, 1, 0
+      set cnt_row to data.one using stmts.count_entries_by_term, record {t0: tp_count.t0, t1: tp_count.t1, t2: tp_count.t2, t3: tp_count.t3, t4: tp_count.t4, t5: tp_count.t5, t6: tp_count.t6, t7: tp_count.t7, t8: tp_count.t8, t9: tp_count.t9, t10: tp_count.t10, t11: tp_count.t11, t12: tp_count.t12, t13: tp_count.t13, t14: tp_count.t14, t15: tp_count.t15, filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val}
+      if cnt_row is not nothing
+        set total_items to cnt_row.total
+      end
+      set offset_val to (args.page minus 1) times args.per_page
+      set rows to data.query using stmts.query_entries_by_term, (build_term_in_params using tid_slice, filter_type, ct_id, filter_status, st_val, args.per_page, offset_val)
+      for each row in rows
+        set items to collections.append using items, (format_query_item using row)
+      end
+    otherwise
+      set all_trows to data.query using stmts.query_entries_by_term, (build_term_in_params using tid_slice, filter_type, ct_id, filter_status, st_val, 5000, 0)
+      set matched to []
+      for each row in all_trows
+        if (matches_custom_field_filter using row.custom_fields_json, args.field_key, args.field_op, args.field_value) and (matches_search_text using row, args.search)
+          set matched to collections.append using matched, (format_query_item using row)
+        end
+      end
+      set total_items to collections.length using matched
+      set start_idx to (args.page minus 1) times args.per_page
+      if start_idx is less than total_items
+        set end_idx to start_idx plus args.per_page
+        if end_idx is greater than total_items
+          set end_idx to total_items
+        end
+        set items to collections.slice using matched, start_idx, end_idx
+      end
     end
   otherwise
-    set all_rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: 5000, offset_rows: 0}
-    set matched to []
-    for each row in all_rows
-      if matches_custom_field_filter using row.custom_fields_json, args.field_key, args.field_op, args.field_value
-        set matched to collections.append using matched, (format_query_item using row)
+    if args.field_key is "" and args.search is ""
+      set cnt_row to data.one using stmts.count_entries_filtered, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val}
+      if cnt_row is not nothing
+        set total_items to cnt_row.total
       end
-    end
-    set total_items to collections.length using matched
-    set start_idx to (args.page minus 1) times args.per_page
-    if start_idx is less than total_items
-      set end_idx to start_idx plus args.per_page
-      if end_idx is greater than total_items
-        set end_idx to total_items
+      set offset_val to (args.page minus 1) times args.per_page
+      set rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: args.per_page, offset_rows: offset_val}
+      for each row in rows
+        set items to collections.append using items, (format_query_item using row)
       end
-      set items to collections.slice using matched, start_idx, end_idx
+    otherwise
+      set all_rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: 5000, offset_rows: 0}
+      set matched to []
+      for each row in all_rows
+        if (matches_custom_field_filter using row.custom_fields_json, args.field_key, args.field_op, args.field_value) and (matches_search_text using row, args.search)
+          set matched to collections.append using matched, (format_query_item using row)
+        end
+      end
+      set total_items to collections.length using matched
+      set start_idx to (args.page minus 1) times args.per_page
+      if start_idx is less than total_items
+        set end_idx to start_idx plus args.per_page
+        if end_idx is greater than total_items
+          set end_idx to total_items
+        end
+        set items to collections.slice using matched, start_idx, end_idx
+      end
     end
   end
 
@@ -2361,6 +2634,17 @@ make render_grex_node using stmts, theme, registry, node, ctx, depth
   set props to {}
   if node has "props"
     set props to node at "props"
+  end
+
+  if el_name is "Nav"
+    if has_map_key using props, "location"
+      set nav_loc to text.from using (props at "location")
+      set cur_p to "/"
+      if has_map_key using ctx, "current_path"
+        set cur_p to text.from using (ctx at "current_path")
+      end
+      give back render_menu using stmts, nav_loc, cur_p
+    end
   end
 
   if el_name is "TemplatePart"
@@ -2536,11 +2820,16 @@ make render_theme_page using stmts, slot_name, page_data, status, query_items
     set meta_title to text.from using (merged at "meta_title")
   end
   set canon_path to "/"
-  if has_map_key using merged, "full_path"
-    set canon_path to text.from using (merged at "full_path")
-  end
-  if has_map_key using merged, "archive_slug"
-    set canon_path to "/" joined with (text.from using (merged at "archive_slug"))
+  if has_map_key using merged, "current_path"
+    set canon_path to text.from using (merged at "current_path")
+  otherwise
+    if has_map_key using merged, "full_path"
+      set canon_path to text.from using (merged at "full_path")
+    end
+    if has_map_key using merged, "archive_slug"
+      set canon_path to "/" joined with (text.from using (merged at "archive_slug"))
+    end
+    set merged to collections.put using merged, "current_path", canon_path
   end
   set head_tags to applyFilter using registry, "theme:head_meta", [], {"theme_slug": theme.slug, "theme_name": theme.name, "page_title": meta_title, "canonical_path": canon_path}
   set head_meta_html to text.join using head_tags, "\n  "
@@ -2590,8 +2879,1180 @@ make render_theme_page using stmts, slot_name, page_data, status, query_items
     set cards_html to render_query_cards using stmts, theme, registry, query_items, merged
     set html_out to text.replace using html_out, "<!-- @part:query_cards -->", cards_html
   end
+  if text.contains using html_out, "<!-- @menu:primary -->"
+    set nav_primary to render_menu using stmts, "primary", canon_path
+    set html_out to text.replace using html_out, "<!-- @menu:primary -->", nav_primary
+  end
+  if text.contains using html_out, "<!-- @menu:footer -->"
+    set nav_footer to render_menu using stmts, "footer", canon_path
+    set html_out to text.replace using html_out, "<!-- @menu:footer -->", nav_footer
+  end
+  if text.contains using html_out, "<!-- @menu:mobile -->"
+    set nav_mobile to render_menu using stmts, "mobile", canon_path
+    set html_out to text.replace using html_out, "<!-- @menu:mobile -->", nav_mobile
+  end
 
   give back server.response using record {status: status, headers: {"Content-Type": "text/html; charset=utf-8"}, body: html_out}
+end
+
+# ==============================================================================
+# Module 8: Media Library, Base64/Magic-Byte Sniffing & Raster Dimension Parser
+# ==============================================================================
+
+make get_upload_dir
+  set dir_val to "uploads"
+  try
+    if env.has using "GRABLAB_UPLOAD_DIR"
+      set raw to text.trim using (env.get using "GRABLAB_UPLOAD_DIR")
+      if raw is not ""
+        set dir_val to raw
+      end
+    end
+  catch err
+    set dir_val to "uploads"
+  end
+  if (text.contains using dir_val, "..") or (text.contains using (json.stringify using dir_val), "\\u000")
+    give back ""
+  end
+  while (text.length using dir_val) is greater than 1 and (text.ends_with using dir_val, "/")
+    set chars to text.split using dir_val, ""
+    set dir_val to text.join using (collections.slice using chars, 0, ((collections.length using chars) minus 1)), ""
+  end
+  give back dir_val
+end
+
+make get_max_upload_bytes
+  set max_b to 10485760
+  try
+    if env.has using "GRABLAB_MAX_UPLOAD_BYTES"
+      set raw to text.trim using (env.get using "GRABLAB_MAX_UPLOAD_BYTES")
+      if raw is not ""
+        set parsed to text.to_integer using raw
+        if parsed is greater than 0
+          set max_b to parsed
+        end
+      end
+    end
+  catch err
+    set max_b to 10485760
+  end
+  give back max_b
+end
+
+make build_b64_lookup
+  set alpha to "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+  set chars to text.split using alpha, ""
+  set tbl to {}
+  set idx to 0
+  for each ch in chars
+    set tbl to collections.put using tbl, ch, idx
+    set idx to idx plus 1
+  end
+  give back tbl
+end
+
+make ascii_char_code using c
+  set table to " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+  set chars to text.split using table, ""
+  set code to 32
+  for each item in chars
+    if item is c
+      give back code
+    end
+    set code to code plus 1
+  end
+  give back 0
+end
+
+make strip_data_uri_and_ws using raw_b64
+  set s to text.trim using raw_b64
+  if text.starts_with using (text.lower using s), "data:"
+    set parts to text.split using s, ","
+    if (collections.length using parts) is at least 2
+      set s to parts at 1
+    end
+  end
+  set s to text.replace using s, "\r", ""
+  set s to text.replace using s, "\n", ""
+  set s to text.replace using s, " ", ""
+  set s to text.replace using s, "\t", ""
+  give back s
+end
+
+make validate_and_decode_b64_prefix using clean_b64, max_decode_bytes
+  set b64_tbl to call build_b64_lookup
+  set n to text.length using clean_b64
+  if n is less than 4 or ((n modulo 4) is not 0)
+    give back record {ok: no, byte_size: 0, bytes: [], error: "Invalid base64 payload length"}
+  end
+  set chars to text.split using clean_b64, ""
+  set pad to 0
+  if (chars at (n minus 1)) is "="
+    set pad to pad plus 1
+  end
+  if (chars at (n minus 2)) is "="
+    set pad to pad plus 1
+  end
+  set byte_size to ((math.floor using (n divided by 4)) times 3) minus pad
+  if byte_size is at most 0
+    give back record {ok: no, byte_size: 0, bytes: [], error: "Empty media payload"}
+  end
+
+  set max_chars to ((math.floor using (max_decode_bytes divided by 3)) plus 1) times 4
+  if max_chars is greater than n
+    set max_chars to n
+  end
+  set out_bytes to []
+  set i to 0
+  while i is less than max_chars
+    set c0 to chars at i
+    set c1 to chars at (i plus 1)
+    set c2 to chars at (i plus 2)
+    set c3 to chars at (i plus 3)
+    if (not (has_map_key using b64_tbl, c0)) or (not (has_map_key using b64_tbl, c1))
+      give back record {ok: no, byte_size: 0, bytes: [], error: "Invalid base64 character in payload"}
+    end
+    set v0 to b64_tbl at c0
+    set v1 to b64_tbl at c1
+    set b0 to (v0 times 4) plus (math.floor using (v1 divided by 16))
+    set out_bytes to collections.append using out_bytes, b0
+    if c2 is not "="
+      if not (has_map_key using b64_tbl, c2)
+        give back record {ok: no, byte_size: 0, bytes: [], error: "Invalid base64 character in payload"}
+      end
+      set v2 to b64_tbl at c2
+      set b1 to ((v1 modulo 16) times 16) plus (math.floor using (v2 divided by 4))
+      set out_bytes to collections.append using out_bytes, b1
+      if c3 is not "="
+        if not (has_map_key using b64_tbl, c3)
+          give back record {ok: no, byte_size: 0, bytes: [], error: "Invalid base64 character in payload"}
+        end
+        set v3 to b64_tbl at c3
+        set b2 to ((v2 modulo 4) times 64) plus v3
+        set out_bytes to collections.append using out_bytes, b2
+      end
+    end
+    set i to i plus 4
+  end
+  give back record {ok: yes, byte_size: byte_size, bytes: out_bytes, error: ""}
+end
+
+make bytes_prefix_to_ascii_lower using b_list, max_len
+  set ascii_tbl to " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+  set ascii_chars to text.split using ascii_tbl, ""
+  set lim to math.min using max_len, (collections.length using b_list)
+  set out_chars to []
+  set idx to 0
+  while idx is less than lim
+    set code to b_list at idx
+    if code is at least 32 and code is at most 126
+      set out_chars to collections.append using out_chars, (ascii_chars at (code minus 32))
+    otherwise
+      set out_chars to collections.append using out_chars, " "
+    end
+    set idx to idx plus 1
+  end
+  give back text.lower using (text.join using out_chars, "")
+end
+
+make read_u16_be using b_list, off
+  give back ((b_list at off) times 256) plus (b_list at (off plus 1))
+end
+
+make read_u16_le using b_list, off
+  give back (b_list at off) plus ((b_list at (off plus 1)) times 256)
+end
+
+make read_u32_be using b_list, off
+  give back ((b_list at off) times 16777216) plus ((b_list at (off plus 1)) times 65536) plus ((b_list at (off plus 2)) times 256) plus (b_list at (off plus 3))
+end
+
+make sniff_media_magic using b_list
+  set n to collections.length using b_list
+  if n is less than 4
+    give back record {ok: no, mime: "", ext: "", error: "Unsupported or unrecognized file signature"}
+  end
+  set ascii_head to bytes_prefix_to_ascii_lower using b_list, 512
+  if (text.contains using ascii_head, "<svg") or (text.contains using ascii_head, "<?xml") or (text.contains using ascii_head, "<html") or (text.contains using ascii_head, "<!doctype") or (text.contains using ascii_head, "<script") or (text.contains using ascii_head, "<iframe")
+    give back record {ok: no, mime: "", ext: "", error: "SVG, HTML, XML, and active script payloads are blocked"}
+  end
+  if (b_list at 0) is 77 and (b_list at 1) is 90
+    give back record {ok: no, mime: "", ext: "", error: "Executable payloads are blocked"}
+  end
+  if (b_list at 0) is 127 and (b_list at 1) is 69 and (b_list at 2) is 76 and (b_list at 3) is 70
+    give back record {ok: no, mime: "", ext: "", error: "ELF executable payloads are blocked"}
+  end
+  if (b_list at 0) is 35 and (b_list at 1) is 33
+    give back record {ok: no, mime: "", ext: "", error: "Shell script payloads are blocked"}
+  end
+  if n is at least 8 and (b_list at 0) is 137 and (b_list at 1) is 80 and (b_list at 2) is 78 and (b_list at 3) is 71 and (b_list at 4) is 13 and (b_list at 5) is 10 and (b_list at 6) is 26 and (b_list at 7) is 10
+    give back record {ok: yes, mime: "image/png", ext: "png", error: ""}
+  end
+  if n is at least 3 and (b_list at 0) is 255 and (b_list at 1) is 216 and (b_list at 2) is 255
+    give back record {ok: yes, mime: "image/jpeg", ext: "jpg", error: ""}
+  end
+  if n is at least 6 and (b_list at 0) is 71 and (b_list at 1) is 73 and (b_list at 2) is 70 and (b_list at 3) is 56 and ((b_list at 4) is 55 or (b_list at 4) is 57) and (b_list at 5) is 97
+    give back record {ok: yes, mime: "image/gif", ext: "gif", error: ""}
+  end
+  if n is at least 12 and (b_list at 0) is 82 and (b_list at 1) is 73 and (b_list at 2) is 70 and (b_list at 3) is 70 and (b_list at 8) is 87 and (b_list at 9) is 69 and (b_list at 10) is 66 and (b_list at 11) is 80
+    give back record {ok: yes, mime: "image/webp", ext: "webp", error: ""}
+  end
+  if n is at least 5 and (b_list at 0) is 37 and (b_list at 1) is 80 and (b_list at 2) is 68 and (b_list at 3) is 70 and (b_list at 4) is 45
+    give back record {ok: yes, mime: "application/pdf", ext: "pdf", error: ""}
+  end
+  give back record {ok: no, mime: "", ext: "", error: "Unsupported media type signature"}
+end
+
+make parse_raster_dimensions using mime, b_list
+  set n to collections.length using b_list
+  if mime is "application/pdf"
+    give back record {ok: yes, width: nothing, height: nothing, error: ""}
+  end
+  if mime is "image/png"
+    if n is less than 24 or (b_list at 12) is not 73 or (b_list at 13) is not 72 or (b_list at 14) is not 68 or (b_list at 15) is not 82
+      give back record {ok: no, width: nothing, height: nothing, error: "Corrupt or truncated PNG header"}
+    end
+    set w to read_u32_be using b_list, 16
+    set h to read_u32_be using b_list, 20
+    if w is less than 1 or h is less than 1 or w is greater than 65535 or h is greater than 65535
+      give back record {ok: no, width: nothing, height: nothing, error: "Invalid PNG dimensions"}
+    end
+    give back record {ok: yes, width: w, height: h, error: ""}
+  end
+  if mime is "image/gif"
+    if n is less than 10
+      give back record {ok: no, width: nothing, height: nothing, error: "Corrupt or truncated GIF header"}
+    end
+    set w to read_u16_le using b_list, 6
+    set h to read_u16_le using b_list, 8
+    if w is less than 1 or h is less than 1
+      give back record {ok: no, width: nothing, height: nothing, error: "Invalid GIF dimensions"}
+    end
+    give back record {ok: yes, width: w, height: h, error: ""}
+  end
+  if mime is "image/webp"
+    if n is less than 30
+      give back record {ok: no, width: nothing, height: nothing, error: "Corrupt or truncated WebP header"}
+    end
+    if (b_list at 12) is 86 and (b_list at 13) is 80 and (b_list at 14) is 56 and (b_list at 15) is 32
+      if (b_list at 23) is not 157 or (b_list at 24) is not 1 or (b_list at 25) is not 42
+        give back record {ok: no, width: nothing, height: nothing, error: "Corrupt WebP VP8 frame"}
+      end
+      set w to (read_u16_le using b_list, 26) modulo 16384
+      set h to (read_u16_le using b_list, 28) modulo 16384
+      give back record {ok: yes, width: w, height: h, error: ""}
+    end
+    if (b_list at 12) is 86 and (b_list at 13) is 80 and (b_list at 14) is 56 and (b_list at 15) is 76
+      if (b_list at 20) is not 47
+        give back record {ok: no, width: nothing, height: nothing, error: "Corrupt WebP VP8L header"}
+      end
+      set v0 to b_list at 21
+      set v1 to b_list at 22
+      set v2 to b_list at 23
+      set v3 to b_list at 24
+      set w to ((v0 plus ((v1 modulo 64) times 256)) plus 1)
+      set h to ((math.floor using (v1 divided by 64)) plus (v2 times 4) plus ((v3 modulo 16) times 1024) plus 1)
+      give back record {ok: yes, width: w, height: h, error: ""}
+    end
+    if (b_list at 12) is 86 and (b_list at 13) is 80 and (b_list at 14) is 56 and (b_list at 15) is 88
+      set w to (b_list at 24) plus ((b_list at 25) times 256) plus ((b_list at 26) times 65536) plus 1
+      set h to (b_list at 27) plus ((b_list at 28) times 256) plus ((b_list at 29) times 65536) plus 1
+      give back record {ok: yes, width: w, height: h, error: ""}
+    end
+    give back record {ok: no, width: nothing, height: nothing, error: "Unsupported or corrupt WebP chunk"}
+  end
+  if mime is "image/jpeg"
+    set pos to 2
+    while (pos plus 1) is less than n
+      if (b_list at pos) is not 255
+        give back record {ok: no, width: nothing, height: nothing, error: "Corrupt JPEG marker stream"}
+      end
+      while (pos plus 1) is less than n and (b_list at pos) is 255
+        set pos to pos plus 1
+      end
+      set marker to b_list at pos
+      set pos to pos plus 1
+      if marker is 217 or marker is 218
+        give back record {ok: no, width: nothing, height: nothing, error: "Truncated JPEG before SOF dimensions"}
+      end
+      set is_sof to (marker is 192 or marker is 193 or marker is 194 or marker is 195 or marker is 197 or marker is 198 or marker is 199 or marker is 201 or marker is 202 or marker is 203 or marker is 205 or marker is 206 or marker is 207)
+      if is_sof
+        if (pos plus 7) is greater than n
+          give back record {ok: no, width: nothing, height: nothing, error: "Truncated JPEG SOF frame"}
+        end
+        set h to read_u16_be using b_list, (pos plus 3)
+        set w to read_u16_be using b_list, (pos plus 5)
+        if w is less than 1 or h is less than 1
+          give back record {ok: no, width: nothing, height: nothing, error: "Invalid JPEG dimensions"}
+        end
+        give back record {ok: yes, width: w, height: h, error: ""}
+      end
+      if marker is not 0 and (not (marker is at least 208 and marker is at most 215)) and marker is not 1
+        if (pos plus 2) is greater than n
+          give back record {ok: no, width: nothing, height: nothing, error: "Truncated JPEG segment"}
+        end
+        set seg_len to read_u16_be using b_list, pos
+        if seg_len is less than 2
+          give back record {ok: no, width: nothing, height: nothing, error: "Invalid JPEG segment length"}
+        end
+        set pos to pos plus seg_len
+      end
+    end
+    give back record {ok: no, width: nothing, height: nothing, error: "Truncated JPEG without dimensions"}
+  end
+  give back record {ok: no, width: nothing, height: nothing, error: "Unsupported media format"}
+end
+
+make sanitize_media_filename using raw_name
+  set name to text.trim using raw_name
+  if name is ""
+    give back record {ok: no, name: "", ext: "", error: "Filename is required"}
+  end
+  if (text.contains using name, "..") or (text.contains using name, "/") or (text.contains using name, "\\") or (text.contains using (json.stringify using name), "\\u000") or (text.contains using (text.lower using name), "%00")
+    give back record {ok: no, name: "", ext: "", error: "Invalid filename: path separators and traversal segments are forbidden"}
+  end
+  set trimmed to text_truncate using name, 255
+  set ext to ""
+  set parts to text.split using trimmed, "."
+  if (collections.length using parts) is at least 2
+    set ext to text.lower using (text.trim using (parts at ((collections.length using parts) minus 1)))
+  end
+  give back record {ok: yes, name: trimmed, ext: ext, error: ""}
+end
+
+make ext_matches_mime using ext, sniffed_mime
+  if ext is ""
+    give back yes
+  end
+  if sniffed_mime is "image/png"
+    give back ext is "png"
+  end
+  if sniffed_mime is "image/jpeg"
+    give back (ext is "jpg" or ext is "jpeg")
+  end
+  if sniffed_mime is "image/webp"
+    give back ext is "webp"
+  end
+  if sniffed_mime is "image/gif"
+    give back ext is "gif"
+  end
+  if sniffed_mime is "application/pdf"
+    give back ext is "pdf"
+  end
+  give back no
+end
+
+make declared_mime_matches using declared, sniffed_mime
+  set d to text.lower using (text.trim using declared)
+  if d is "" or d is "application/octet-stream"
+    give back yes
+  end
+  if d is sniffed_mime
+    give back yes
+  end
+  if (d is "image/jpg") and (sniffed_mime is "image/jpeg")
+    give back yes
+  end
+  give back no
+end
+
+make format_media_record using row
+  set dec_flag to (row.is_decorative is 1)
+  give back record {id: row.id, filename: row.filename, original_name: row.original_name, url: ("/media/" joined with (text.from using row.id) joined with "/" joined with row.filename), mime_type: row.mime_type, byte_size: row.byte_size, width: row.width, height: row.height, alt_text: row.alt_text, is_decorative: dec_flag, caption: row.caption, sha256_hex: row.sha256_hex, uploader_id: row.uploader_id, created_at: row.created_at, updated_at: row.updated_at}
+end
+
+# ==============================================================================
+# Module 9: Navigation Menus, Validation & Semantic Grex Rendering
+# ==============================================================================
+
+make is_valid_menu_location using loc
+  give back (loc is "" or loc is "primary" or loc is "footer" or loc is "mobile")
+end
+
+make is_valid_external_menu_url using raw_url
+  set u to text.trim using raw_url
+  if u is "" or (text.contains using u, "\r") or (text.contains using u, "\n") or (text.contains using (json.stringify using u), "\\u000") or (text.contains using u, " ") or (text.contains using u, "\\")
+    give back no
+  end
+  if u is "/" or u is "/blog"
+    give back yes
+  end
+  set low to text.lower using u
+  if (text.starts_with using low, "https://") or (text.starts_with using low, "http://")
+    give back (text.length using u) is greater than 8
+  end
+  give back no
+end
+
+make resolve_menu_item_url using item, include_unpublished
+  if item.link_type is "external"
+    if item.external_url is nothing
+      give back ""
+    end
+    set eu to text.trim using item.external_url
+    if is_valid_external_menu_url using eu
+      give back eu
+    end
+    give back ""
+  end
+  if item.link_type is "entry"
+    if item.entry_full_path is nothing
+      give back ""
+    end
+    if (not include_unpublished) and (item.entry_status is not "published")
+      give back ""
+    end
+    give back item.entry_full_path
+  end
+  give back ""
+end
+
+make build_menu_children using rows, parent_id_val, depth, include_unpublished
+  if depth is greater than 4
+    give back []
+  end
+  set out to []
+  for each item in rows
+    set match_parent to no
+    if parent_id_val is nothing
+      if item.parent_id is nothing
+        set match_parent to yes
+      end
+    otherwise
+      if item.parent_id is not nothing and item.parent_id is parent_id_val
+        set match_parent to yes
+      end
+    end
+    if match_parent
+      set resolved_url to resolve_menu_item_url using item, include_unpublished
+      if resolved_url is not "" or include_unpublished
+        set kids to build_menu_children using rows, item.id, (depth plus 1), include_unpublished
+        set out to collections.append using out, record {id: item.id, parent_id: item.parent_id, label: item.label, link_type: item.link_type, entry_id: item.entry_id, external_url: item.external_url, url: resolved_url, target_blank: (item.target_blank is 1), css_class: item.css_class, sort_order: item.sort_order, children: kids}
+      end
+    end
+  end
+  give back out
+end
+
+make get_menu_tree using stmts, location, include_unpublished
+  if location is "" or (not (is_valid_menu_location using location))
+    give back nothing
+  end
+  set ckey to "menu:loc:" joined with location
+  if not include_unpublished
+    set cached to cache.get using stmts.cms_cache, ckey
+    if cached.found
+      give back cached.value
+    end
+  end
+  set menu_row to data.one using stmts.get_menu_by_location, record {location: location}
+  if menu_row is nothing
+    give back nothing
+  end
+  set rows to data.query using stmts.list_menu_items_by_menu, record {menu_id: menu_row.id}
+  set items_tree to build_menu_children using rows, nothing, 1, include_unpublished
+  set tree_obj to record {id: menu_row.id, slug: menu_row.slug, name: menu_row.name, location: menu_row.location, items: items_tree}
+  if not include_unpublished
+    call cache.set using stmts.cms_cache, ckey, tree_obj, 120000
+  end
+  give back tree_obj
+end
+
+make render_menu_ul using nodes, current_path, depth
+  if (collections.length using nodes) is 0 or depth is greater than 4
+    give back ""
+  end
+  set cur_norm to normalize_path using current_path
+  set li_parts to []
+  for each node in nodes
+    set href_safe to "#"
+    if node.url is not ""
+      set href_safe to node.url
+    end
+    set a_attrs to "href=\"" joined with (escape_html using href_safe) joined with "\""
+    if (normalize_path using href_safe) is cur_norm
+      set a_attrs to a_attrs joined with " aria-current=\"page\""
+    end
+    if node.target_blank
+      set a_attrs to a_attrs joined with " target=\"_blank\" rel=\"noopener noreferrer\""
+    end
+    if node.css_class is not ""
+      set a_attrs to a_attrs joined with " class=\"" joined with (escape_html using node.css_class) joined with "\""
+    end
+    set sub_ul to render_menu_ul using node.children, cur_norm, (depth plus 1)
+    set li_html to "<li><a " joined with a_attrs joined with ">" joined with (escape_html using node.label) joined with "</a>" joined with sub_ul joined with "</li>"
+    set li_parts to collections.append using li_parts, li_html
+  end
+  give back "<ul>" joined with (text.join using li_parts, "") joined with "</ul>"
+end
+
+make render_menu using stmts, location, current_path
+  set tree to get_menu_tree using stmts, location, no
+  if tree is nothing
+    give back ""
+  end
+  set ul_html to render_menu_ul using tree.items, current_path, 1
+  give back "<nav class=\"cms-nav cms-nav-" joined with (escape_html using location) joined with "\" aria-label=\"" joined with (escape_html using tree.name) joined with "\">" joined with ul_html joined with "</nav>"
+end
+
+make validate_menu_hierarchy using items_list
+  set by_key to {}
+  set idx to 0
+  for each item in items_list
+    set k to "idx:" joined with (text.from using idx)
+    if (has_map_key using item, "client_id") and (text.trim using (text.from using (item at "client_id"))) is not ""
+      set k to "cid:" joined with (text.trim using (text.from using (item at "client_id")))
+    otherwise
+      if (has_map_key using item, "id") and (item at "id") is not nothing
+        set k to "id:" joined with (text.from using (item at "id"))
+      end
+    end
+    if has_map_key using by_key, k
+      give back record {ok: no, error: "Duplicate menu item key"}
+    end
+    set by_key to collections.put using by_key, k, item
+    set idx to idx plus 1
+  end
+
+  set keys_all to collections.keys using by_key
+  for each k in keys_all
+    set depth to 1
+    set cur to by_key at k
+    set visited to collections.put using {}, k, yes
+    while (has_map_key using cur, "parent_key") and (cur at "parent_key") is not nothing and (cur at "parent_key") is not ""
+      set pk to text.from using (cur at "parent_key")
+      if pk is k or (has_map_key using visited, pk)
+        give back record {ok: no, error: "Cycle detected in menu hierarchy"}
+      end
+      if not (has_map_key using by_key, pk)
+        give back record {ok: no, error: "Parent menu item does not belong to this menu"}
+      end
+      set visited to collections.put using visited, pk, yes
+      set depth to depth plus 1
+      if depth is greater than 4
+        give back record {ok: no, error: "Menu nesting depth exceeds maximum of 4 levels"}
+      end
+      set cur to by_key at pk
+    end
+  end
+  give back record {ok: yes, error: ""}
+end
+
+# ==============================================================================
+# Module 10: Taxonomies, Hierarchical Terms & Entry Term Assignment
+# ==============================================================================
+
+make parse_content_type_slugs_json using raw_json
+  try
+    set parsed to json.parse using raw_json
+    set out to []
+    for each s in parsed
+      set sn to normalize_slug using (text.from using s)
+      if sn is not "" and (is_valid_slug using sn)
+        set out to collections.append using out, sn
+      end
+    end
+    give back out
+  catch err
+    give back []
+  end
+end
+
+make check_term_parent_valid using stmts, tax_row, self_id, parent_id
+  if parent_id is nothing
+    give back record {ok: yes, error: ""}
+  end
+  if tax_row.is_hierarchical is not 1
+    give back record {ok: no, error: "Flat taxonomies do not support parent terms"}
+  end
+  if self_id is not nothing and parent_id is self_id
+    give back record {ok: no, error: "Term cannot be its own parent"}
+  end
+  set all_terms to data.query using stmts.list_terms_by_tax, record {taxonomy_id: tax_row.id}
+  set by_id to {}
+  for each t in all_terms
+    set by_id to collections.put using by_id, (text.from using t.id), t
+  end
+  set pid_key to text.from using parent_id
+  if not (has_map_key using by_id, pid_key)
+    give back record {ok: no, error: "Parent term does not belong to this taxonomy"}
+  end
+  set cur_key to pid_key
+  set steps to 0
+  while cur_key is not "" and steps is less than 12
+    if self_id is not nothing and cur_key is (text.from using self_id)
+      give back record {ok: no, error: "Cycle detected in hierarchical terms"}
+    end
+    if not (has_map_key using by_id, cur_key)
+      give back record {ok: yes, error: ""}
+    end
+    set node to by_id at cur_key
+    if node.parent_id is nothing
+      give back record {ok: yes, error: ""}
+    end
+    set cur_key to text.from using node.parent_id
+    set steps to steps plus 1
+  end
+  give back record {ok: no, error: "Term hierarchy depth limit exceeded"}
+end
+
+make sync_entry_terms_tx using stmts, entry_id, term_ids_raw, now_iso, tx
+  call data.execute using stmts.delete_entry_terms_by_entry, record {entry_id: entry_id}, tx
+  set seen to {}
+  for each tid_raw in term_ids_raw
+    set tid to text.to_integer using (text.from using tid_raw)
+    set tid_str to text.from using tid
+    if not (has_map_key using seen, tid_str)
+      set trow to data.one using stmts.get_term_by_id, record {id: tid}, tx
+      if trow is nothing
+        give back record {ok: no, error: "Unknown term_id: " joined with tid_str}
+      end
+      call data.execute using stmts.insert_entry_term, record {entry_id: entry_id, term_id: tid, created_at: now_iso}, tx
+      set seen to collections.put using seen, tid_str, yes
+    end
+  end
+  give back record {ok: yes, error: ""}
+end
+
+# ==============================================================================
+# Module 11: Strict Grex Validation, WCAG AA auditAccessibility & grab mcp Tools
+# ==============================================================================
+
+make text_contains_unsafe_markup using raw
+  set low to text.lower using raw
+  if (text.contains using low, "<script") or (text.contains using low, "<iframe") or (text.contains using low, "<object") or (text.contains using low, "<div") or (text.contains using low, "javascript:") or (text.contains using low, "onerror=") or (text.contains using low, "onload=") or (text.contains using low, "onclick=") or (text.contains using low, "eval(")
+    give back yes
+  end
+  give back no
+end
+
+make grex_node_has_accessible_name using node
+  if node has "props"
+    set props to node at "props"
+    for each k in ["text", "label", "aria-label"]
+      if has_map_key using props, k
+        set v to text.trim using (text.from using (props at k))
+        if v is not ""
+          give back yes
+        end
+      end
+    end
+  end
+  if node has "children"
+    for each ch in (node at "children")
+      if ch has "props"
+        set cp to ch at "props"
+        if has_map_key using cp, "text"
+          if (text.trim using (text.from using (cp at "text"))) is not ""
+            give back yes
+          end
+        end
+      end
+    end
+  end
+  give back no
+end
+
+make resolve_heading_level using node, tag_name
+  if tag_name is "h1"
+    give back 1
+  end
+  if tag_name is "h2"
+    give back 2
+  end
+  if tag_name is "h3"
+    give back 3
+  end
+  if tag_name is "h4"
+    give back 4
+  end
+  if tag_name is "h5"
+    give back 5
+  end
+  if tag_name is "h6"
+    give back 6
+  end
+  if node has "props"
+    set props to node at "props"
+    if has_map_key using props, "level"
+      try
+        give back text.to_integer using (text.from using (props at "level"))
+      catch err
+        give back 0
+      end
+    end
+  end
+  give back 2
+end
+
+make audit_grex_tree_walk using stmts, node, depth, path_label, state
+  set violations to state.violations
+  set h1_count to state.h1_count
+  set last_h to state.last_heading_level
+
+  if depth is greater than 24
+    set violations to collections.append using violations, record {rule: "schema-max-depth", path: path_label, message: "Grex layout nesting exceeds maximum depth (24)"}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+  end
+
+  if not (node has "element")
+    set violations to collections.append using violations, record {rule: "schema-element-required", path: path_label, message: "Grex layout node requires an element field"}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+  end
+
+  set el_name to text.from using (node at "element")
+  if not (is_allowed_grex_element using el_name)
+    set violations to collections.append using violations, record {rule: "schema-element-allowlist", path: path_label, message: "Unsupported or unsafe Grex element: " joined with el_name}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+  end
+
+  set tag_name to ""
+  if node has "tag"
+    set tag_name to text.lower using (text.from using (node at "tag"))
+    if tag_name is "div"
+      set violations to collections.append using violations, record {rule: "no-wrapper-div", path: path_label, message: "Wrapper <div> tags are strictly forbidden in Grex layouts"}
+    otherwise
+      if tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "style" or (not (is_allowed_grex_tag using tag_name))
+        set violations to collections.append using violations, record {rule: "security-disallowed-tag", path: path_label, message: "Disallowed HTML tag in Grex layout: " joined with tag_name}
+      end
+    end
+  end
+
+  set props to {}
+  if node has "props"
+    set props to node at "props"
+    set prop_keys to collections.keys using props
+    for each pk in prop_keys
+      set pkl to text.lower using pk
+      if text.starts_with using pkl, "on"
+        set violations to collections.append using violations, record {rule: "security-no-inline-events", path: path_label, message: "Inline event handler prop not allowed: " joined with pk}
+      end
+      if pkl is "dangerouslysetinnerhtml" or pkl is "innerhtml" or pkl is "outerhtml"
+        set violations to collections.append using violations, record {rule: "zero-innerHTML", path: path_label, message: "Unsafe HTML sink prop not allowed: " joined with pk}
+      end
+      if pkl is "href" or pkl is "src" or pkl is "action" or pkl is "formaction"
+        set u_val to text.from using (props at pk)
+        if (not (is_safe_url using u_val)) and (not (is_binding_token using u_val))
+          set violations to collections.append using violations, record {rule: "url-protocol-check", path: path_label, message: "Unsafe URL in prop " joined with pk}
+        end
+      end
+      if pkl is "text" or pkl is "html" or pkl is "content"
+        set txt_val to text.from using (props at pk)
+        if text_contains_unsafe_markup using txt_val
+          set violations to collections.append using violations, record {rule: "csp-safe", path: path_label, message: "Unsafe script/div/event markup inside " joined with pk}
+        end
+      end
+    end
+  end
+
+  if el_name is "Image" or tag_name is "img"
+    set has_alt to no
+    if (has_map_key using props, "is_decorative") and (is_truthy_val using (props at "is_decorative"))
+      set has_alt to yes
+    end
+    if (has_map_key using props, "aria-hidden") and (text.lower using (text.from using (props at "aria-hidden"))) is "true"
+      set has_alt to yes
+    end
+    if has_map_key using props, "alt"
+      if (text.trim using (text.from using (props at "alt"))) is not ""
+        set has_alt to yes
+      end
+    end
+    if (not has_alt) and (has_map_key using props, "media_id")
+      try
+        set mid to text.to_integer using (text.from using (props at "media_id"))
+        set mrow to data.one using stmts.get_media_by_id, record {id: mid}
+        if mrow is nothing
+          set violations to collections.append using violations, record {rule: "a11y-media-exists", path: path_label, message: "Referenced media_id not found"}
+        otherwise
+          if (text.trim using mrow.alt_text) is not "" or mrow.is_decorative is 1
+            set has_alt to yes
+          end
+        end
+      catch merr
+      end
+    end
+    if not has_alt
+      set violations to collections.append using violations, record {rule: "a11y-image-alt", path: path_label, message: "Image requires non-empty alt text or explicit is_decorative: true"}
+    end
+  end
+
+  if el_name is "Heading" or tag_name is "h1" or tag_name is "h2" or tag_name is "h3" or tag_name is "h4" or tag_name is "h5" or tag_name is "h6"
+    set lvl to resolve_heading_level using node, tag_name
+    if lvl is less than 1 or lvl is greater than 6
+      set violations to collections.append using violations, record {rule: "a11y-heading-level", path: path_label, message: "Heading level must be between 1 and 6"}
+    otherwise
+      if lvl is 1
+        set h1_count to h1_count plus 1
+        if h1_count is greater than 1
+          set violations to collections.append using violations, record {rule: "a11y-single-h1", path: path_label, message: "Multiple <h1> headings detected; only one <h1> is allowed per layout"}
+        end
+      end
+      if last_h is greater than 0 and lvl is greater than (last_h plus 1)
+        set violations to collections.append using violations, record {rule: "a11y-heading-order", path: path_label, message: "Skipped heading level from h" joined with (text.from using last_h) joined with " to h" joined with (text.from using lvl)}
+      end
+      set last_h to lvl
+    end
+  end
+
+  if el_name is "Link" or el_name is "Button" or el_name is "Input" or el_name is "Select" or tag_name is "a" or tag_name is "button" or tag_name is "input" or tag_name is "select"
+    if not (grex_node_has_accessible_name using node)
+      set violations to collections.append using violations, record {rule: "a11y-interactive-label", path: path_label, message: "Interactive " joined with el_name joined with " requires accessible label (text, label, or aria-label)"}
+    end
+  end
+
+  set cur_state to record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+  if node has "children"
+    set kids to node at "children"
+    set idx to 0
+    for each ch in kids
+      set next_path to path_label joined with ".children[" joined with (text.from using idx) joined with "]"
+      set cur_state to audit_grex_tree_walk using stmts, ch, (depth plus 1), next_path, cur_state
+      set idx to idx plus 1
+    end
+  end
+  give back cur_state
+end
+
+make render_validated_grex_html using stmts, node, depth
+  if depth is greater than 24
+    give back ""
+  end
+  set el_name to text.from using (node at "element")
+  set props to {}
+  if node has "props"
+    set props to node at "props"
+  end
+  set tag to default_tag_for_grex_element using el_name, props
+  if node has "tag"
+    set req_tag to text.lower using (text.from using (node at "tag"))
+    if is_allowed_grex_tag using req_tag
+      set tag to req_tag
+    end
+  end
+  if el_name is "Heading" and (not (node has "tag")) and (has_map_key using props, "level")
+    set lvl_str to text.from using (props at "level")
+    if lvl_str is "1" or lvl_str is "2" or lvl_str is "3" or lvl_str is "4" or lvl_str is "5" or lvl_str is "6"
+      set tag to "h" joined with lvl_str
+    end
+  end
+
+  set inner to ""
+  if has_map_key using props, "text"
+    set inner to escape_html using (text.from using (props at "text"))
+  end
+  if node has "children"
+    for each ch in (node at "children")
+      set inner to inner joined with (render_validated_grex_html using stmts, ch, (depth plus 1))
+    end
+  end
+  if tag is ""
+    give back inner
+  end
+
+  set attrs to ""
+  if has_map_key using props, "class"
+    set attrs to attrs joined with " class=\"" joined with (escape_html using (text.from using (props at "class"))) joined with "\""
+  end
+  if has_map_key using props, "href"
+    set hv to text.from using (props at "href")
+    if is_safe_url using hv
+      set attrs to attrs joined with " href=\"" joined with (escape_html using hv) joined with "\""
+    end
+  end
+  if el_name is "Image" or tag is "img"
+    set src_val to ""
+    set alt_val to ""
+    set is_dec to no
+    if has_map_key using props, "src"
+      set src_val to text.from using (props at "src")
+    end
+    if has_map_key using props, "alt"
+      set alt_val to text.from using (props at "alt")
+    end
+    if (has_map_key using props, "is_decorative") and (is_truthy_val using (props at "is_decorative"))
+      set is_dec to yes
+    end
+    if has_map_key using props, "media_id"
+      try
+        set mrow to data.one using stmts.get_media_by_id, record {id: (text.to_integer using (text.from using (props at "media_id")))}
+        if mrow is not nothing
+          if src_val is ""
+            set src_val to "/media/" joined with (text.from using mrow.id) joined with "/" joined with mrow.filename
+          end
+          if alt_val is "" and mrow.alt_text is not ""
+            set alt_val to mrow.alt_text
+          end
+          if mrow.is_decorative is 1
+            set is_dec to yes
+          end
+        end
+      catch err
+      end
+    end
+    if src_val is not "" and (is_safe_url using src_val)
+      set attrs to attrs joined with " src=\"" joined with (escape_html using src_val) joined with "\""
+    end
+    if is_dec
+      set attrs to attrs joined with " alt=\"\" aria-hidden=\"true\""
+    otherwise
+      set attrs to attrs joined with " alt=\"" joined with (escape_html using alt_val) joined with "\""
+    end
+    give back "<img" joined with attrs joined with ">"
+  end
+  if has_map_key using props, "aria-label"
+    set attrs to attrs joined with " aria-label=\"" joined with (escape_html using (text.from using (props at "aria-label"))) joined with "\""
+  end
+  give back "<" joined with tag joined with attrs joined with ">" joined with inner joined with "</" joined with tag joined with ">"
+end
+
+make resolve_mcp_principal using stmts, req
+  set bearer to extract_bearer_token using req
+  if bearer is not ""
+    set sess to resolve_session_token using stmts, bearer
+    if sess is nothing
+      give back record {ok: no, status: 401, session: nothing, via_bearer: yes, error: "Invalid or expired MCP bearer token"}
+    end
+    give back record {ok: yes, status: 200, session: sess, via_bearer: yes, error: ""}
+  end
+  set csess to resolve_session using stmts, req
+  if csess is nothing
+    give back record {ok: no, status: 401, session: nothing, via_bearer: no, error: "MCP authentication required (Bearer token or valid session)"}
+  end
+  if not (csrf_matches using req, csess)
+    give back record {ok: no, status: 403, session: nothing, via_bearer: no, error: "Missing or invalid X-CSRF-Token for cookie-authenticated MCP call"}
+  end
+  give back record {ok: yes, status: 200, session: csess, via_bearer: no, error: ""}
+end
+
+make mcp_tool_schemas
+  give back [record {name: "list_content_types", description: "List registered GrabLab content types and field definitions", inputSchema: (record {type: "object", properties: {}})}, record {name: "query_entries", description: "Query CMS entries with optional content_type, status, filter_by_term, search, limit, and offset", inputSchema: (record {type: "object", properties: {"content_type": {"type": "string"}, "status": {"type": "string"}, "filter_by_term": {"type": "object"}, "search": {"type": "string"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "create_entry_draft", description: "Create a new draft entry (status is always forced to draft)", inputSchema: (record {type: "object", required: ["content_type", "slug", "title"], properties: {"content_type": {"type": "string"}, "slug": {"type": "string"}, "title": {"type": "string"}}})}, record {name: "update_entry_layout", description: "Update an entry's Grex layout after grex.elements.json and WCAG AA auditAccessibility validation", inputSchema: (record {type: "object", required: ["entry_id", "layout"], properties: {"entry_id": {"type": "integer"}, "layout": {"type": "object"}}})}, record {name: "list_media", description: "List uploaded media assets", inputSchema: (record {type: "object", properties: {"mime_prefix": {"type": "string"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "list_menus", description: "List menus and resolved menu item hierarchies", inputSchema: (record {type: "object", properties: {}})}]
+end
+
+make execute_mcp_tool using stmts, sess, tool_name, args
+  if tool_name is "list_content_types"
+    if not (role_has_capability using sess.role, "admin:access")
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for list_content_types"}}
+    end
+    set types to data.query using stmts.list_types, record {}
+    set out to []
+    for each ct in types
+      set fields to data.query using stmts.list_fields_by_type, record {content_type_id: ct.id}
+      set out to collections.append using out, record {id: ct.id, slug: ct.slug, label_singular: ct.label_singular, label_plural: ct.label_plural, permalink_pattern: ct.permalink_pattern, has_archive: (ct.has_archive is 1), archive_slug: ct.archive_slug, fields: fields}
+    end
+    give back record {ok: yes, status: 200, payload: record {content_types: out}}
+  end
+
+  if tool_name is "query_entries"
+    set req_status to "published"
+    if args has "status" and (args at "status") is not nothing
+      set req_status to text.lower using (text.trim using (text.from using (args at "status")))
+    end
+    if sess.role is "viewer" and req_status is not "published"
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: viewer role cannot read non-published entries"}}
+    end
+    set limit_val to 20
+    if args has "limit" and (args at "limit") is not nothing
+      set limit_val to math.clamp using (text.to_integer using (text.from using (args at "limit"))), 1, 100
+    end
+    set offset_val to 0
+    if args has "offset" and (args at "offset") is not nothing
+      set offset_val to math.max using 0, (text.to_integer using (text.from using (args at "offset")))
+    end
+    set page_num to (math.floor using (offset_val divided by limit_val)) plus 1
+    set q_map to {"status": req_status, "per_page": (text.from using limit_val), "page": (text.from using page_num)}
+    if args has "content_type" and (args at "content_type") is not nothing
+      set q_map to collections.put using q_map, "content_type", (text.from using (args at "content_type"))
+    end
+    if args has "filter_by_term" and (args at "filter_by_term") is not nothing
+      set q_map to collections.put using q_map, "filter_by_term", (args at "filter_by_term")
+    end
+    if args has "search" and (args at "search") is not nothing
+      set q_map to collections.put using q_map, "search", (text.from using (args at "search"))
+    end
+    set theme to get_active_theme_context using stmts
+    set registry to build_active_hook_registry using theme
+    if sess.role is "author"
+      set raw_rows to data.query using stmts.list_entries, record {}
+      set safe_rows to []
+      for each r in raw_rows
+        set can_see to (r.status is "published") or (r.author_id is not nothing and r.author_id is sess.user_id)
+        if req_status is not "all" and r.status is not req_status
+          set can_see to no
+        end
+        if can_see
+          set safe_rows to collections.append using safe_rows, (format_query_item using r)
+        end
+      end
+      give back record {ok: yes, status: 200, payload: record {items: safe_rows, pagination: record {page: 1, per_page: limit_val, total_items: (collections.length using safe_rows)}}}
+    end
+    set is_pub_q to (sess.role is "viewer")
+    set qres to query_entries using stmts, theme, registry, q_map, is_pub_q
+    if not qres.ok
+      give back record {ok: no, status: 400, payload: record {error: qres.error}}
+    end
+    give back record {ok: yes, status: 200, payload: qres.data}
+  end
+
+  if tool_name is "create_entry_draft"
+    if not (role_has_capability using sess.role, "entries:create")
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for create_entry_draft"}}
+    end
+    if (not (args has "content_type")) or (not (args has "slug")) or (not (args has "title"))
+      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: content_type, slug, title"}}
+    end
+    set ct_slug to normalize_slug using (text.from using (args at "content_type"))
+    set ct to data.one using stmts.get_type_by_slug, record {slug: ct_slug}
+    if ct is nothing
+      give back record {ok: no, status: 404, payload: record {error: "Content type not found"}}
+    end
+    set slug to normalize_slug using (text.from using (args at "slug"))
+    if not (is_valid_entry_slug using slug)
+      give back record {ok: no, status: 400, payload: record {error: "Invalid entry slug"}}
+    end
+    set full_path to compute_full_path using ct.permalink_pattern, slug
+    if is_reserved_path using full_path
+      give back record {ok: no, status: 400, payload: record {error: "Computed permalink collides with reserved prefix"}}
+    end
+    set conflict to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}
+    if conflict is not nothing
+      give back record {ok: no, status: 409, payload: record {error: "Entry already exists at " joined with full_path}}
+    end
+    set body_html to ""
+    if args has "body_html" and (args at "body_html") is not nothing
+      set bres to normalize_and_validate_body using (args at "body_html")
+      if not bres.ok
+        give back record {ok: no, status: 400, payload: record {error: bres.error}}
+      end
+      set body_html to bres.body_html
+    end
+    set cf_in to {}
+    if args has "custom_fields" and (args at "custom_fields") is not nothing
+      set cf_in to args at "custom_fields"
+    end
+    set cf_res to validate_custom_fields using stmts, ct.id, cf_in
+    if not cf_res.ok
+      give back record {ok: no, status: 400, payload: record {error: cf_res.error}}
+    end
+    set meta_t to ""
+    if args has "meta_title" and (args at "meta_title") is not nothing
+      set meta_t to text.from using (args at "meta_title")
+    end
+    set meta_d to ""
+    if args has "meta_description" and (args at "meta_description") is not nothing
+      set meta_d to text.from using (args at "meta_description")
+    end
+    set term_ids to []
+    if args has "term_ids" and (args at "term_ids") is not nothing
+      set term_ids to args at "term_ids"
+    end
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (text.from using (args at "title")), status: "draft", body_html: body_html, custom_fields_json: cf_res.json_text, meta_title: meta_t, meta_description: meta_d, author_id: sess.user_id, published_at: nothing, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      set created to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}, tx
+      if (collections.length using term_ids) is greater than 0
+        set tr to sync_entry_terms_tx using stmts, created.id, term_ids, now_rec.iso, tx
+        if not tr.ok
+          call data.rollback using tx
+          give back record {ok: no, status: 400, payload: record {error: tr.error}}
+        end
+      end
+      call data.commit using tx
+      call invalidate_route_caches using stmts, full_path, "", ct.slug
+      give back record {ok: yes, status: 201, payload: record {entry: created, status_enforced: "draft"}}
+    catch tx_err
+      call data.rollback using tx
+      give back record {ok: no, status: 500, payload: record {error: tx_err.message}}
+    end
+  end
+
+  if tool_name is "update_entry_layout"
+    if not (role_has_capability using sess.role, "entries:update:own")
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for update_entry_layout"}}
+    end
+    if (not (args has "entry_id")) or (not (args has "layout"))
+      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: entry_id, layout"}}
+    end
+    set entry_id to text.to_integer using (text.from using (args at "entry_id"))
+    set existing to data.one using stmts.get_entry_by_id, record {id: entry_id}
+    if existing is nothing
+      give back record {ok: no, status: 404, payload: record {error: "Entry not found"}}
+    end
+    if not (role_has_capability using sess.role, "entries:update:any")
+      if existing.author_id is nothing or existing.author_id is not sess.user_id
+        give back record {ok: no, status: 403, payload: record {error: "Forbidden: can only update layout of your own entries"}}
+      end
+    end
+    set layout_node to args at "layout"
+    set audit_res to audit_grex_tree_walk using stmts, layout_node, 0, "layout", record {violations: [], h1_count: 0, last_heading_level: 0}
+    if (collections.length using audit_res.violations) is greater than 0
+      give back record {ok: no, status: 422, payload: record {error: "grex_validation_failed", violations: audit_res.violations}}
+    end
+    set rendered_html to render_validated_grex_html using stmts, layout_node, 0
+    set cf_map to {}
+    try
+      set parsed_cf to json.parse using existing.custom_fields_json
+      if parsed_cf is not nothing
+        for each cfk in (collections.keys using parsed_cf)
+          set cf_map to collections.put using cf_map, cfk, (parsed_cf at cfk)
+        end
+      end
+    catch err
+      set cf_map to {}
+    end
+    set cf_map to collections.put using cf_map, "_grex_layout", layout_node
+    set next_cf_json to json.stringify using cf_map
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.update_entry, record {slug: existing.slug, full_path: existing.full_path, title: existing.title, status: existing.status, body_html: rendered_html, custom_fields_json: next_cf_json, meta_title: existing.meta_title, meta_description: existing.meta_description, published_at: existing.published_at, updated_at: now_rec.iso, id: entry_id}
+    set updated to data.one using stmts.get_entry_by_id, record {id: entry_id}
+    call invalidate_route_caches using stmts, existing.full_path, "", existing.content_type_slug
+    give back record {ok: yes, status: 200, payload: record {entry: updated, body_html: rendered_html, grex_layout_json: layout_node, violations: []}}
+  end
+
+  if tool_name is "list_media"
+    if not (role_has_capability using sess.role, "media:read")
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for list_media"}}
+    end
+    set mime_prefix to ""
+    set mime_like to "%"
+    if args has "mime_prefix" and (args at "mime_prefix") is not nothing
+      set mime_prefix to text.lower using (text.trim using (text.from using (args at "mime_prefix")))
+      if mime_prefix is not ""
+        set mime_like to mime_prefix joined with "%"
+      end
+    end
+    set lim to 50
+    if args has "limit" and (args at "limit") is not nothing
+      set lim to math.clamp using (text.to_integer using (text.from using (args at "limit"))), 1, 100
+    end
+    set off to 0
+    if args has "offset" and (args at "offset") is not nothing
+      set off to math.max using 0, (text.to_integer using (text.from using (args at "offset")))
+    end
+    set rows to data.query using stmts.list_media, record {mime_filter: mime_prefix, mime_like: mime_like, limit_rows: lim, offset_rows: off}
+    set items to []
+    for each r in rows
+      set items to collections.append using items, (format_media_record using r)
+    end
+    give back record {ok: yes, status: 200, payload: record {media: items}}
+  end
+
+  if tool_name is "list_menus"
+    if not (role_has_capability using sess.role, "admin:access")
+      give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for list_menus"}}
+    end
+    set menus_rows to data.query using stmts.list_menus, record {}
+    set out to []
+    for each m in menus_rows
+      set m_items to data.query using stmts.list_menu_items_by_menu, record {menu_id: m.id}
+      set tree to build_menu_children using m_items, nothing, 1, yes
+      set out to collections.append using out, record {id: m.id, slug: m.slug, name: m.name, location: m.location, items: tree}
+    end
+    give back record {ok: yes, status: 200, payload: record {menus: out}}
+  end
+
+  give back record {ok: no, status: 404, payload: record {error: "Unknown MCP tool: " joined with tool_name}}
 end
 
 # ==============================================================================
@@ -2777,6 +4238,30 @@ route "GET" "/admin/settings" using req
   give back render_admin_dashboard using stmts, gate.session, "settings", "Settings & Users", "Site configuration, optional OAuth2/PKCE social login, and user roles"
 end
 
+route "GET" "/admin/media" using req
+  set gate to require_admin_html using stmts, req, "media:read"
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "media", "Media Library", "Upload, audit accessibility metadata, and manage approved media assets"
+end
+
+route "GET" "/admin/menus" using req
+  set gate to require_admin_html using stmts, req, "menus:manage"
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "menus", "Navigation Menus", "Manage theme navigation slots, nested hierarchy, and dynamic entry links"
+end
+
+route "GET" "/admin/taxonomies" using req
+  set gate to require_admin_html using stmts, req, "taxonomies:manage"
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "taxonomies", "Taxonomies & Terms", "Organize content types with categories, tags, and custom taxonomies"
+end
+
 route "GET" "/admin/{rest}" using req
   set gate to require_admin_html using stmts, req, "admin:access"
   if not gate.ok
@@ -2919,6 +4404,18 @@ route "GET" "/api/auth/session" using req
   end
   set body_json to json.stringify using (record {authenticated: yes, user: (record {id: sess.user_id, email: sess.email, display_name: sess.display_name, role: sess.role, email_verified: sess.email_verified}), csrf_token: sess.csrf_secret, expires_at: sess.expires_at})
   give back server.response using record {status: 200, headers: {"Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store"}, body: body_json}
+end
+
+route "POST" "/api/auth/mcp-token" using req
+  set auth to require_api_auth using stmts, req, "", yes
+  if not auth.ok
+    give back auth.response
+  end
+  set tok_res to create_rotated_session using stmts, req, auth.session.user_id, ""
+  if not tok_res.ok
+    give back server.json using 500, record {error: tok_res.error}
+  end
+  give back server.response using record {status: 201, headers: {"Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store"}, body: (json.stringify using (record {token: tok_res.raw_token, expires_at: tok_res.expires_at, user_id: auth.session.user_id, role: auth.session.role}))}
 end
 
 route "GET" "/api/auth/oauth/{provider}/start" using req
@@ -3493,6 +4990,10 @@ route "POST" "/api/content-types" using req
       if archive_clash is not nothing
         give back server.json using 409, record {error: "archive_slug is already used by another content type"}
       end
+      set tax_clash to data.one using stmts.get_taxonomy_by_archive, record {archive_slug: archive_slug}
+      if tax_clash is not nothing
+        give back server.json using 409, record {error: "archive_slug collides with an existing taxonomy"}
+      end
     end
 
     set existing to data.one using stmts.get_type_by_slug, record {slug: slug}
@@ -3693,6 +5194,13 @@ route "POST" "/api/entries" using req
       end
       call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (filtered_draft at "title"), status: status, body_html: (filtered_draft at "body_html"), custom_fields_json: cf_res.json_text, meta_title: (filtered_draft at "meta_title"), meta_description: (filtered_draft at "meta_description"), author_id: auth.session.user_id, published_at: pub_at, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
       set created to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}, tx
+      if payload has "term_ids" and (payload at "term_ids") is not nothing
+        set tr to sync_entry_terms_tx using stmts, created.id, (payload at "term_ids"), now_rec.iso, tx
+        if not tr.ok
+          call data.rollback using tx
+          give back server.json using 400, record {error: tr.error}
+        end
+      end
       call data.commit using tx
       if status is "published"
         call runHook using stmts, registry, "content:after_publish", {"full_path": full_path, "old_path": "", "content_type_slug": ct.slug, "entry_id": created.id}
@@ -3810,6 +5318,13 @@ route "PUT" "/api/entries/{id}" using req
         call data.execute using stmts.insert_redirect, record {old_path: existing.full_path, entry_id: entry_id, created_at: now_rec.iso}, tx
       end
       call data.execute using stmts.update_entry, record {slug: new_slug, full_path: new_full_path, title: (filtered_draft at "title"), status: new_status, body_html: (filtered_draft at "body_html"), custom_fields_json: new_cf_json, meta_title: (filtered_draft at "meta_title"), meta_description: (filtered_draft at "meta_description"), published_at: new_pub_at, updated_at: now_rec.iso, id: entry_id}, tx
+      if payload has "term_ids" and (payload at "term_ids") is not nothing
+        set tr to sync_entry_terms_tx using stmts, entry_id, (payload at "term_ids"), now_rec.iso, tx
+        if not tr.ok
+          call data.rollback using tx
+          give back server.json using 400, record {error: tr.error}
+        end
+      end
       set updated to data.one using stmts.get_entry_by_id, record {id: entry_id}, tx
       call data.commit using tx
       if new_status is "published" or existing.status is "published"
@@ -4002,6 +5517,1048 @@ route "GET" "/api/query" using req
   give back server.json using 200, qres.data
 end
 
+# ==============================================================================
+# Media Library API (/api/admin/media/*, /api/media/upload) & Public /media/*
+# ==============================================================================
+
+make handle_media_upload using stmts, req, auth
+  try
+    set payload to server.parse_json using req
+    set raw_name to ""
+    if payload has "original_name" and (payload at "original_name") is not nothing
+      set raw_name to text.from using (payload at "original_name")
+    otherwise
+      if payload has "filename" and (payload at "filename") is not nothing
+        set raw_name to text.from using (payload at "filename")
+      end
+    end
+    set name_res to sanitize_media_filename using raw_name
+    if not name_res.ok
+      give back server.json using 400, record {error: "invalid_filename", message: name_res.error}
+    end
+
+    if (not (payload has "data_base64")) or (payload at "data_base64") is nothing
+      give back server.json using 400, record {error: "data_base64 is required"}
+    end
+    set clean_b64 to strip_data_uri_and_ws using (text.from using (payload at "data_base64"))
+    set b64_chars_len to text.length using clean_b64
+    if b64_chars_len is less than 4 or ((b64_chars_len modulo 4) is not 0)
+      give back server.json using 400, record {error: "Invalid base64 payload"}
+    end
+
+    set approx_bytes to (math.floor using (b64_chars_len divided by 4)) times 3
+    set max_bytes to call get_max_upload_bytes
+    if approx_bytes is greater than (max_bytes plus 3)
+      give back server.json using 413, record {error: "payload_too_large", max_bytes: max_bytes}
+    end
+
+    set dec_res to validate_and_decode_b64_prefix using clean_b64, 16384
+    if not dec_res.ok
+      give back server.json using 400, record {error: dec_res.error}
+    end
+    if dec_res.byte_size is greater than max_bytes
+      give back server.json using 413, record {error: "payload_too_large", max_bytes: max_bytes, byte_size: dec_res.byte_size}
+    end
+
+    set sniff_res to sniff_media_magic using dec_res.bytes
+    if not sniff_res.ok
+      give back server.json using 415, record {error: "unsupported_media_type", message: sniff_res.error}
+    end
+
+    set declared_mime to ""
+    if payload has "mime_type" and (payload at "mime_type") is not nothing
+      set declared_mime to text.from using (payload at "mime_type")
+    end
+    if (not (ext_matches_mime using name_res.ext, sniff_res.mime)) or (not (declared_mime_matches using declared_mime, sniff_res.mime))
+      give back server.json using 415, record {error: "mime_mismatch", message: "Declared MIME type or extension does not match sniffed file signature"}
+    end
+
+    set dim_res to parse_raster_dimensions using sniff_res.mime, dec_res.bytes
+    if not dim_res.ok
+      give back server.json using 400, record {error: "corrupt_image", message: dim_res.error}
+    end
+
+    set alt_text to ""
+    if payload has "alt_text" and (payload at "alt_text") is not nothing
+      set alt_text to text.trim using (text.from using (payload at "alt_text"))
+    end
+    set is_dec to 0
+    if payload has "is_decorative" and (is_truthy_val using (payload at "is_decorative"))
+      set is_dec to 1
+    end
+    if (text.starts_with using sniff_res.mime, "image/") and alt_text is "" and is_dec is 0
+      give back server.json using 422, record {error: "alt_text_required", message: "Image uploads require non-empty alt_text or explicit is_decorative: true"}
+    end
+    if is_dec is 1 and alt_text is ""
+      set alt_text to ""
+    end
+
+    set caption to ""
+    if payload has "caption" and (payload at "caption") is not nothing
+      set caption to text.trim using (text.from using (payload at "caption"))
+    end
+
+    set upload_dir to call get_upload_dir
+    if upload_dir is "" or (not (files.exists using upload_dir))
+      give back server.json using 503, record {error: "Upload directory is not available or unconfigured"}
+    end
+
+    set rand_hex to crypto.random_hex using 16
+    set safe_filename to rand_hex joined with "." joined with sniff_res.ext
+    set storage_path to safe_filename joined with ".b64"
+    set dest_path to upload_dir joined with "/" joined with storage_path
+    set sha_hex to crypto.sha256_hex using clean_b64
+
+    try
+      call files.write_text using dest_path, clean_b64
+    catch w_err
+      give back server.json using 503, record {error: "Unable to write upload inside isolated upload directory"}
+    end
+
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.insert_media, record {filename: safe_filename, original_name: name_res.name, storage_path: storage_path, mime_type: sniff_res.mime, byte_size: dec_res.byte_size, width: dim_res.width, height: dim_res.height, alt_text: alt_text, is_decorative: is_dec, caption: caption, sha256_hex: sha_hex, uploader_id: auth.session.user_id, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      set created to data.one using stmts.get_media_by_filename, record {filename: safe_filename}, tx
+      call data.commit using tx
+      give back server.json using 201, record {media: (format_media_record using created)}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/admin/media/upload" using req
+  set auth to require_api_auth using stmts, req, "media:upload", yes
+  if not auth.ok
+    give back auth.response
+  end
+  give back handle_media_upload using stmts, req, auth
+end
+
+route "POST" "/api/media/upload" using req
+  set auth to require_api_auth using stmts, req, "media:upload", yes
+  if not auth.ok
+    give back auth.response
+  end
+  give back handle_media_upload using stmts, req, auth
+end
+
+route "GET" "/api/admin/media" using req
+  set auth to require_api_auth using stmts, req, "media:read", no
+  if not auth.ok
+    give back auth.response
+  end
+  set mime_prefix to text.lower using (get_query_param using req, "mime_prefix")
+  set mime_like to "%"
+  if mime_prefix is not ""
+    set mime_like to mime_prefix joined with "%"
+  end
+  set lim to 50
+  set off to 0
+  set lim_raw to get_query_param using req, "limit"
+  if lim_raw is not ""
+    try
+      set lim to math.clamp using (text.to_integer using lim_raw), 1, 100
+    catch err
+    end
+  end
+  set off_raw to get_query_param using req, "offset"
+  if off_raw is not ""
+    try
+      set off to math.max using 0, (text.to_integer using off_raw)
+    catch err
+    end
+  end
+  set cnt_row to data.one using stmts.count_media, record {mime_filter: mime_prefix, mime_like: mime_like}
+  set rows to data.query using stmts.list_media, record {mime_filter: mime_prefix, mime_like: mime_like, limit_rows: lim, offset_rows: off}
+  set out to []
+  for each r in rows
+    set out to collections.append using out, (format_media_record using r)
+  end
+  set total to 0
+  if cnt_row is not nothing
+    set total to cnt_row.total
+  end
+  give back server.json using 200, record {media: out, total: total}
+end
+
+route "PATCH" "/api/admin/media/{id}" using req
+  set auth to require_api_auth using stmts, req, "media:update_own", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set media_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_media_by_id, record {id: media_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Media asset not found"}
+    end
+    if not (role_has_capability using auth.session.role, "media:update_any")
+      if existing.uploader_id is nothing or existing.uploader_id is not auth.session.user_id
+        give back server.json using 403, record {error: "Forbidden: can only update your own media assets"}
+      end
+    end
+    set payload to server.parse_json using req
+    set next_alt to existing.alt_text
+    if payload has "alt_text" and (payload at "alt_text") is not nothing
+      set next_alt to text.trim using (text.from using (payload at "alt_text"))
+    end
+    set next_dec to existing.is_decorative
+    if payload has "is_decorative" and (payload at "is_decorative") is not nothing
+      if is_truthy_val using (payload at "is_decorative")
+        set next_dec to 1
+      otherwise
+        set next_dec to 0
+      end
+    end
+    if (text.starts_with using existing.mime_type, "image/") and next_alt is "" and next_dec is 0
+      give back server.json using 422, record {error: "alt_text_required", message: "Image assets require non-empty alt_text or is_decorative: true"}
+    end
+    set next_cap to existing.caption
+    if payload has "caption" and (payload at "caption") is not nothing
+      set next_cap to text.trim using (text.from using (payload at "caption"))
+    end
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.update_media, record {alt_text: next_alt, is_decorative: next_dec, caption: next_cap, updated_at: now_rec.iso, id: media_id}
+    set updated to data.one using stmts.get_media_by_id, record {id: media_id}
+    give back server.json using 200, record {media: (format_media_record using updated)}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "DELETE" "/api/admin/media/{id}" using req
+  set auth to require_api_auth using stmts, req, "media:delete_own", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set media_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_media_by_id, record {id: media_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Media asset not found"}
+    end
+    if not (role_has_capability using auth.session.role, "media:delete_any")
+      if existing.uploader_id is nothing or existing.uploader_id is not auth.session.user_id
+        give back server.json using 403, record {error: "Forbidden: can only delete your own media assets"}
+      end
+    end
+    set upload_dir to call get_upload_dir
+    if upload_dir is not "" and (not (text.contains using existing.storage_path, ".."))
+      try
+        set fp to upload_dir joined with "/" joined with existing.storage_path
+        if files.exists using fp
+          call files.write_text using fp, ""
+        end
+      catch w_err
+      end
+    end
+    call data.execute using stmts.delete_media, record {id: media_id}
+    give back server.json using 200, record {deleted: yes, id: media_id}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/media/{id}/{filename}" using req
+  try
+    set media_id to text.to_integer using req.params.id
+    set row to data.one using stmts.get_media_by_id, record {id: media_id}
+    if row is nothing or row.filename is not req.params.filename
+      give back server.json using 404, record {error: "Media asset not found"}
+    end
+    if (text.contains using row.storage_path, "..") or (text.contains using row.storage_path, "/") or (text.contains using row.storage_path, "\\")
+      give back server.json using 404, record {error: "Invalid media path"}
+    end
+    set etag_val to "\"" joined with row.sha256_hex joined with "\""
+    set inm to text.trim using (get_req_header using req, "if-none-match")
+    if inm is etag_val or inm is row.sha256_hex
+      give back server.response using record {status: 304, headers: {"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'", "ETag": etag_val, "Cache-Control": "public, max-age=31536000, immutable"}, body: ""}
+    end
+    set upload_dir to call get_upload_dir
+    set file_path to upload_dir joined with "/" joined with row.storage_path
+    if not (files.exists using file_path)
+      give back server.json using 404, record {error: "Media payload missing from storage"}
+    end
+    set raw_b64 to files.read_text using file_path
+    give back server.response using record {status: 200, headers: {"Content-Type": row.mime_type, "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'", "ETag": etag_val, "Cache-Control": "public, max-age=31536000, immutable", "X-GrabLab-Payload-Encoding": "base64"}, body: raw_b64}
+  catch err
+    give back server.json using 404, record {error: "Media asset not found"}
+  end
+end
+
+# ==============================================================================
+# Navigation Menus API (/api/menus/{location}, /api/admin/menus/*)
+# ==============================================================================
+
+route "GET" "/api/menus/{location}" using req
+  set loc to text.lower using (text.trim using req.params.location)
+  if loc is "" or (not (is_valid_menu_location using loc))
+    give back server.json using 404, record {error: "Unknown menu location"}
+  end
+  set tree to get_menu_tree using stmts, loc, no
+  if tree is nothing
+    give back server.json using 404, record {error: "No menu assigned to location " joined with loc}
+  end
+  give back server.json using 200, record {menu: tree}
+end
+
+route "GET" "/api/admin/menus" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", no
+  if not auth.ok
+    give back auth.response
+  end
+  set mrows to data.query using stmts.list_menus, record {}
+  set out to []
+  for each m in mrows
+    set items_rows to data.query using stmts.list_menu_items_by_menu, record {menu_id: m.id}
+    set tree to build_menu_children using items_rows, nothing, 1, yes
+    set out to collections.append using out, record {id: m.id, slug: m.slug, name: m.name, location: m.location, items: tree, flat_items: items_rows, created_at: m.created_at, updated_at: m.updated_at}
+  end
+  give back server.json using 200, record {menus: out}
+end
+
+route "POST" "/api/admin/menus" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set payload to server.parse_json using req
+    if (not (payload has "slug")) or (not (payload has "name"))
+      give back server.json using 400, record {error: "Missing required fields: slug, name"}
+    end
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    if not (is_valid_slug using slug)
+      give back server.json using 400, record {error: "Invalid menu slug"}
+    end
+    set name to text.trim using (text.from using (payload at "name"))
+    if name is ""
+      give back server.json using 400, record {error: "Menu name cannot be empty"}
+    end
+    set loc_val to nothing
+    set loc_str to ""
+    if payload has "location" and (payload at "location") is not nothing
+      set loc_str to text.lower using (text.trim using (text.from using (payload at "location")))
+      if not (is_valid_menu_location using loc_str)
+        give back server.json using 400, record {error: "Invalid location (allowed: primary, footer, mobile, or null)"}
+      end
+      if loc_str is not ""
+        set loc_val to loc_str
+      end
+    end
+    set dup to data.one using stmts.get_menu_by_slug, record {slug: slug}
+    if dup is not nothing
+      give back server.json using 409, record {error: "Menu slug already exists"}
+    end
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      if loc_val is not nothing
+        call data.execute using stmts.clear_menu_location, record {updated_at: now_rec.iso, location: loc_val}, tx
+      end
+      call data.execute using stmts.insert_menu, record {slug: slug, name: name, location: loc_val, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      set created to data.one using stmts.get_menu_by_slug, record {slug: slug}, tx
+      call data.commit using tx
+      call invalidate_menu_caches using stmts, loc_str
+      give back server.json using 201, record {menu: created}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "PUT" "/api/admin/menus/{id}" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set menu_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_menu_by_id, record {id: menu_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Menu not found"}
+    end
+    set payload to server.parse_json using req
+    set next_name to existing.name
+    if payload has "name" and (payload at "name") is not nothing
+      set next_name to text.trim using (text.from using (payload at "name"))
+      if next_name is ""
+        give back server.json using 400, record {error: "Menu name cannot be empty"}
+      end
+    end
+    set next_loc to existing.location
+    if payload has "location"
+      if (payload at "location") is nothing or (text.trim using (text.from using (payload at "location"))) is ""
+        set next_loc to nothing
+      otherwise
+        set cand to text.lower using (text.trim using (text.from using (payload at "location")))
+        if not (is_valid_menu_location using cand)
+          give back server.json using 400, record {error: "Invalid menu location"}
+        end
+        set next_loc to cand
+      end
+    end
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      if next_loc is not nothing
+        call data.execute using stmts.clear_menu_location, record {updated_at: now_rec.iso, location: next_loc}, tx
+      end
+      call data.execute using stmts.update_menu, record {name: next_name, location: next_loc, updated_at: now_rec.iso, id: menu_id}, tx
+      set updated to data.one using stmts.get_menu_by_id, record {id: menu_id}, tx
+      call data.commit using tx
+      call invalidate_menu_caches using stmts, ""
+      give back server.json using 200, record {menu: updated}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "DELETE" "/api/admin/menus/{id}" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set menu_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_menu_by_id, record {id: menu_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Menu not found"}
+    end
+    call data.execute using stmts.delete_menu, record {id: menu_id}
+    call invalidate_menu_caches using stmts, ""
+    give back server.json using 200, record {deleted: yes, id: menu_id}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/admin/menus/{id}/items" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set menu_id to text.to_integer using req.params.id
+    set menu_row to data.one using stmts.get_menu_by_id, record {id: menu_id}
+    if menu_row is nothing
+      give back server.json using 404, record {error: "Menu not found"}
+    end
+    set payload to server.parse_json using req
+    if (not (payload has "label")) or (not (payload has "link_type"))
+      give back server.json using 400, record {error: "Missing required fields: label, link_type"}
+    end
+    set label to text.trim using (text.from using (payload at "label"))
+    if label is ""
+      give back server.json using 400, record {error: "Menu item label is required"}
+    end
+    set ltype to text.lower using (text.trim using (text.from using (payload at "link_type")))
+    if ltype is not "entry" and ltype is not "external"
+      give back server.json using 400, record {error: "link_type must be entry or external"}
+    end
+    set entry_id_val to nothing
+    set ext_url_val to nothing
+    if ltype is "entry"
+      if (not (payload has "entry_id")) or (payload at "entry_id") is nothing
+        give back server.json using 400, record {error: "entry_id is required when link_type is entry"}
+      end
+      set eid to text.to_integer using (text.from using (payload at "entry_id"))
+      set erow to data.one using stmts.get_entry_by_id, record {id: eid}
+      if erow is nothing
+        give back server.json using 400, record {error: "Referenced entry_id does not exist"}
+      end
+      set entry_id_val to eid
+    otherwise
+      if (not (payload has "external_url")) or (payload at "external_url") is nothing
+        give back server.json using 400, record {error: "external_url is required when link_type is external"}
+      end
+      set eu to text.trim using (text.from using (payload at "external_url"))
+      if not (is_valid_external_menu_url using eu)
+        give back server.json using 400, record {error: "External URL must start with https:// or http://"}
+      end
+      set ext_url_val to eu
+    end
+
+    set existing_items to data.query using stmts.list_menu_items_by_menu, record {menu_id: menu_id}
+    set parent_id_val to nothing
+    if payload has "parent_id" and (payload at "parent_id") is not nothing and (text.trim using (text.from using (payload at "parent_id"))) is not ""
+      set pid to text.to_integer using (text.from using (payload at "parent_id"))
+      set parent_map to {}
+      for each it in existing_items
+        set parent_map to collections.put using parent_map, (text.from using it.id), it.parent_id
+      end
+      set cur_key to text.from using pid
+      if not (has_map_key using parent_map, cur_key)
+        give back server.json using 400, record {error: "parent_id must belong to this menu"}
+      end
+      set depth to 2
+      set seen_p to collections.put using {}, cur_key, yes
+      while (parent_map at cur_key) is not nothing
+        set next_k to text.from using (parent_map at cur_key)
+        if has_map_key using seen_p, next_k
+          give back server.json using 400, record {error: "Cycle detected in menu hierarchy"}
+        end
+        set seen_p to collections.put using seen_p, next_k, yes
+        set depth to depth plus 1
+        set cur_key to next_k
+      end
+      if depth is greater than 4
+        give back server.json using 400, record {error: "Menu nesting depth cannot exceed 4 levels"}
+      end
+      set parent_id_val to pid
+    end
+
+    set target_blank to 0
+    if payload has "target_blank" and (is_truthy_val using (payload at "target_blank"))
+      set target_blank to 1
+    end
+    set css_cls to ""
+    if payload has "css_class" and (payload at "css_class") is not nothing
+      set css_cls to text.trim using (text.from using (payload at "css_class"))
+    end
+    set sort_ord to collections.length using existing_items
+    if payload has "sort_order" and (payload at "sort_order") is not nothing
+      set sort_ord to text.to_integer using (text.from using (payload at "sort_order"))
+    end
+
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.insert_menu_item, record {menu_id: menu_id, parent_id: parent_id_val, label: label, link_type: ltype, entry_id: entry_id_val, external_url: ext_url_val, target_blank: target_blank, css_class: css_cls, sort_order: sort_ord, created_at: now_rec.iso, updated_at: now_rec.iso}
+    call invalidate_menu_caches using stmts, ""
+    set updated_items to data.query using stmts.list_menu_items_by_menu, record {menu_id: menu_id}
+    give back server.json using 201, record {items: (build_menu_children using updated_items, nothing, 1, yes), flat_items: updated_items}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "PUT" "/api/admin/menus/{id}/items" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set menu_id to text.to_integer using req.params.id
+    set menu_row to data.one using stmts.get_menu_by_id, record {id: menu_id}
+    if menu_row is nothing
+      give back server.json using 404, record {error: "Menu not found"}
+    end
+    set payload to server.parse_json using req
+    if not (payload has "items")
+      give back server.json using 400, record {error: "items array is required"}
+    end
+    set items_in to payload at "items"
+    set norm_list to []
+    set idx to 0
+    for each it in items_in
+      set lbl to ""
+      if it has "label" and (it at "label") is not nothing
+        set lbl to text.trim using (text.from using (it at "label"))
+      end
+      if lbl is ""
+        give back server.json using 400, record {error: "Every menu item requires a non-empty label"}
+      end
+      set lt to ""
+      if it has "link_type" and (it at "link_type") is not nothing
+        set lt to text.lower using (text.trim using (text.from using (it at "link_type")))
+      end
+      if lt is not "entry" and lt is not "external"
+        give back server.json using 400, record {error: "Menu item link_type must be entry or external"}
+      end
+      set eid_v to nothing
+      set eu_v to nothing
+      if lt is "entry"
+        if (not (it has "entry_id")) or (it at "entry_id") is nothing
+          give back server.json using 400, record {error: "entry_id required for entry link"}
+        end
+        set eid_v to text.to_integer using (text.from using (it at "entry_id"))
+        if (data.one using stmts.get_entry_by_id, record {id: eid_v}) is nothing
+          give back server.json using 400, record {error: "Referenced entry_id not found"}
+        end
+      otherwise
+        if (not (it has "external_url")) or (it at "external_url") is nothing
+          give back server.json using 400, record {error: "external_url required for external link"}
+        end
+        set eu_raw to text.trim using (text.from using (it at "external_url"))
+        if not (is_valid_external_menu_url using eu_raw)
+          give back server.json using 400, record {error: "Invalid external_url (must use https:// or http://)"}
+        end
+        set eu_v to eu_raw
+      end
+      set c_key to "idx:" joined with (text.from using idx)
+      if it has "client_id" and (it at "client_id") is not nothing and (text.trim using (text.from using (it at "client_id"))) is not ""
+        set c_key to text.trim using (text.from using (it at "client_id"))
+      otherwise
+        if it has "id" and (it at "id") is not nothing
+          set c_key to "id:" joined with (text.from using (it at "id"))
+        end
+      end
+      set p_key to ""
+      if it has "parent_key" and (it at "parent_key") is not nothing
+        set p_key to text.trim using (text.from using (it at "parent_key"))
+      otherwise
+        if it has "parent_id" and (it at "parent_id") is not nothing and (text.trim using (text.from using (it at "parent_id"))) is not ""
+          set p_key to "id:" joined with (text.trim using (text.from using (it at "parent_id")))
+        end
+      end
+      set tb_v to 0
+      if it has "target_blank" and (is_truthy_val using (it at "target_blank"))
+        set tb_v to 1
+      end
+      set cc_v to ""
+      if it has "css_class" and (it at "css_class") is not nothing
+        set cc_v to text.trim using (text.from using (it at "css_class"))
+      end
+      set norm_list to collections.append using norm_list, record {key: c_key, parent_key: p_key, label: lbl, link_type: lt, entry_id: eid_v, external_url: eu_v, target_blank: tb_v, css_class: cc_v, sort_order: idx}
+      set idx to idx plus 1
+    end
+
+    set by_key to {}
+    for each ni in norm_list
+      if has_map_key using by_key, ni.key
+        give back server.json using 400, record {error: "Duplicate menu item key"}
+      end
+      set by_key to collections.put using by_key, ni.key, ni
+    end
+    for each ni in norm_list
+      set depth to 1
+      set cur to ni
+      set visited to collections.put using {}, ni.key, yes
+      while cur.parent_key is not ""
+        if (cur.parent_key is ni.key) or (has_map_key using visited, cur.parent_key)
+          give back server.json using 400, record {error: "Cycle detected in menu hierarchy"}
+        end
+        if not (has_map_key using by_key, cur.parent_key)
+          give back server.json using 400, record {error: "Parent menu item missing from menu"}
+        end
+        set visited to collections.put using visited, cur.parent_key, yes
+        set depth to depth plus 1
+        if depth is greater than 4
+          give back server.json using 400, record {error: "Menu nesting depth exceeds maximum of 4 levels"}
+        end
+        set next_pk to cur.parent_key
+        set cur to by_key at next_pk
+      end
+    end
+
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.delete_menu_items_by_menu, record {menu_id: menu_id}, tx
+      set remaining to norm_list
+      set id_by_key to {}
+      set pass_num to 0
+      while (collections.length using remaining) is greater than 0 and pass_num is less than 6
+        set next_rem to []
+        for each ni in remaining
+          set resolved_pid to nothing
+          set ready to no
+          if ni.parent_key is ""
+            set ready to yes
+          otherwise
+            set ni_pk to ni.parent_key
+            if has_map_key using id_by_key, ni_pk
+              set resolved_pid to id_by_key at ni_pk
+              set ready to yes
+            end
+          end
+          if ready
+            call data.execute using stmts.insert_menu_item, record {menu_id: menu_id, parent_id: resolved_pid, label: ni.label, link_type: ni.link_type, entry_id: ni.entry_id, external_url: ni.external_url, target_blank: ni.target_blank, css_class: ni.css_class, sort_order: ni.sort_order, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+            set latest_rows to data.query using stmts.list_menu_items_by_menu, record {menu_id: menu_id}, tx
+            set max_id to 0
+            for each lr in latest_rows
+              if lr.id is greater than max_id
+                set max_id to lr.id
+              end
+            end
+            set id_by_key to collections.put using id_by_key, ni.key, max_id
+          otherwise
+            set next_rem to collections.append using next_rem, ni
+          end
+        end
+        set remaining to next_rem
+        set pass_num to pass_num plus 1
+      end
+      call data.commit using tx
+      call invalidate_menu_caches using stmts, ""
+      set final_rows to data.query using stmts.list_menu_items_by_menu, record {menu_id: menu_id}
+      give back server.json using 200, record {items: (build_menu_children using final_rows, nothing, 1, yes), flat_items: final_rows}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "DELETE" "/api/admin/menus/{id}/items/{item_id}" using req
+  set auth to require_api_auth using stmts, req, "menus:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set menu_id to text.to_integer using req.params.id
+    set item_id to text.to_integer using req.params.item_id
+    set existing to data.one using stmts.get_menu_item_by_id, record {id: item_id}
+    if existing is nothing or existing.menu_id is not menu_id
+      give back server.json using 404, record {error: "Menu item not found"}
+    end
+    call data.execute using stmts.delete_menu_item_by_id, record {id: item_id}
+    call invalidate_menu_caches using stmts, ""
+    give back server.json using 200, record {deleted: yes, id: item_id}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+# ==============================================================================
+# Taxonomies, Terms & Entry Term Assignment API
+# ==============================================================================
+
+route "GET" "/api/taxonomies"
+  set trows to data.query using stmts.list_taxonomies, record {}
+  set out to []
+  for each txrow in trows
+    set terms to data.query using stmts.list_terms_by_tax, record {taxonomy_id: txrow.id}
+    set out to collections.append using out, record {id: txrow.id, slug: txrow.slug, label_singular: txrow.label_singular, label_plural: txrow.label_plural, is_hierarchical: (txrow.is_hierarchical is 1), archive_slug: txrow.archive_slug, content_type_slugs: (parse_content_type_slugs_json using txrow.content_type_slugs_json), is_system: (txrow.is_system is 1), terms: terms}
+  end
+  give back server.json using 200, record {taxonomies: out}
+end
+
+route "GET" "/api/admin/taxonomies" using req
+  set auth to require_api_auth using stmts, req, "admin:access", no
+  if not auth.ok
+    give back auth.response
+  end
+  set trows to data.query using stmts.list_taxonomies, record {}
+  set out to []
+  for each txrow in trows
+    set terms to data.query using stmts.list_terms_by_tax, record {taxonomy_id: txrow.id}
+    set out to collections.append using out, record {id: txrow.id, slug: txrow.slug, label_singular: txrow.label_singular, label_plural: txrow.label_plural, is_hierarchical: (txrow.is_hierarchical is 1), archive_slug: txrow.archive_slug, content_type_slugs: (parse_content_type_slugs_json using txrow.content_type_slugs_json), is_system: (txrow.is_system is 1), terms: terms}
+  end
+  give back server.json using 200, record {taxonomies: out}
+end
+
+route "POST" "/api/admin/taxonomies" using req
+  set auth to require_api_auth using stmts, req, "taxonomies:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set payload to server.parse_json using req
+    if (not (payload has "slug")) or (not (payload has "label_singular")) or (not (payload has "label_plural")) or (not (payload has "archive_slug"))
+      give back server.json using 400, record {error: "Missing required fields: slug, label_singular, label_plural, archive_slug"}
+    end
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    if not (is_valid_slug using slug)
+      give back server.json using 400, record {error: "Invalid taxonomy slug"}
+    end
+    set arch_slug to normalize_slug using (text.from using (payload at "archive_slug"))
+    if not (is_valid_slug using arch_slug)
+      give back server.json using 400, record {error: "Invalid archive_slug"}
+    end
+    if is_reserved_path using ("/" joined with arch_slug)
+      give back server.json using 409, record {error: "archive_slug collides with a reserved system prefix"}
+    end
+    if (data.one using stmts.get_type_by_archive, record {archive_slug: arch_slug}) is not nothing
+      give back server.json using 409, record {error: "archive_slug collides with an existing content type archive_slug"}
+    end
+    if (data.one using stmts.get_taxonomy_by_archive, record {archive_slug: arch_slug}) is not nothing
+      give back server.json using 409, record {error: "archive_slug is already used by another taxonomy"}
+    end
+    if (data.one using stmts.get_taxonomy_by_slug, record {slug: slug}) is not nothing
+      give back server.json using 409, record {error: "Taxonomy slug already exists"}
+    end
+    set is_hier to 0
+    if payload has "is_hierarchical" and (is_truthy_val using (payload at "is_hierarchical"))
+      set is_hier to 1
+    end
+    set ct_list to ["post"]
+    if payload has "content_type_slugs" and (payload at "content_type_slugs") is not nothing
+      set parsed_cts to []
+      for each cts in (payload at "content_type_slugs")
+        set ctn to normalize_slug using (text.from using cts)
+        if ctn is not "" and (is_valid_slug using ctn)
+          set parsed_cts to collections.append using parsed_cts, ctn
+        end
+      end
+      set ct_list to parsed_cts
+    end
+    set ct_json to json.stringify using ct_list
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.insert_taxonomy, record {slug: slug, label_singular: (text.trim using (text.from using (payload at "label_singular"))), label_plural: (text.trim using (text.from using (payload at "label_plural"))), is_hierarchical: is_hier, archive_slug: arch_slug, content_type_slugs_json: ct_json, is_system: 0, created_at: now_rec.iso}
+    set created to data.one using stmts.get_taxonomy_by_slug, record {slug: slug}
+    call bump_query_cache_epochs using stmts, ""
+    give back server.json using 201, record {taxonomy: created}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "DELETE" "/api/admin/taxonomies/{id}" using req
+  set auth to require_api_auth using stmts, req, "taxonomies:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set tid to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_taxonomy_by_id, record {id: tid}
+    if existing is nothing
+      give back server.json using 404, record {error: "Taxonomy not found"}
+    end
+    if existing.is_system is 1
+      give back server.json using 400, record {error: "Built-in system taxonomies cannot be deleted"}
+    end
+    call data.execute using stmts.delete_taxonomy, record {id: tid}
+    call invalidate_route_caches using stmts, "", "", ""
+    give back server.json using 200, record {deleted: yes, id: tid}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/api/admin/taxonomies/{slug}/terms" using req
+  set auth to require_api_auth using stmts, req, "admin:access", no
+  if not auth.ok
+    give back auth.response
+  end
+  set tslug to normalize_slug using req.params.slug
+  set txrow to data.one using stmts.get_taxonomy_by_slug, record {slug: tslug}
+  if txrow is nothing
+    give back server.json using 404, record {error: "Taxonomy not found"}
+  end
+  set rows to data.query using stmts.list_terms_by_tax, record {taxonomy_id: txrow.id}
+  give back server.json using 200, record {taxonomy: txrow, terms: rows}
+end
+
+route "POST" "/api/admin/taxonomies/{slug}/terms" using req
+  set auth to require_api_auth using stmts, req, "taxonomies:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set tslug to normalize_slug using req.params.slug
+    set txrow to data.one using stmts.get_taxonomy_by_slug, record {slug: tslug}
+    if txrow is nothing
+      give back server.json using 404, record {error: "Taxonomy not found"}
+    end
+    set payload to server.parse_json using req
+    if (not (payload has "slug")) or (not (payload has "name"))
+      give back server.json using 400, record {error: "Missing required fields: slug, name"}
+    end
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    if not (is_valid_entry_slug using slug)
+      give back server.json using 400, record {error: "Invalid term slug"}
+    end
+    set name to text.trim using (text.from using (payload at "name"))
+    if name is ""
+      give back server.json using 400, record {error: "Term name is required"}
+    end
+    set dup to data.one using stmts.get_term_by_tax_slug, record {taxonomy_id: txrow.id, slug: slug}
+    if dup is not nothing
+      give back server.json using 409, record {error: "Term slug already exists in this taxonomy"}
+    end
+    set parent_id_val to nothing
+    if payload has "parent_id" and (payload at "parent_id") is not nothing and (text.trim using (text.from using (payload at "parent_id"))) is not ""
+      set parent_id_val to text.to_integer using (text.from using (payload at "parent_id"))
+    end
+    set pcheck to check_term_parent_valid using stmts, txrow, nothing, parent_id_val
+    if not pcheck.ok
+      give back server.json using 400, record {error: pcheck.error}
+    end
+    set desc to ""
+    if payload has "description" and (payload at "description") is not nothing
+      set desc to text.trim using (text.from using (payload at "description"))
+    end
+    set sort_ord to 0
+    if payload has "sort_order" and (payload at "sort_order") is not nothing
+      set sort_ord to text.to_integer using (text.from using (payload at "sort_order"))
+    end
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.insert_term, record {taxonomy_id: txrow.id, parent_id: parent_id_val, slug: slug, name: name, description: desc, sort_order: sort_ord, created_at: now_rec.iso, updated_at: now_rec.iso}
+    set created to data.one using stmts.get_term_by_tax_slug, record {taxonomy_id: txrow.id, slug: slug}
+    call bump_query_cache_epochs using stmts, ""
+    give back server.json using 201, record {term: created}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "DELETE" "/api/admin/terms/{id}" using req
+  set auth to require_api_auth using stmts, req, "taxonomies:manage", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set tid to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_term_by_id, record {id: tid}
+    if existing is nothing
+      give back server.json using 404, record {error: "Term not found"}
+    end
+    call data.execute using stmts.delete_term, record {id: tid}
+    call invalidate_route_caches using stmts, "", "", ""
+    give back server.json using 200, record {deleted: yes, id: tid}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/api/admin/entries/{id}/terms" using req
+  set auth to require_api_auth using stmts, req, "entries:read", no
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set entry_id to text.to_integer using req.params.id
+    set entry to data.one using stmts.get_entry_by_id, record {id: entry_id}
+    if entry is nothing
+      give back server.json using 404, record {error: "Entry not found"}
+    end
+    set rows to data.query using stmts.list_entry_terms, record {entry_id: entry_id}
+    give back server.json using 200, record {entry_id: entry_id, terms: rows}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "PUT" "/api/admin/entries/{id}/terms" using req
+  set auth to require_api_auth using stmts, req, "entries:update:own", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set entry_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_entry_by_id, record {id: entry_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Entry not found"}
+    end
+    if not (role_has_capability using auth.session.role, "entries:update:any")
+      if existing.author_id is nothing or existing.author_id is not auth.session.user_id
+        give back server.json using 403, record {error: "Forbidden: can only assign terms on your own entries"}
+      end
+    end
+    set payload to server.parse_json using req
+    if (not (payload has "term_ids")) or (payload at "term_ids") is nothing
+      give back server.json using 400, record {error: "term_ids array is required"}
+    end
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      set tr to sync_entry_terms_tx using stmts, entry_id, (payload at "term_ids"), now_rec.iso, tx
+      if not tr.ok
+        call data.rollback using tx
+        give back server.json using 400, record {error: tr.error}
+      end
+      set updated_terms to data.query using stmts.list_entry_terms, record {entry_id: entry_id}, tx
+      call data.commit using tx
+      call invalidate_route_caches using stmts, existing.full_path, "", existing.content_type_slug
+      give back server.json using 200, record {entry_id: entry_id, terms: updated_terms}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+# ==============================================================================
+# Capability-Gated grab mcp CMS Tools (/api/mcp, /api/mcp/tools/*)
+# ==============================================================================
+
+route "GET" "/api/mcp/tools" using req
+  set bearer to extract_bearer_token using req
+  set sess to nothing
+  if bearer is not ""
+    set sess to resolve_session_token using stmts, bearer
+  otherwise
+    set sess to resolve_session using stmts, req
+  end
+  if sess is nothing
+    give back server.json using 401, record {error: "MCP authentication required"}
+  end
+  give back server.json using 200, record {tools: (call mcp_tool_schemas), user_role: sess.role}
+end
+
+route "POST" "/api/mcp/tools/{name}" using req
+  set principal to resolve_mcp_principal using stmts, req
+  if not principal.ok
+    give back server.json using principal.status, record {error: principal.error}
+  end
+  try
+    set body_map to server.parse_json using req
+    set args to body_map
+    if body_map has "arguments" and (body_map at "arguments") is not nothing
+      set args to body_map at "arguments"
+    end
+    set res to execute_mcp_tool using stmts, principal.session, req.params.name, args
+    give back server.json using res.status, res.payload
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/mcp" using req
+  set principal to resolve_mcp_principal using stmts, req
+  if not principal.ok
+    give back server.json using principal.status, record {error: principal.error}
+  end
+  try
+    set rpc to server.parse_json using req
+    set rpc_id to nothing
+    if rpc has "id"
+      set rpc_id to rpc at "id"
+    end
+    set method to ""
+    if rpc has "method" and (rpc at "method") is not nothing
+      set method to text.from using (rpc at "method")
+    end
+    if method is "initialize"
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "0.4.0"}), capabilities: (record {tools: {}})})}
+    end
+    if method is "ping"
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: {}}
+    end
+    if method is "tools/list"
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {tools: (call mcp_tool_schemas)})}
+    end
+    if method is "tools/call"
+      set params to {}
+      if rpc has "params" and (rpc at "params") is not nothing
+        set params to rpc at "params"
+      end
+      set tname to ""
+      if params has "name" and (params at "name") is not nothing
+        set tname to text.from using (params at "name")
+      end
+      set targs to {}
+      if params has "arguments" and (params at "arguments") is not nothing
+        set targs to params at "arguments"
+      end
+      set res to execute_mcp_tool using stmts, principal.session, tname, targs
+      if not res.ok
+        give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {isError: yes, status: res.status, content: [record {type: "text", text: (json.stringify using res.payload)}], structuredContent: res.payload})}
+      end
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {isError: no, status: res.status, content: [record {type: "text", text: (json.stringify using res.payload)}], structuredContent: res.payload})}
+    end
+    give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, error: (record {code: -32601, message: ("Method not found: " joined with method)})}
+  catch err
+    give back server.json using 400, record {jsonrpc: "2.0", id: nothing, error: (record {code: -32700, message: err.message})}
+  end
+end
+
 route "GET" "/api/{rest}" using req
   give back server.json using 404, record {error: "Unknown API endpoint", path: req.path}
 end
@@ -4009,6 +6566,33 @@ end
 # ==============================================================================
 # Pretty Permalink & Search Public Routes
 # ==============================================================================
+
+make render_taxonomy_archive using stmts, tax_row, slug_norm, full_path, req
+  set term_row to data.one using stmts.get_term_by_tax_slug, record {taxonomy_id: tax_row.id, slug: slug_norm}
+  if term_row is nothing
+    give back render_theme_page using stmts, "404", {"requested_path": full_path, "current_path": full_path}, 404, []
+  end
+  set theme to get_active_theme_context using stmts
+  set registry to build_active_hook_registry using theme
+  set q_map to {"taxonomy": tax_row.slug, "term_slug": slug_norm, "include_children": "true", "per_page": "10", "sort_by": "published_at", "sort_dir": "desc"}
+  if req.query has "page"
+    set q_map to collections.put using q_map, "page", (req.query at "page")
+  end
+  set qres to query_entries using stmts, theme, registry, q_map, yes
+  set items to []
+  set cnt to "0"
+  if qres.ok
+    set items to qres.data.items
+    set cnt to text.from using qres.data.pagination.total_items
+  end
+  set summary to build_entries_summary using items
+  set desc_txt to term_row.description
+  if desc_txt is ""
+    set desc_txt to tax_row.label_singular joined with ": " joined with term_row.name
+  end
+  set arch_prefix to tax_row.archive_slug joined with "/" joined with slug_norm
+  give back render_theme_page using stmts, "archive", {"archive_label": term_row.name, "archive_slug": arch_prefix, "meta_description": desc_txt, "taxonomy_slug": tax_row.slug, "term_slug": slug_norm, "entry_count": cnt, "published_count": cnt, "entries_summary": summary, "current_path": full_path}, 200, items
+end
 
 route "GET" "/search" using req
   set q_text to ""
@@ -4029,7 +6613,7 @@ route "GET" "/search" using req
   end
   set summary to build_entries_summary using matched
   set cnt to text.from using (collections.length using matched)
-  give back render_theme_page using stmts, "search", {"page_title": "Search", "query": q_text, "results_summary": summary, "published_count": cnt}, 200, matched
+  give back render_theme_page using stmts, "search", {"page_title": "Search", "query": q_text, "results_summary": summary, "published_count": cnt, "current_path": "/search"}, 200, matched
 end
 
 route "GET" "/" using req
@@ -4060,14 +6644,34 @@ route "GET" "/" using req
     set cnt to text.from using qres.data.pagination.total_items
   end
   set summary to build_entries_summary using items
-  give back render_theme_page using stmts, "home", {"page_title": "Home", "meta_description": (settings at "site_tagline"), "published_count": cnt, "entries_summary": summary}, 200, items
+  give back render_theme_page using stmts, "home", {"page_title": "Home", "meta_description": (settings at "site_tagline"), "published_count": cnt, "entries_summary": summary, "current_path": "/"}, 200, items
+end
+
+route "GET" "/category/{slug}" using req
+  set slug_norm to normalize_slug using req.params.slug
+  set full_path to "/category/" joined with slug_norm
+  set tax_row to data.one using stmts.get_taxonomy_by_archive, record {archive_slug: "category"}
+  if tax_row is nothing
+    give back render_theme_page using stmts, "404", {"requested_path": full_path, "current_path": full_path}, 404, []
+  end
+  give back render_taxonomy_archive using stmts, tax_row, slug_norm, full_path, req
+end
+
+route "GET" "/tag/{slug}" using req
+  set slug_norm to normalize_slug using req.params.slug
+  set full_path to "/tag/" joined with slug_norm
+  set tax_row to data.one using stmts.get_taxonomy_by_archive, record {archive_slug: "tag"}
+  if tax_row is nothing
+    give back render_theme_page using stmts, "404", {"requested_path": full_path, "current_path": full_path}, 404, []
+  end
+  give back render_taxonomy_archive using stmts, tax_row, slug_norm, full_path, req
 end
 
 route "GET" "/{slug}" using req
   set slug_norm to normalize_slug using req.params.slug
   set full_path to "/" joined with slug_norm
   if is_reserved_path using full_path
-    give back render_theme_page using stmts, "404", {"requested_path": full_path}, 404, []
+    give back render_theme_page using stmts, "404", {"requested_path": full_path, "current_path": full_path}, 404, []
   end
 
   set archive_type to data.one using stmts.get_type_by_archive, record {archive_slug: slug_norm}
@@ -4086,7 +6690,7 @@ route "GET" "/{slug}" using req
       set cnt to text.from using qres.data.pagination.total_items
     end
     set summary to build_entries_summary using items
-    give back render_theme_page using stmts, "archive", {"archive_label": archive_type.label_plural, "archive_slug": slug_norm, "meta_description": archive_type.label_plural joined with " archive", "entry_count": cnt, "published_count": cnt, "entries_summary": summary}, 200, items
+    give back render_theme_page using stmts, "archive", {"archive_label": archive_type.label_plural, "archive_slug": slug_norm, "meta_description": archive_type.label_plural joined with " archive", "entry_count": cnt, "published_count": cnt, "entries_summary": summary, "current_path": full_path}, 200, items
   end
 
   give back resolve_public_path using stmts, full_path
@@ -4096,5 +6700,14 @@ route "GET" "/{type_prefix}/{slug}" using req
   set prefix_norm to normalize_slug using req.params.type_prefix
   set slug_norm to normalize_slug using req.params.slug
   set full_path to "/" joined with prefix_norm joined with "/" joined with slug_norm
+  if is_reserved_path using full_path
+    give back render_theme_page using stmts, "404", {"requested_path": full_path, "current_path": full_path}, 404, []
+  end
+
+  set tax_row to data.one using stmts.get_taxonomy_by_archive, record {archive_slug: prefix_norm}
+  if tax_row is not nothing
+    give back render_taxonomy_archive using stmts, tax_row, slug_norm, full_path, req
+  end
+
   give back resolve_public_path using stmts, full_path
 end

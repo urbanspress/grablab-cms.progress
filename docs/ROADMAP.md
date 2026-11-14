@@ -53,7 +53,7 @@ Scope:
 
 ## `v0.4` — Media Library, Menus, Taxonomies & `grab mcp` CMS Tools
 
-**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-004.md`)
+**Status:** Complete (`v0.4.0`, `specifications/GRABLAB-SPEC-004.md`)
 
 Scope:
 - **Media Library:** Confined uploads under writable media mounts, MIME/extension allowlists, metadata (`alt`, dimensions), and cache-busted serving (`--read-only` root compatible).

@@ -4,27 +4,27 @@
 
 ## Why GrabLab CMS?
 
-- **Zero-Plugin Core:** Every essential CMS feature—custom content types, custom fields, pretty permalinks, automatic 301 redirect history, authentication, roles/capabilities, optional OAuth2/PKCE social login, hooks/filters, and query loops—lives natively in core `.grab` modules.
+- **Zero-Plugin Core:** Every essential CMS feature—custom content types, custom fields, pretty permalinks, automatic 301 redirect history, authentication, roles/capabilities, optional OAuth2/PKCE social login, hooks/filters, query loops, Media Library, Navigation Menus, Taxonomies, and `grab mcp` CMS tools—lives natively in core `.grab` modules.
 - **Exclusive Active Theme Architecture:** Import coded themes (`.grab` + `.grab.html` + `Grex JS v1.0.0`) or install the **Grex Theme Builder** visual theme. Exactly **one** theme is active at a time; activating a new theme via `/admin/themes` automatically deactivates the prior theme and hands 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`) to the active theme.
-- **Security & Speed by Default:** Native Argon2id password hashing (`use crypto`), SHA-256 hashed session tokens with `HttpOnly` + `SameSite=Lax` cookies and login rotation, `cache.limit` brute-force protection, disabled-by-default OAuth2/PKCE with AES-256-GCM encrypted secrets (`GRABLAB_MASTER_KEY`), `X-CSRF-Token` validation, strict `script-src 'self'` CSP (`--allow-scripts`), prepared SQL (`use data`), and `--read-only` container compatibility.
+- **Security & Speed by Default:** Native Argon2id password hashing (`use crypto`), SHA-256 hashed session tokens with `HttpOnly` + `SameSite=Lax` cookies and login rotation, `cache.limit` brute-force protection, disabled-by-default OAuth2/PKCE with AES-256-GCM encrypted secrets (`GRABLAB_MASTER_KEY`), `X-CSRF-Token` validation, magic-byte-verified uploads confined to `--allow-write uploads` with mandatory `alt` text, strict `script-src 'self'` CSP (`--allow-scripts`), capability-gated MCP tools with `grex.elements.json` + WCAG AA checks, prepared SQL (`use data`), and `--read-only` root compatibility.
 
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js`)
-2. **Step 2 — `grablab-cms`:** Active (`urbanspress/grablab-cms`) — **`v0.3.0` Complete** (`v0.4.0` planned)
+2. **Step 2 — `grablab-cms`:** Active (`urbanspress/grablab-cms`) — **`v0.4.0` Complete** (`v1.0.0` planned)
 3. **Step 3 — `grex-builder`:** Planned (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
 4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai`) — Autonomous MCP design & CMS agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard`) — Desktop VPS control panel & 1-click installer
 
-## Quickstart (`v0.3.0` on `GRAB v1.1.0`)
+## Quickstart (`v0.4.0` on `GRAB v1.1.0`)
 
 ```bash
-grab migrate --db-config grab.data.json --allow-db main:migrate migrations/002_auth_schema.grab
+grab migrate --db-config grab.data.json --allow-db main:migrate migrations/003_v04_schema.grab
 grab run --db-config grab.data.json --allow-db main:read-write --allow-read . migrations/seed.grab
-grab serve --addr 127.0.0.1:8080 --allow-scripts --db-config grab.data.json --allow-db main:read-write --platform-config grab.platform.json --allow-cache cms:read-write --allow-cache cms:limit --allow-env GRABLAB_MASTER_KEY --allow-read . --static public src/app.grab
+grab serve --addr 127.0.0.1:8080 --allow-scripts --db-config grab.data.json --allow-db main:read-write --platform-config grab.platform.json --allow-cache cms:read-write --allow-cache cms:limit --allow-env GRABLAB_MASTER_KEY,GRABLAB_UPLOAD_DIR,GRABLAB_MAX_UPLOAD_BYTES --allow-read . --allow-write uploads --static public --max-body-bytes 15728640 src/app.grab
 ```
 
-On first launch without a bootstrap admin, open `http://127.0.0.1:8080/setup` to create the primary administrator account, then manage entries, types, themes, settings, and users under `/admin`.
+On first launch without a bootstrap admin, open `http://127.0.0.1:8080/setup` to create the primary administrator account, then manage entries, media, menus, taxonomies, types, themes, settings, and users under `/admin`.
 
 Verify formatting, type checks, and the full HTTP/auth/database integration suite:
 
@@ -41,4 +41,5 @@ python tests/integration_test.py
 - [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — `v0.1.0` core architecture & schema (`Complete`)
 - [`specifications/GRABLAB-SPEC-002.md`](specifications/GRABLAB-SPEC-002.md) — `v0.2.0` exclusive theme engine, template parts, hooks & query loop (`Complete`)
 - [`specifications/GRABLAB-SPEC-003.md`](specifications/GRABLAB-SPEC-003.md) — `v0.3.0` users, roles/capabilities, auth, OAuth2/PKCE & Grex admin (`Complete`)
-- [`docs/releases/pdf/GrabLab-v0.3.0-Guide.pdf`](docs/releases/pdf/GrabLab-v0.3.0-Guide.pdf) — Plain-English `v0.3.0` walkthrough guide for site owners and designers
+- [`specifications/GRABLAB-SPEC-004.md`](specifications/GRABLAB-SPEC-004.md) — `v0.4.0` media library, navigation menus, taxonomies & `grab mcp` CMS tools (`Complete`)
+- [`docs/releases/pdf/GrabLab-v0.4.0-Guide.pdf`](docs/releases/pdf/GrabLab-v0.4.0-Guide.pdf) — Plain-English `v0.4.0` walkthrough guide for site owners and designers
