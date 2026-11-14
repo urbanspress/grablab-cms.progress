@@ -2,13 +2,13 @@
 
 **Current Owner:** Google Antigravity  
 **Last Completed Milestone:** `v0.1.0` — Core Content Types, Custom Fields, Pretty Permalinks & 301 Slug History (`Complete`)  
-**Next Milestone:** `v0.2.0` — Exclusive Theme Engine, Template Parts, Native Hooks/Filters & Query Loop Engine (`Planned`)  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md` complete; `v0.2.0` spec (`specifications/GRABLAB-SPEC-002.md`) not yet drafted.
+**Next Milestone:** `v0.2.0` — Exclusive Theme Engine, Template Parts, Native Hooks/Filters & Query Loop Engine (`Approved target; specification in review`)  
+**Specification Status:** `specifications/GRABLAB-SPEC-001.md` complete; `specifications/GRABLAB-SPEC-002.md` drafted and awaiting owner approval.
 
 ---
 
 ## Pending Tasks
-1. **Milestone `v0.2.0` Planning:** Draft `specifications/GRABLAB-SPEC-002.md` for Exclusive Theme Engine, Template Parts, Native Hooks/Filters, and Query Loop Engine and submit for owner approval before writing `v0.2.0` application code.
+1. **Milestone `v0.2.0` Specification Review:** Owner review and approval of `specifications/GRABLAB-SPEC-002.md` before starting `src/` implementation.
 
 ---
 

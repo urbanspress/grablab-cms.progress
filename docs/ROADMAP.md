@@ -26,7 +26,7 @@ Scope:
 
 ## `v0.2` — Exclusive Theme Engine, Template Parts, Native Hooks/Filters & Query Loop Engine
 
-**Status:** Planned
+**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-002.md`)
 
 Scope:
 - **Exclusive Theme Engine:**
@@ -46,6 +46,7 @@ Scope:
 - `users`, `sessions`, and role/capability tables (`admin`, `editor`, `author`, `viewer`) with secure password hashing and session cookies (`HttpOnly`, `SameSite=Lax`, `Secure`).
 - CSRF-protected Admin Dashboard built with `.grab.html` and `Grex JS v1.0.0` reactive components (`ForEach`, `Form`, `Tabs`, `Modal`, `createTheme`).
 - **1-Click Theme / Grex Switcher:** Visual Themes dashboard allowing site owners to switch between installed coded themes and the **Grex Theme Builder** visual theme with instant atomic deactivation of the prior theme.
+- **Optional Built-In OAuth2/PKCE Social Login Toggle:** Disabled by default (`0` social buttons rendered and `0` outbound network calls until enabled); administrators can toggle individual providers (**Google**, **GitHub**, **Discord**, **Apple**) in Admin Settings with encrypted/env-backed Client ID & Secret, `state` + PKCE verifier protection, verified email account linking, and strict Grisp `--allow-net` domain allowlists.
 - Content editor, custom type/field manager, and permalink/redirect inspector.
 
 ---
