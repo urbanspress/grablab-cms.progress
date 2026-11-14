@@ -2,13 +2,13 @@
 
 **Current Owner:** Google Antigravity  
 **Last Completed Milestone:** `v0.3.0` — Users, Roles/Capabilities, Auth, Optional OAuth2/PKCE & Grex Admin Dashboard (`Complete`)  
-**Next Milestone:** `v0.4.0` — Media Library, Menus, Taxonomies & `grab mcp` CMS Tools (awaiting specification drafting & owner approval)  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md`, `specifications/GRABLAB-SPEC-002.md`, and `specifications/GRABLAB-SPEC-003.md` complete; `GRABLAB-SPEC-004.md` not yet drafted.
+**Next Milestone:** `v0.4.0` — Media Library, Navigation Menus, Taxonomies & `grab mcp` CMS Tools (`Approved target; specification in review`)  
+**Specification Status:** `specifications/GRABLAB-SPEC-001.md`, `specifications/GRABLAB-SPEC-002.md`, and `specifications/GRABLAB-SPEC-003.md` complete; `specifications/GRABLAB-SPEC-004.md` drafted and awaiting owner approval.
 
 ---
 
 ## Pending Tasks
-1. **Milestone `v0.4.0` Spec-First Gate:** Draft `specifications/GRABLAB-SPEC-004.md` for Media Library, Menus, Taxonomies & `grab mcp` CMS Tools and obtain owner approval before coding `v0.4.0` features.
+1. **Milestone `v0.4.0` Spec-First Gate:** Owner review and approval of `specifications/GRABLAB-SPEC-004.md` before starting `v0.4.0` implementation.
 
 ---
 
