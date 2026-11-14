@@ -1,7 +1,7 @@
 # GrabLab CMS Roadmap
 
 **Repository:** `urbanspress/grablab-cms`  
-**Platform Runtimes:** GRAB `v1.0.1` + Grex JS `v1.0.0`
+**Platform Runtimes:** GRAB `v1.1.0` + Grex JS `v1.0.0`
 
 **Status Labels:**
 - **Draft / In Review** — Specification drafted; awaiting owner approval before code implementation.
@@ -40,7 +40,7 @@ Scope:
 
 ## `v0.3` — Users, Roles/Capabilities, Auth & CSRF-Protected Admin Dashboard
 
-**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-003.md`)
+**Status:** Complete (`specifications/GRABLAB-SPEC-003.md`)
 
 Scope:
 - `users`, `sessions`, and role/capability tables (`admin`, `editor`, `author`, `viewer`) with secure password hashing and session cookies (`HttpOnly`, `SameSite=Lax`, `Secure`).

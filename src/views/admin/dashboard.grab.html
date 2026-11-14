@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="grablab-csrf" content="{csrf_token}">
+  <meta name="grablab-page" content="{admin_page}">
+  <meta name="grablab-role" content="{user_role}">
+  <meta name="grablab-user-email" content="{user_email}">
+  <meta name="grablab-user-name" content="{user_name}">
+  <meta name="grablab-user-id" content="{user_id}">
+  <meta name="grablab-site-title" content="{site_title}">
+  <meta name="grablab-active-theme" content="{active_theme_slug}">
+  <title>{page_title} — {site_title} Admin</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{admin_css_url}">
+</head>
+<body class="cms-admin-body">
+  <header class="cms-admin-topbar">
+    <section class="cms-topbar-left">
+      <a class="cms-brand" href="/admin">{site_title}</a>
+      <span class="cms-badge">Active Theme: {active_theme_slug}</span>
+    </section>
+    <section class="cms-topbar-right">
+      <span class="cms-user-chip">{user_name} ({user_role})</span>
+      <a class="cms-btn-link" href="/">View Site</a>
+      <button type="button" id="admin-logout-btn" class="cms-btn-secondary">Sign Out</button>
+    </section>
+  </header>
+
+  <section class="cms-admin-layout">
+    <aside class="cms-admin-sidebar" id="admin-nav-mount" aria-label="Admin navigation"></aside>
+    <main class="cms-admin-main" id="admin-main" data-admin-page="{admin_page}" data-user-role="{user_role}" data-active-theme="{active_theme_slug}">
+      <header class="cms-page-head">
+        <h1>{page_title}</h1>
+        <p class="cms-muted">{page_subtitle}</p>
+      </header>
+      <section id="admin-app" aria-live="polite"></section>
+    </main>
+  </section>
+
+  <script type="module" src="{grex_js_url}"></script>
+  <script type="module" src="{admin_js_url}"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="grablab-page" content="login">
+  <meta name="grablab-site-title" content="{site_title}">
+  <title>Sign In — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{admin_css_url}">
+</head>
+<body class="cms-admin-body">
+  <main class="cms-auth-shell" data-admin-page="login">
+    <header class="cms-auth-header">
+      <a class="cms-brand" href="/">{site_title}</a>
+      <span class="cms-badge">GrabLab CMS v0.3.0</span>
+    </header>
+    <section class="cms-auth-card" aria-labelledby="login-heading">
+      <h1 id="login-heading">Sign in to GrabLab</h1>
+      <p class="cms-muted">Enter your administrator, editor, or author credentials.</p>
+      <section id="login-form-mount" aria-label="Sign in form"></section>
+      <!-- @slot:social_login -->
+      <p class="cms-auth-footer"><a href="/">Return to public site</a></p>
+    </section>
+  </main>
+  <script type="module" src="{grex_js_url}"></script>
+  <script type="module" src="{admin_js_url}"></script>
+</body>
+</html>
