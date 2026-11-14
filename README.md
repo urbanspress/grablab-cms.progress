@@ -12,7 +12,7 @@
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js`)
 2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms`) — **`v1.0.0` Production CMS Release**
-3. **Step 3 — `grex-builder`:** Ready next (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
+3. **Step 3 — Grex Theme Builder:** Ready next (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
 4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai`) — Autonomous MCP design & CMS agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard`) — Desktop VPS control panel & 1-click installer
 

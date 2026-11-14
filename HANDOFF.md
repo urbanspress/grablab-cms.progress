@@ -2,7 +2,7 @@
 
 **Current Owner:** Google Antigravity  
 **Last Completed Milestone:** `v1.0.0` — Production CMS Release (`Complete`)  
-**Next Milestone:** Step 3 (`grex-builder`) — Grex Visual Theme & Studio Integration (`Ecosystem`)  
+**Next Milestone:** Step 3 (`urbanspress/grex-builder`) — Grex Theme Builder Visual Theme & Studio Integration (`Ecosystem`)  
 **Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), and `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze) complete.
 
 ---

@@ -225,7 +225,7 @@ Every upload to `POST /api/admin/media/upload` (requiring valid session + `media
 
 ## 6. Native `grab mcp` CMS Tools & AI Guardrails
 
-To support **Step 4 (`groxy-ai`)** and **Step 3 (`grex-builder`)**, GrabLab exposes structured, capability-gated CMS tools via `grab mcp` (and matching `/api/mcp/tools/*` service handlers).
+To support **Step 4 (`groxy-ai`)** and **Step 3 (Grex Theme Builder)**, GrabLab exposes structured, capability-gated CMS tools via `grab mcp` (and matching `/api/mcp/tools/*` service handlers).
 
 ### 6.1 Authentication & RBAC Guardrails
 - Every `grab mcp` invocation MUST present a scoped MCP token / session principal bound to an active `users` row (`is_active = 1`).

@@ -31,7 +31,7 @@ Scope:
 Scope:
 - **Exclusive Theme Engine:**
   - Safe coded theme import (`.grab` + `.grab.html` + `Grex JS v1.0.0` static assets via `server.asset` and `themes/<slug>/theme.json` validation).
-  - First-class **Grex Visual Theme Contract** so **Step 3 (`grex-builder`)** installs as a selectable theme that disables any prior theme and takes 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`).
+  - First-class **Grex Visual Theme Contract** so **Step 3 (Grex Theme Builder)** installs as a selectable theme that disables any prior theme and takes 100% exclusive template rendering control (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`).
 - **Template Parts:** Reusable `header`, `footer`, `sidebar`, and partial `.grab.html` / Grex sections.
 - **Native Hooks & Filters:** Deterministic core `.grab` lifecycle hooks/filters (e.g., `before_render`, `after_save_entry`, `head_meta`, `footer_scripts`) without third-party plugins.
 - **Query Loop Engine:** Declarative, prepared-SQL query loops for archives, recent posts, filtered custom content types, and pagination.

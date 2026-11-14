@@ -184,7 +184,7 @@ Every theme lives in `themes/<slug>/` and MUST include a valid `theme.json` mani
 
 ### 5.1 Manifest Validation & Security Rules
 - `slug` MUST match directory name and `[a-z0-9-]+`.
-- `engine` MUST be `"coded"` (standard `.grab.html` templates + optional Grex JS) or `"grex-visual"` (installed by **Step 3 `grex-builder`**).
+- `engine` MUST be `"coded"` (standard `.grab.html` templates + optional Grex JS) or `"grex-visual"` (installed by **Step 3: Grex Theme Builder**).
 - All `templates` and `assets` paths MUST be relative, normalized, and strictly confined inside `themes/<slug>/` (no `..`, no symlinks escaping theme root, no sensitive files).
 - **Required slots:** `home`, `single`, `archive`, `404` MUST exist on disk for coded themes (or be backed by Grex layout definitions for `"grex-visual"` themes).
 
