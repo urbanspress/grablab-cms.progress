@@ -40,7 +40,7 @@ Scope:
 
 ## `v0.3` — Users, Roles/Capabilities, Auth & CSRF-Protected Admin Dashboard
 
-**Status:** Planned
+**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-003.md`)
 
 Scope:
 - `users`, `sessions`, and role/capability tables (`admin`, `editor`, `author`, `viewer`) with secure password hashing and session cookies (`HttpOnly`, `SameSite=Lax`, `Secure`).

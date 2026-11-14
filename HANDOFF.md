@@ -2,13 +2,13 @@
 
 **Current Owner:** Google Antigravity  
 **Last Completed Milestone:** `v0.2.0` — Exclusive Theme Engine, Template Parts, Native Hooks/Filters & Query Loop Engine (`Complete`)  
-**Next Milestone:** `v0.3.0` — Users, Roles/Capabilities, Auth & CSRF-Protected Admin Dashboard (`Planned`)  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md` and `specifications/GRABLAB-SPEC-002.md` complete; `v0.3.0` spec (`specifications/GRABLAB-SPEC-003.md`) not yet drafted.
+**Next Milestone:** `v0.3.0` — Users, Roles/Capabilities, Auth & CSRF-Protected Admin Dashboard (`Approved target; specification in review`)  
+**Specification Status:** `specifications/GRABLAB-SPEC-001.md` and `specifications/GRABLAB-SPEC-002.md` complete; `specifications/GRABLAB-SPEC-003.md` drafted (`Approved target; specification in review`) and awaiting owner approval.
 
 ---
 
 ## Pending Tasks
-1. **Milestone `v0.3.0` Planning:** Draft `specifications/GRABLAB-SPEC-003.md` for Users, Roles/Capabilities, Auth, Optional Built-In OAuth2/PKCE Social Login Toggle, and CSRF-Protected Admin Dashboard, and submit for owner approval before writing `v0.3.0` application code.
+1. **Milestone `v0.3.0` Spec Review:** Owner review and approval of `specifications/GRABLAB-SPEC-003.md` before writing `v0.3.0` application code.
 
 ---
 
