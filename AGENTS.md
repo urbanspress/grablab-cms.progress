@@ -21,9 +21,11 @@
 
 ## Model Routing & Effort Levels
 Advise the project owner which Antigravity model and effort level to select for the next step so AI Pro quota is used efficiently:
-- **`Google Hydrogen (Medium)`:** Specification drafting, roadmap updates, multi-module CMS design, and straightforward `.grab` / `.grab.html` / SQL updates.
-- **`Google Hydrogen (High)`:** Core GrabLab CMS implementation (routing, `use data` migrations/queries, `use cache` invalidation, auth/CSRF, theme engine, and integration test suites).
-- **`Google Hydrogen (Extra)`:** Reserved strictly for complex cross-module debugging, subtle security/concurrency issues, or stubborn test failures.
+- **`Google Hydrogen (Medium)`:** Pre-implementation specifications (`*-SPEC-*.md`), documentation, governance updates, and single-module edits.
+- **`Google Hydrogen (High)`:** Standard feature milestone implementations (`v0.4.0`, `v1.0.0` build & release).
+- **`Orchestrator (Argon)`:** Second-opinion pre-`v1.0.0` security/DOM/contract audits, multi-repo cross-layer integrations, and complex refactors where Argon-level planning + automated delegation saves tokens.
+- **`Google Hydrogen (Extra)`:** Reserved for autonomous AI engines (`Groxy AI`), multi-server orchestration (`Gashboard + Grabtaculous + grabman`), and stubborn cross-layer bugs.
+- **Mandatory Pause & Swap Prompt Rule:** Every active AI agent MUST pause at milestone boundaries or before high-risk cross-layer/pre-`v1.0.0` audits and explicitly tell the user when to switch to `Orchestrator (Argon)`, including a clear 1-sentence reason why `Orchestrator (Argon)` is recommended next.
 
 ---
 
