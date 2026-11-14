@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-GrabLab CMS v0.1.0 Comprehensive Integration Test Suite
+GrabLab CMS v0.2.0 Comprehensive Integration Test Suite
 Tests:
-1. grab check & grab format parity on all .grab and .grab.html files
+1. grab check & grab format parity on all .grab and .grab.html files (including card/sidebar parts)
 2. Database schema migration idempotency & initial seed
 3. Content type registration, 8 typed custom fields, GrabDecimal/GrabInteger string fidelity, Grex JS v1.0.0 layout validation
-4. Pretty permalink resolution (/ , /:slug, /:type_prefix/:slug, archives, 404, XSS escaping)
+4. Pretty permalink resolution (/, /search, /:slug, /:type_prefix/:slug, archives, 404, XSS escaping)
 5. Reserved system route protection (/admin, /api, /static, /_health, /_ready)
 6. Atomic slug change, 301 Moved Permanently redirects, and redirect-loop cleanup on slug revert
-7. Exclusive active theme manifest security validation, atomic switching, and use cache invalidation
+7. Safe theme import/package validation (rejecting path traversal, disallowed executables, unauthorized capabilities)
+8. Exclusive active theme switching (coded <-> Grex Theme Builder visual mode), template parts with zero wrapper-<div> bloat
+9. Native hooks & filters priority ordering, zero-plugin active-theme isolation, and lifecycle hooks
+10. Query Loop Engine (/api/query) filtering, pagination, SQL injection/bad-arg rejection, and use cache invalidation
 """
 
 import http.client
@@ -106,6 +109,8 @@ def test_checks_and_formatting():
             ("themes/default-starter/templates/search.grab.html", 'record {site_title: "T", tokens_css_url: "/s", theme_css_url: "/t", query: "q", results_summary: "R", theme_slug: "default-starter"}'),
             ("themes/default-starter/templates/parts/header.grab.html", 'record {site_title: "T"}'),
             ("themes/default-starter/templates/parts/footer.grab.html", 'record {theme_slug: "default-starter"}'),
+            ("themes/default-starter/templates/parts/card.grab.html", 'record {content_type_label: "Post", full_path: "/blog/hello", title: "Hello", published_at: "2026-11-13", excerpt: "Hi"}'),
+            ("themes/default-starter/templates/parts/sidebar.grab.html", 'record {site_title: "T", site_tagline: "G", published_count: "2", theme_name: "Default Starter"}'),
         ]
         probe = os.path.join(tmp_dir, "tmpl_check.grab")
         for rel_tmpl, data_expr in templates:
@@ -208,18 +213,24 @@ def run_http_tests(port):
     st, _, _, js = http_req(port, "GET", "/api/nonexistent")
     assert st == 404 and "Unknown API endpoint" in js["error"]
 
-    # Seeded public routes
+    # Seeded public routes + Template Parts + Zero wrapper-<div> verification
     st, _, html, _ = http_req(port, "GET", "/")
     assert st == 200 and "Default Starter" in html and "/static/grex/tokens.css?v=" in html
+    assert '<header class="cms-header"' in html and '<aside class="cms-sidebar"' in html and '<article class="cms-card"' in html and '<footer class="cms-footer"' in html
+    assert "<div" not in html.lower(), "Unexpected wrapper <div> found on /"
+    assert '<meta name="generator" content="GrabLab CMS v0.2.0 (default-starter)">' in html
+
     st, _, html, _ = http_req(port, "GET", "/about")
-    assert st == 200 and "About GrabLab CMS" in html
+    assert st == 200 and "About GrabLab CMS" in html and "<div" not in html.lower()
     st, _, html, _ = http_req(port, "GET", "/blog")
-    assert st == 200 and "Posts" in html and "Hello, GrabLab CMS" in html
+    assert st == 200 and "Posts" in html and "Hello, GrabLab CMS" in html and '<article class="cms-card"' in html and "<div" not in html.lower()
     st, _, html, _ = http_req(port, "GET", "/blog/hello-world")
-    assert st == 200 and "Hello, GrabLab CMS" in html
+    assert st == 200 and "Hello, GrabLab CMS" in html and "<div" not in html.lower()
+    st, _, html, _ = http_req(port, "GET", "/search?q=Hello")
+    assert st == 200 and "Hello, GrabLab CMS" in html and '<article class="cms-card"' in html and "<div" not in html.lower()
     st, _, html, _ = http_req(port, "GET", "/does-not-exist")
-    assert st == 404 and "Page Not Found" in html
-    print("  OK: System probes, static Grex JS v1.0.0 assets, and seeded routes verified.")
+    assert st == 404 and "Page Not Found" in html and "<div" not in html.lower()
+    print("  OK: System probes, static Grex JS v1.0.0 assets, template parts, zero-div HTML, and seeded routes verified.")
 
     print("[4/7] Testing Content Type, 8 Custom Field types, GrabDecimal precision & Grex layout validation...")
     st, _, _, js = http_req(port, "GET", "/api/content-types")
@@ -438,7 +449,47 @@ def run_http_tests(port):
         st, _, _, js = http_req(port, "POST", "/api/themes/activate", {"slug": "test-bad-traversal"})
         assert st == 400 and "GRAB-E401" in js["error"]
 
-        # Create valid second theme test-alt-theme
+        # Test disallowed executable extension in theme directory
+        bad_exec_dir = os.path.join(ROOT, "themes", "test-bad-exec")
+        os.makedirs(os.path.join(bad_exec_dir, "templates"), exist_ok=True)
+        with open(os.path.join(bad_exec_dir, "theme.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "schemaVersion": "1.0.0",
+                "slug": "test-bad-exec",
+                "name": "Evil Exec Theme",
+                "version": "1.0.0",
+                "mode": "coded",
+                "templates": {
+                    "home": "templates/home.grab.html",
+                    "single": "templates/single.grab.html",
+                    "archive": "templates/archive.grab.html",
+                    "404": "templates/404.grab.html"
+                }
+            }, f)
+        for slot in ("home", "single", "archive", "404"):
+            with open(os.path.join(bad_exec_dir, "templates", f"{slot}.grab.html"), "w", encoding="utf-8") as f:
+                f.write("<!doctype html><html><body><p>ok</p></body></html>\n")
+        with open(os.path.join(bad_exec_dir, "payload.sh"), "w", encoding="utf-8") as f:
+            f.write("#!/bin/sh\nid\n")
+        st, _, _, js = http_req(port, "POST", "/api/themes/activate", {"slug": "test-bad-exec"})
+        assert st == 400 and "GRAB-E401" in js["error"], f"Expected executable rejection, got {st} {js}"
+
+        # Test theme package bundle validator rejections
+        st, _, _, js = http_req(port, "POST", "/api/themes/validate-package", {
+            "slug": "pkg-bad",
+            "manifest": {"schemaVersion": "1.0.0", "slug": "pkg-bad", "name": "Bad", "version": "1.0.0", "mode": "coded", "templates": {"home": "templates/home.grab.html", "single": "templates/single.grab.html", "archive": "templates/archive.grab.html", "404": "templates/404.grab.html"}},
+            "files": [{"path": "../escape.txt", "content": "x"}]
+        })
+        assert st == 400 and "GRAB-E401" in js["error"]
+
+        st, _, _, js = http_req(port, "POST", "/api/themes/validate-package", {
+            "slug": "pkg-bad-php",
+            "manifest": {"schemaVersion": "1.0.0", "slug": "pkg-bad-php", "name": "Bad", "version": "1.0.0", "mode": "coded", "templates": {"home": "templates/home.grab.html", "single": "templates/single.grab.html", "archive": "templates/archive.grab.html", "404": "templates/404.grab.html"}},
+            "files": [{"path": "backdoor.php", "content": "<?php ?>"}]
+        })
+        assert st == 400 and "GRAB-E401" in js["error"]
+
+        # Create valid second coded theme test-alt-theme
         alt_dir = os.path.join(ROOT, "themes", "test-alt-theme")
         os.makedirs(os.path.join(alt_dir, "templates"), exist_ok=True)
         with open(os.path.join(alt_dir, "theme.json"), "w", encoding="utf-8") as f:
@@ -473,6 +524,62 @@ def run_http_tests(port):
         st, _, html, _ = http_req(port, "GET", "/")
         assert st == 200 and "ALT-EXCLUSIVE-HOME" in html and "Default Starter" not in html
 
+        # Create & activate first-class Grex Visual Theme (mode: "visual")
+        vis_dir = os.path.join(ROOT, "themes", "test-grex-visual")
+        os.makedirs(vis_dir, exist_ok=True)
+        with open(os.path.join(vis_dir, "theme.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "schemaVersion": "1.0.0",
+                "slug": "test-grex-visual",
+                "name": "Grex Visual Fixture",
+                "version": "1.0.0",
+                "mode": "visual",
+                "engine": "grex-visual",
+                "capabilities": ["grex:visual", "parts", "hooks:theme"],
+                "themeHooks": [
+                    {"hook": "theme:head_meta", "priority": 5, "handler": "theme_meta_brand"}
+                ]
+            }, f)
+        with open(os.path.join(vis_dir, "grex.elements.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "parts": {
+                    "header": {"element": "Nav", "props": {"class": "grex-nav", "aria-label": "Visual Nav"}, "children": [{"element": "Link", "props": {"href": "/", "text": "{site_title}"}}]},
+                    "footer": {"element": "Section", "tag": "footer", "props": {"class": "grex-footer"}, "children": [{"element": "Text", "props": {"text": "Visual Footer: {theme_slug}"}}]},
+                    "card": {"element": "Card", "props": {"class": "grex-card"}, "children": [{"element": "Heading", "props": {"level": 3, "text": "{title}"}}, {"element": "Link", "props": {"href": "{full_path}", "text": "Read more"}}]},
+                    "sidebar": {"element": "Section", "tag": "aside", "props": {"class": "grex-sidebar"}, "children": [{"element": "Text", "props": {"text": "Visual Sidebar ({published_count})"}}]}
+                },
+                "templates": {
+                    "home": {"element": "Fragment", "children": [
+                        {"element": "TemplatePart", "props": {"name": "header"}},
+                        {"element": "Container", "tag": "main", "children": [
+                            {"element": "Heading", "props": {"level": 1, "text": "GREX-VISUAL-HOME: {site_title}"}},
+                            {"element": "ForEach", "props": {"class": "grex-loop", "query": {"content_type": "post", "per_page": "5"}}},
+                            {"element": "TemplatePart", "props": {"name": "sidebar"}}
+                        ]},
+                        {"element": "TemplatePart", "props": {"name": "footer"}}
+                    ]},
+                    "single": {"element": "Section", "tag": "main", "children": [{"element": "Heading", "props": {"level": 1, "text": "{title}"}}]},
+                    "archive": {"element": "Section", "tag": "main", "children": [{"element": "Heading", "props": {"level": 1, "text": "{archive_label}"}}]},
+                    "404": {"element": "Section", "tag": "main", "children": [{"element": "Heading", "props": {"level": 1, "text": "Visual 404"}}]}
+                }
+            }, f)
+
+        st, _, _, js = http_req(port, "POST", "/api/themes/activate", {"slug": "test-grex-visual"})
+        assert st == 200 and js["active_theme"]["slug"] == "test-grex-visual" and js["mode"] == "visual", f"Failed activating visual theme: {js}"
+
+        st, _, html, _ = http_req(port, "GET", "/")
+        assert st == 200 and "GREX-VISUAL-HOME:" in html and "Visual Sidebar" in html and "Visual Footer: test-grex-visual" in html
+        assert 'data-grex-foreach="query"' in html and "/static/grex/grex.js?v=" in html
+        assert '<meta name="theme-name" content="Grex Visual Fixture">' in html
+        assert "default-starter" not in html and "<div" not in html.lower()
+
+        # Verify /api/hooks isolated strictly to core + test-grex-visual (no default-starter hooks)
+        st, _, _, js = http_req(port, "GET", "/api/hooks")
+        assert st == 200 and js["active_theme_slug"] == "test-grex-visual"
+        head_meta_regs = js["filters"]["theme:head_meta"]
+        assert [r["source"] for r in head_meta_regs] == ["theme:test-grex-visual", "core"]
+        assert [r["priority"] for r in head_meta_regs] == [5, 10]
+
         # Switch back to default-starter
         st, _, _, js = http_req(port, "POST", "/api/themes/activate", {"slug": "default-starter"})
         assert st == 200 and js["active_theme"]["slug"] == "default-starter"
@@ -480,13 +587,92 @@ def run_http_tests(port):
         active_rows = [t["slug"] for t in js["themes"] if t["is_active"] == 1]
         assert active_rows == ["default-starter"]
         st, _, html, _ = http_req(port, "GET", "/")
-        assert st == 200 and "Default Starter" in html and "ALT-EXCLUSIVE-HOME" not in html
+        assert st == 200 and "Default Starter" in html and "GREX-VISUAL-HOME" not in html
     finally:
-        for d in ("_test-bad-theme", "test-bad-traversal", "_test-alt-theme", "test-alt-theme"):
+        for d in ("_test-bad-theme", "test-bad-traversal", "test-bad-exec", "_test-alt-theme", "test-alt-theme", "test-grex-visual"):
             p = os.path.join(ROOT, "themes", d)
             if os.path.exists(p):
                 shutil.rmtree(p, ignore_errors=True)
-    print("  OK: Theme manifest security validation, atomic switching, and cache invalidation verified.")
+    print("  OK: Theme security validation, Grex visual mode, template parts, and exclusive switching verified.")
+
+    print("[7/8] Testing native hooks/filters priority order, zero-plugin isolation & Query Loop cache invalidation...")
+    # Zero-plugin isolation: reject inactive theme or plugin source
+    st, _, _, js = http_req(port, "POST", "/api/hooks/register-check", {
+        "registrations": [{"kind": "hook", "name": "theme:before_render", "source": "plugin:evil", "priority": 1, "handler": "theme_before_render_badge"}]
+    })
+    assert st == 403 and "GRAB-E401" in js["error"]
+
+    st, _, _, js = http_req(port, "POST", "/api/hooks/register-check", {
+        "registrations": [{"kind": "filter", "name": "theme:head_meta", "source": "theme:inactive-theme", "priority": 1, "handler": "theme_meta_brand"}]
+    })
+    assert st == 403 and "GRAB-E401" in js["error"]
+
+    # Priority ordering: 50, 1, 10, 10 -> sorted [1, 10(first), 10(second), 50]
+    st, _, _, js = http_req(port, "POST", "/api/hooks/register-check", {
+        "registrations": [
+            {"kind": "filter", "name": "theme:head_meta", "source": "theme:default-starter", "priority": 50, "handler": "theme_meta_brand"},
+            {"kind": "filter", "name": "theme:head_meta", "source": "theme:default-starter", "priority": 1, "handler": "theme_meta_generator"},
+            {"kind": "filter", "name": "theme:head_meta", "source": "core", "priority": 10, "handler": "core_default_head_meta"},
+            {"kind": "filter", "name": "theme:head_meta", "source": "theme:default-starter", "priority": 10, "handler": "theme_meta_brand"}
+        ]
+    })
+    assert st == 200
+    ordered = js["filters"]["theme:head_meta"]
+    assert [(r["priority"], r["handler"]) for r in ordered] == [
+        (1, "theme_meta_generator"),
+        (10, "core_default_head_meta"),
+        (10, "theme_meta_brand"),
+        (50, "theme_meta_brand"),
+    ], f"Unexpected hook priority ordering: {ordered}"
+
+    # Query Loop Engine: reject unsafe sort_by / field_op / out-of-range per_page
+    st, _, _, js = http_req(port, "GET", "/api/query?sort_by=id%20DROP%20TABLE%20entries")
+    assert st == 400
+    st, _, _, js = http_req(port, "GET", "/api/query?sort_by=unknown_col")
+    assert st == 400
+    st, _, _, js = http_req(port, "GET", "/api/query?field_op=like_raw")
+    assert st == 400
+    st, _, _, js = http_req(port, "GET", "/api/query?per_page=500")
+    assert st == 400
+
+    # Query Loop custom field filter + cache hit/miss
+    st, _, _, js1 = http_req(port, "GET", "/api/query?content_type=product&field_key=sku&field_op=eq&field_value=BN-100")
+    assert st == 200 and js1["cache"]["hit"] is False and len(js1["items"]) == 1
+    assert js1["items"][0]["custom_fields"]["price"] == "19.9500"
+
+    st, _, _, js2 = http_req(port, "GET", "/api/query?content_type=product&field_key=sku&field_op=eq&field_value=BN-100")
+    assert st == 200 and js2["cache"]["hit"] is True and len(js2["items"]) == 1
+
+    # Query pagination before & after publishing a second product (tests content:after_publish cache invalidation)
+    st, _, _, q_before = http_req(port, "GET", "/api/query?content_type=product&sort_by=id&sort_dir=desc&page=1&per_page=1")
+    assert st == 200 and q_before["pagination"]["total_items"] == 1 and q_before["cache"]["hit"] is False
+
+    st, _, _, q_before_hit = http_req(port, "GET", "/api/query?content_type=product&sort_by=id&sort_dir=desc&page=1&per_page=1")
+    assert st == 200 and q_before_hit["cache"]["hit"] is True
+
+    # Publish second product (omits meta_title to verify content:before_save filter auto-fills it!)
+    st, _, _, created_p2 = http_req(port, "POST", "/api/entries", {
+        "content_type": "product",
+        "slug": "alpaca-scarf",
+        "title": "  Alpaca Winter Scarf  ",
+        "status": "published",
+        "body_html": "Soft brushed alpaca scarf.",
+        "custom_fields": {"sku": "SC-200", "stock": "15", "price": "34.5000"}
+    })
+    assert st == 201 and created_p2["entry"]["title"] == "Alpaca Winter Scarf"
+    assert created_p2["entry"]["meta_title"] == "Alpaca Winter Scarf"
+
+    # Immediately query again: cache MUST be invalidated (hit == False) and total_items == 2!
+    st, _, _, q_after = http_req(port, "GET", "/api/query?content_type=product&sort_by=id&sort_dir=desc&page=1&per_page=1")
+    assert st == 200 and q_after["cache"]["hit"] is False, f"Expected query cache invalidation on publish: {q_after}"
+    assert q_after["pagination"]["total_items"] == 2 and q_after["pagination"]["total_pages"] == 2
+    assert q_after["pagination"]["has_next"] is True and q_after["pagination"]["has_prev"] is False
+    assert q_after["items"][0]["slug"] == "alpaca-scarf"
+
+    st, _, _, q_page2 = http_req(port, "GET", "/api/query?content_type=product&sort_by=id&sort_dir=desc&page=2&per_page=1")
+    assert st == 200 and q_page2["pagination"]["has_prev"] is True and q_page2["pagination"]["has_next"] is False
+    assert q_page2["items"][0]["slug"] == "merino-beanie"
+    print("  OK: Native hooks/filters priority, zero-plugin isolation, and Query Loop cache invalidation verified.")
 
 
 def main():
@@ -507,9 +693,9 @@ def main():
             os.remove(log_path)
 
     # Reset storage/grablab.db back to clean seeded baseline after tests
-    print("[7/7] Restoring clean migrated & seeded storage/grablab.db baseline...")
+    print("[8/8] Restoring clean migrated & seeded storage/grablab.db baseline...")
     test_migrations_and_seed()
-    print("\nALL GRABLAB CMS v0.1.0 INTEGRATION TESTS PASSED (100%)!")
+    print("\nALL GRABLAB CMS v0.2.0 INTEGRATION TESTS PASSED (100%)!")
 
 
 if __name__ == "__main__":

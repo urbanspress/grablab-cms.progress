@@ -62,12 +62,28 @@ body {
 
 .cms-hero,
 .cms-card,
-.cms-article {
+.cms-article,
+.cms-sidebar {
   background: var(--cms-surface);
   border: 1px solid var(--cms-border);
   border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1.25rem;
+}
+
+.cms-card-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.cms-card-link {
+  color: var(--cms-ink);
+  text-decoration: none;
+}
+
+.cms-card-link:hover {
+  color: var(--cms-accent);
 }
 
 .cms-meta {

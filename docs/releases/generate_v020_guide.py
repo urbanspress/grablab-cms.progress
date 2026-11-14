@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""
+GrabLab CMS v0.2.0 Plain-English Walkthrough Guide Generator
+Generates docs/releases/html/GrabLab-v0.2.0-Guide.html and renders
+docs/releases/pdf/GrabLab-v0.2.0-Guide.pdf via headless Chrome.
+"""
+
+import os
+import subprocess
+import sys
+
+CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HTML_DIR = os.path.join(BASE_DIR, "html")
+PDF_DIR = os.path.join(BASE_DIR, "pdf")
+HTML_PATH = os.path.join(HTML_DIR, "GrabLab-v0.2.0-Guide.html")
+PDF_PATH = os.path.join(PDF_DIR, "GrabLab-v0.2.0-Guide.pdf")
+
+HTML_DOC = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GrabLab CMS v0.2.0 — Plain-English Walkthrough Guide</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --teal: #0d9488;
+      --blue: #0284c7;
+      --green: #15803d;
+    }
+    * { box-sizing: border-box; }
+    @page { size: A4; margin: 13mm 14mm 14mm 14mm; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      font-size: 13px;
+      line-height: 1.55;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0284c7 100%);
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 22px 26px;
+      margin-bottom: 18px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.28);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 { margin: 0 0 6px; font-size: 24px; line-height: 1.2; }
+    .hero p { margin: 0; color: #e2e8f0; font-size: 13.5px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: var(--ink);
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 5px;
+    }
+    h3 { margin: 10px 0 4px; font-size: 13.5px; color: var(--blue); }
+    p { margin: 6px 0; }
+    ul { margin: 6px 0 6px 18px; padding: 0; }
+    li { margin-bottom: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f1f5f9; font-weight: 700; }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    code { padding: 1px 4px; }
+    pre {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin: 8px 0 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11.5px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <span class="badge">Milestone Release v0.2.0 &middot; GRAB v1.0.1 + Grex JS v1.0.0</span>
+    <h1>GrabLab CMS v0.2.0 — Plain-English Walkthrough</h1>
+    <p>Exclusive Theme Engine, Reusable Template Parts, Zero-Plugin Native Hooks &amp; Filters, and the Cached Query Loop Engine.</p>
+  </header>
+
+  <section class="card">
+    <h2>1. What Was Built in v0.2.0</h2>
+    <p>Milestone <code>v0.2.0</code> transforms GrabLab CMS from a foundational content store into a full themeable publishing engine while keeping its strict zero-plugin security model:</p>
+    <ul>
+      <li><strong>Safe Theme Validation &amp; Hot-Switch Engine:</strong> Inspects theme folders and package bundles before registration, blocking path traversal (<code>..</code>), sensitive files (<code>.env</code>, <code>.git</code>, <code>.key</code>), executable files (<code>.exe</code>, <code>.sh</code>, <code>.php</code>, <code>.go</code>), oversized packages, and unauthorized capabilities (<code>GRAB-E401</code>).</li>
+      <li><strong>First-Class Visual Theme Contract (<code>mode: "visual"</code>):</strong> Alongside coded <code>.grab.html</code> themes (<code>mode: "coded"</code>), GrabLab now natively validates and renders <strong>Grex Theme Builder</strong> visual themes powered by <code>grex.elements.json</code> and <code>Grex JS v1.0.0</code>.</li>
+      <li><strong>Reusable Template Parts (Zero Wrapper-<code>&lt;div&gt;</code> Bloat):</strong> Active themes register <code>header</code>, <code>footer</code>, <code>card</code>, and <code>sidebar</code> parts that render directly as clean HTML5 elements (<code>&lt;header&gt;</code>, <code>&lt;footer&gt;</code>, <code>&lt;article&gt;</code>, <code>&lt;aside&gt;</code>) with zero extra wrapper <code>&lt;div&gt;</code> tags.</li>
+      <li><strong>Native Hooks &amp; Filters Registry:</strong> Five priority-ordered lifecycle extension points restricted strictly to <strong>GrabLab Core</strong> and the <strong>single Active Theme</strong>.</li>
+      <li><strong>Query Loop Engine &amp; Smart Cache Invalidation:</strong> Powers coded archives, <code>/search</code>, and <code>GET /api/query</code> (for Grex <code>useQuery</code> + <code>ForEach</code>) using prepared SQL and automatic <code>use cache</code> epoch invalidation whenever content changes or themes switch.</li>
+    </ul>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>2. How Exclusive Themes Work</h2>
+      <p>Only <strong>one theme</strong> can be active at a time. When you switch themes via <code>POST /api/themes/activate</code>:</p>
+      <ul>
+        <li>GrabLab validates <code>theme.json</code>, all templates/parts, or <code>grex.elements.json</code>.</li>
+        <li>A database transaction marks all other themes inactive (<code>is_active = 0</code>) and activates the new theme (<code>is_active = 1</code>).</li>
+        <li>All hooks from the old theme are dropped immediately, and <code>use cache</code> epochs bump so visitors see the new theme on the very next page load.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>3. Native Hooks &amp; Filters</h2>
+      <p>Hooks run in predictable priority order (lower numbers run first, e.g. <code>5</code> before <code>10</code>):</p>
+      <ul>
+        <li><code>content:before_save</code> — Normalizes titles and auto-fills SEO metadata before saving.</li>
+        <li><code>content:after_publish</code> — Clears route and Query Loop caches automatically after publishing.</li>
+        <li><code>theme:head_meta</code> — Injects canonical URLs, OpenGraph tags, and active theme meta tags.</li>
+        <li><code>theme:before_render</code> — Prepares active theme context before any template renders.</li>
+        <li><code>query:modify_args</code> — Clamps pagination bounds and enforces <code>published</code> status on public routes.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>4. Query Loop Engine (<code>GET /api/query</code>)</h2>
+    <p>Both coded themes and Grex visual <code>ForEach</code> loops fetch filtered, paginated entries safely without raw SQL concatenation:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Allowed Values</th>
+          <th>Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>content_type</code></td>
+          <td>Any valid type slug (e.g. <code>post</code>, <code>product</code>)</td>
+          <td>Filters entries to a single content type or all types if omitted.</td>
+        </tr>
+        <tr>
+          <td><code>field_key</code>, <code>field_op</code>, <code>field_value</code></td>
+          <td><code>eq</code>, <code>neq</code>, <code>contains</code></td>
+          <td>Filters by custom field values while preserving exact <code>GrabDecimal</code> strings (e.g. <code>19.9500</code>).</td>
+        </tr>
+        <tr>
+          <td><code>sort_by</code>, <code>sort_dir</code></td>
+          <td><code>published_at</code>, <code>created_at</code>, <code>updated_at</code>, <code>title</code>, <code>id</code> (<code>asc</code>/<code>desc</code>)</td>
+          <td>Maps strictly to pre-compiled prepared SQL statements (<code>use data</code>).</td>
+        </tr>
+        <tr>
+          <td><code>page</code>, <code>per_page</code></td>
+          <td><code>page &gt;= 1</code>, <code>per_page</code> in <code>1..100</code></td>
+          <td>Returns exact <code>GrabInteger</code> pagination counts and caches results in <code>use cache</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>5. How to Run &amp; Verify</h2>
+    <pre>grab migrate --db-config grab.data.json --allow-db main:migrate migrations/001_schema.grab
+grab run --db-config grab.data.json --allow-db main:read-write --allow-read . migrations/seed.grab
+grab check --platform-config grab.platform.json src/app.grab
+grab serve --addr 127.0.0.1:8080 --db-config grab.data.json --allow-db main:read-write --platform-config grab.platform.json --allow-cache cms:read-write --allow-read . --static public src/app.grab
+python tests/integration_test.py</pre>
+  </section>
+
+  <p class="footer-note">GrabLab CMS v0.2.0 &middot; Built on GRAB v1.0.1 &amp; Grex JS v1.0.0 &middot; Repository: urbanspress/grablab-cms</p>
+</body>
+</html>
+"""
+
+
+def main():
+    os.makedirs(HTML_DIR, exist_ok=True)
+    os.makedirs(PDF_DIR, exist_ok=True)
+    with open(HTML_PATH, "w", encoding="utf-8") as f:
+        f.write(HTML_DOC)
+
+    if not os.path.exists(CHROME_PATH):
+        print(f"Chrome not found at {CHROME_PATH}", file=sys.stderr)
+        sys.exit(1)
+
+    cmd = [
+        CHROME_PATH,
+        "--headless",
+        "--disable-gpu",
+        "--no-sandbox",
+        "--print-to-pdf-no-header",
+        f"--print-to-pdf={PDF_PATH}",
+        HTML_PATH,
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0 or not os.path.exists(PDF_PATH):
+        print("PDF generation failed:", res.stderr, file=sys.stderr)
+        sys.exit(1)
+    print(f"Generated {PDF_PATH} ({os.path.getsize(PDF_PATH)} bytes)")
+
+
+if __name__ == "__main__":
+    main()

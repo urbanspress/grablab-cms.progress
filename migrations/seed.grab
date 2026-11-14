@@ -22,6 +22,7 @@ set insert_entry to data.prepare using db, "INSERT INTO entries (content_type_id
 set find_theme to data.prepare using db, "SELECT slug, is_active FROM themes WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {slug: "text", is_active: "integer"}}
 set count_active_themes to data.prepare using db, "SELECT count(*) AS total FROM themes WHERE is_active = 1", record {params: record {}, columns: record {total: "integer"}}
 set insert_theme to data.prepare using db, "INSERT INTO themes (slug, name, version, engine, is_active, manifest_json, installed_at) VALUES (:slug, :name, :version, :engine, :is_active, :manifest_json, :installed_at)", record {params: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}, columns: record {}}
+set update_theme to data.prepare using db, "UPDATE themes SET name = :name, version = :version, engine = :engine, manifest_json = :manifest_json WHERE slug = :slug", record {params: record {name: "text", version: "text", engine: "text", manifest_json: "text", slug: "text"}, columns: record {}}
 
 set starter_manifest_raw to files.read_text using "themes/default-starter/theme.json"
 set starter_manifest to json.parse using starter_manifest_raw
@@ -81,7 +82,9 @@ if starter_row is nothing
     set make_active to 1
   end
   call data.execute using insert_theme, record {slug: starter_manifest at "slug", name: starter_manifest at "name", version: starter_manifest at "version", engine: starter_manifest at "engine", is_active: make_active, manifest_json: starter_manifest_raw, installed_at: now_iso}, tx
+otherwise
+  call data.execute using update_theme, record {name: starter_manifest at "name", version: starter_manifest at "version", engine: starter_manifest at "engine", manifest_json: starter_manifest_raw, slug: "default-starter"}, tx
 end
 
 call data.commit using tx
-show "GrabLab CMS v0.1.0 seed completed."
+show "GrabLab CMS v0.2.0 seed completed."

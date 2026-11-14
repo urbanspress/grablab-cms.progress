@@ -3,18 +3,31 @@
   "slug": "default-starter",
   "name": "Default Starter",
   "version": "1.0.0",
+  "mode": "coded",
   "engine": "coded",
   "author": "Urbanspress",
   "grexJsVersion": "1.0.0",
+  "capabilities": ["templates", "parts", "hooks:theme", "assets:static"],
   "templates": {
     "home": "templates/home.grab.html",
     "single": "templates/single.grab.html",
     "archive": "templates/archive.grab.html",
-    "header": "templates/parts/header.grab.html",
-    "footer": "templates/parts/footer.grab.html",
     "404": "templates/404.grab.html",
     "search": "templates/search.grab.html"
   },
+  "parts": {
+    "header": "templates/parts/header.grab.html",
+    "footer": "templates/parts/footer.grab.html",
+    "card": "templates/parts/card.grab.html",
+    "sidebar": "templates/parts/sidebar.grab.html"
+  },
+  "themeHooks": [
+    {
+      "hook": "theme:head_meta",
+      "priority": 20,
+      "handler": "theme_meta_generator"
+    }
+  ],
   "assets": {
     "styles": ["assets/theme.css"],
     "scripts": []

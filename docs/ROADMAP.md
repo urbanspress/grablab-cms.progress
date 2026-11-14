@@ -26,7 +26,7 @@ Scope:
 
 ## `v0.2` — Exclusive Theme Engine, Template Parts, Native Hooks/Filters & Query Loop Engine
 
-**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-002.md`)
+**Status:** Complete (`specifications/GRABLAB-SPEC-002.md`)
 
 Scope:
 - **Exclusive Theme Engine:**

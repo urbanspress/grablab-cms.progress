@@ -4,6 +4,7 @@ use data
 use dates
 use files
 use json
+use math
 use server
 use text
 
@@ -38,6 +39,18 @@ set stmt_get_published_entry_by_path to data.prepare using db, "SELECT e.id, e.c
 set stmt_insert_entry to data.prepare using db, "INSERT INTO entries (content_type_id, slug, full_path, title, status, body_html, custom_fields_json, meta_title, meta_description, published_at, created_at, updated_at) VALUES (:content_type_id, :slug, :full_path, :title, :status, :body_html, :custom_fields_json, :meta_title, :meta_description, :published_at, :created_at, :updated_at)", record {params: record {content_type_id: "integer", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
 set stmt_update_entry to data.prepare using db, "UPDATE entries SET slug = :slug, full_path = :full_path, title = :title, status = :status, body_html = :body_html, custom_fields_json = :custom_fields_json, meta_title = :meta_title, meta_description = :meta_description, published_at = :published_at, updated_at = :updated_at WHERE id = :id", record {params: record {slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, updated_at: "text", id: "integer"}, columns: record {}}
 
+set stmt_count_entries_filtered to data.prepare using db, "SELECT count(*) AS total FROM entries e WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status)", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text"}, columns: record {total: "integer"}}
+set stmt_query_published_at_desc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY COALESCE(e.published_at, e.created_at) DESC, e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_published_at_asc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY COALESCE(e.published_at, e.created_at) ASC, e.id ASC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_created_at_desc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.created_at DESC, e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_created_at_asc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.created_at ASC, e.id ASC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_updated_at_desc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.updated_at DESC, e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_updated_at_asc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.updated_at ASC, e.id ASC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_title_desc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.title DESC, e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_title_asc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.title ASC, e.id ASC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_id_desc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.id DESC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_query_id_asc to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE (:filter_type = 0 OR e.content_type_id = :content_type_id) AND (:filter_status = 0 OR e.status = :status) ORDER BY e.id ASC LIMIT :limit_rows OFFSET :offset_rows", record {params: record {filter_type: "integer", content_type_id: "integer", filter_status: "integer", status: "text", limit_rows: "integer", offset_rows: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+
 set stmt_find_redirect_by_old_path to data.prepare using db, "SELECT s.id, s.old_path, s.entry_id, e.full_path AS target_path FROM slug_history s JOIN entries e ON e.id = s.entry_id WHERE s.old_path = :old_path AND e.status = 'published'", record {params: record {old_path: "text"}, columns: record {id: "integer", old_path: "text", entry_id: "integer", target_path: "text"}}
 set stmt_list_redirects to data.prepare using db, "SELECT s.id, s.old_path, s.entry_id, e.full_path AS target_path, s.created_at FROM slug_history s JOIN entries e ON e.id = s.entry_id ORDER BY s.id DESC", record {params: record {}, columns: record {id: "integer", old_path: "text", entry_id: "integer", target_path: "text", created_at: "text"}}
 set stmt_delete_redirect_by_old_path to data.prepare using db, "DELETE FROM slug_history WHERE old_path = :old_path", record {params: record {old_path: "text"}, columns: record {}}
@@ -51,10 +64,10 @@ set stmt_update_theme_manifest to data.prepare using db, "UPDATE themes SET name
 set stmt_deactivate_all_themes to data.prepare using db, "UPDATE themes SET is_active = 0", record {params: record {}, columns: record {}}
 set stmt_activate_theme_slug to data.prepare using db, "UPDATE themes SET is_active = 1 WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {}}
 
-set stmts to record {db: db, cms_cache: cms_cache, get_setting: stmt_get_setting, list_settings: stmt_list_settings, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, list_types: stmt_list_types, get_type_by_slug: stmt_get_type_by_slug, get_type_by_id: stmt_get_type_by_id, get_type_by_archive: stmt_get_type_by_archive, insert_type: stmt_insert_type, list_fields_by_type: stmt_list_fields_by_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, list_entries: stmt_list_entries, list_published_entries: stmt_list_published_entries, list_published_by_type: stmt_list_published_by_type, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, get_published_entry_by_path: stmt_get_published_entry_by_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, find_redirect_by_old_path: stmt_find_redirect_by_old_path, list_redirects: stmt_list_redirects, delete_redirect_by_old_path: stmt_delete_redirect_by_old_path, insert_redirect: stmt_insert_redirect, list_themes: stmt_list_themes, get_theme_by_slug: stmt_get_theme_by_slug, get_active_theme: stmt_get_active_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, deactivate_all_themes: stmt_deactivate_all_themes, activate_theme_slug: stmt_activate_theme_slug}
+set stmts to record {db: db, cms_cache: cms_cache, get_setting: stmt_get_setting, list_settings: stmt_list_settings, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, list_types: stmt_list_types, get_type_by_slug: stmt_get_type_by_slug, get_type_by_id: stmt_get_type_by_id, get_type_by_archive: stmt_get_type_by_archive, insert_type: stmt_insert_type, list_fields_by_type: stmt_list_fields_by_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, list_entries: stmt_list_entries, list_published_entries: stmt_list_published_entries, list_published_by_type: stmt_list_published_by_type, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, get_published_entry_by_path: stmt_get_published_entry_by_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, count_entries_filtered: stmt_count_entries_filtered, query_published_at_desc: stmt_query_published_at_desc, query_published_at_asc: stmt_query_published_at_asc, query_created_at_desc: stmt_query_created_at_desc, query_created_at_asc: stmt_query_created_at_asc, query_updated_at_desc: stmt_query_updated_at_desc, query_updated_at_asc: stmt_query_updated_at_asc, query_title_desc: stmt_query_title_desc, query_title_asc: stmt_query_title_asc, query_id_desc: stmt_query_id_desc, query_id_asc: stmt_query_id_asc, find_redirect_by_old_path: stmt_find_redirect_by_old_path, list_redirects: stmt_list_redirects, delete_redirect_by_old_path: stmt_delete_redirect_by_old_path, insert_redirect: stmt_insert_redirect, list_themes: stmt_list_themes, get_theme_by_slug: stmt_get_theme_by_slug, get_active_theme: stmt_get_active_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, deactivate_all_themes: stmt_deactivate_all_themes, activate_theme_slug: stmt_activate_theme_slug}
 
 # ==============================================================================
-# Shared Helpers: Normalization, Identifier & URL Safety, Reserved Prefixes
+# Shared Helpers: Normalization, Identifier & URL Safety, Escaping
 # ==============================================================================
 
 make is_allowed_chars using raw, allowed_str, min_len, max_len
@@ -163,12 +176,55 @@ make is_safe_url using raw_url
   give back no
 end
 
+make escape_html using raw
+  set s to text.from using raw
+  set s to text.replace using s, "&", "&amp;"
+  set s to text.replace using s, "<", "&lt;"
+  set s to text.replace using s, ">", "&gt;"
+  set s to text.replace using s, "\"", "&#34;"
+  set s to text.replace using s, "'", "&#39;"
+  give back s
+end
+
 make safe_asset_url using raw_path
   try
     give back server.asset using raw_path
   catch err
-    give back raw_path
+    give back ""
   end
+end
+
+make has_map_key using m, key
+  if m is nothing
+    give back no
+  end
+  set ks to collections.keys using m
+  for each k in ks
+    if k is key
+      give back yes
+    end
+  end
+  give back no
+end
+
+make text_truncate using raw, max_chars
+  set chars to text.split using raw, ""
+  if (collections.length using chars) is at most max_chars
+    give back raw
+  end
+  set sliced to collections.slice using chars, 0, max_chars
+  give back (text.join using sliced, "") joined with "..."
+end
+
+make make_excerpt using raw_body
+  set cleaned to text.trim using (text.from using raw_body)
+  if cleaned is ""
+    give back ""
+  end
+  if text.starts_with using cleaned, "{"
+    give back "Structured Grex layout content."
+  end
+  give back text_truncate using cleaned, 160
 end
 
 # ==============================================================================
@@ -186,9 +242,30 @@ make is_valid_field_type using ftype
 end
 
 make is_allowed_grex_element using el_name
-  set allowed to ["Section", "Container", "Grid", "Stack", "Card", "Heading", "Text", "RichText", "Link", "Button", "Image", "Icon", "Form", "Input", "Select", "Tabs", "Accordion", "Modal", "Nav", "ForEach"]
+  set allowed to ["Fragment", "TemplatePart", "Section", "Container", "Grid", "Stack", "Card", "Heading", "Text", "RichText", "Link", "Button", "Image", "Icon", "Form", "Input", "Select", "Tabs", "Accordion", "Modal", "Nav", "ForEach"]
   for each item in allowed
     if item is el_name
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_grex_tag using tag_name
+  set allowed to ["section", "main", "header", "footer", "article", "aside", "nav", "h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "button", "img", "ul", "ol", "li", "form", "input", "select", "label"]
+  for each item in allowed
+    if item is tag_name
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_binding_token using raw
+  if (text.starts_with using raw, "{") and (text.ends_with using raw, "}") and (text.length using raw) is greater than 2
+    set inner to text.replace using raw, "{", ""
+    set inner to text.replace using inner, "}", ""
+    if (not (text.contains using inner, "{")) and (not (text.contains using inner, "}")) and (is_valid_field_key using inner)
       give back yes
     end
   end
@@ -209,7 +286,7 @@ make validate_grex_node using node, depth
     end
     if node has "tag"
       set tag_name to text.lower using (text.from using (node at "tag"))
-      if tag_name is "div" or tag_name is "script" or tag_name is "iframe" or tag_name is "object"
+      if tag_name is "div" or tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "style" or (not (is_allowed_grex_tag using tag_name))
         give back record {ok: no, error: "Disallowed HTML tag in Grex layout: " joined with tag_name}
       end
     end
@@ -221,9 +298,12 @@ make validate_grex_node using node, depth
         if text.starts_with using pkl, "on"
           give back record {ok: no, error: "Inline event handler prop not allowed: " joined with pk}
         end
-        if pkl is "href" or pkl is "src" or pkl is "action"
+        if pkl is "dangerouslysetinnerhtml" or pkl is "innerhtml" or pkl is "outerhtml"
+          give back record {ok: no, error: "Unsafe raw HTML prop not allowed: " joined with pk}
+        end
+        if pkl is "href" or pkl is "src" or pkl is "action" or pkl is "formaction"
           set url_val to text.from using (props at pk)
-          if not (is_safe_url using url_val)
+          if (not (is_safe_url using url_val)) and (not (is_binding_token using url_val))
             give back record {ok: no, error: "Unsafe URL in Grex prop: " joined with pk}
           end
         end
@@ -345,19 +425,6 @@ make validate_single_field_value using ftype, raw_val
   give back record {ok: no, value: "", error: "Unknown field type: " joined with ftype}
 end
 
-make has_map_key using m, key
-  if m is nothing
-    give back no
-  end
-  set ks to collections.keys using m
-  for each k in ks
-    if k is key
-      give back yes
-    end
-  end
-  give back no
-end
-
 make validate_custom_fields using stmts, content_type_id, input_map
   set defs to data.query using stmts.list_fields_by_type, record {content_type_id: content_type_id}
   set validated to {}
@@ -438,15 +505,48 @@ make compute_full_path using permalink_pattern, slug
 end
 
 # ==============================================================================
-# Module 2: Exclusive Active Theme Manager & Cache Invalidation
+# Module 2: Safe Theme Import, Packaging & Exclusive Hot-Switch Engine
 # ==============================================================================
 
 make is_sensitive_segment using seg
   set s to text.lower using seg
-  if s is ".git" or s is ".env" or s is ".ssh" or s is "id_rsa" or s is "id_ed25519"
+  if s is ".git" or s is ".env" or s is ".ssh" or s is "id_rsa" or s is "id_ed25519" or s is ".ds_store"
     give back yes
   end
   if (text.starts_with using s, ".env.") or (text.ends_with using s, ".pem") or (text.ends_with using s, ".key")
+    give back yes
+  end
+  give back no
+end
+
+make is_disallowed_executable_ext using rel
+  set lower to text.lower using rel
+  set bad_exts to [".exe", ".dll", ".so", ".dylib", ".sh", ".bat", ".cmd", ".ps1", ".py", ".php", ".rb", ".pl", ".go", ".wasm", ".msi", ".jar"]
+  for each ext in bad_exts
+    if text.ends_with using lower, ext
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_theme_file_ext using rel
+  set lower to text.lower using rel
+  set allowed_exts to [".json", ".grab.html", ".css", ".js", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".woff2"]
+  for each ext in allowed_exts
+    if text.ends_with using lower, ext
+      if ext is ".js" and (not (text.starts_with using lower, "assets/"))
+        give back no
+      end
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_text_theme_file using rel
+  set lower to text.lower using rel
+  if (text.ends_with using lower, ".json") or (text.ends_with using lower, ".grab.html") or (text.ends_with using lower, ".css") or (text.ends_with using lower, ".js") or (text.ends_with using lower, ".svg")
     give back yes
   end
   give back no
@@ -465,19 +565,266 @@ make is_safe_theme_relpath using rel
   give back yes
 end
 
+make is_allowed_theme_capability using cap
+  set allowed to ["templates", "parts", "hooks:theme", "grex:visual", "assets:static"]
+  for each item in allowed
+    if item is cap
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_theme_hook_name using hname
+  set allowed to ["theme:head_meta", "theme:before_render", "query:modify_args", "content:before_save"]
+  for each item in allowed
+    if item is hname
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_theme_handler using handler_name
+  set allowed to ["theme_meta_generator", "theme_meta_brand", "theme_query_defaults", "theme_before_render_badge", "theme_before_save_meta"]
+  for each item in allowed
+    if item is handler_name
+      give back yes
+    end
+  end
+  give back no
+end
+
+make validate_theme_capabilities using manifest
+  set has_hooks_cap to no
+  if not (manifest has "capabilities")
+    give back record {ok: yes, has_hooks_cap: no, error: ""}
+  end
+  set caps to manifest at "capabilities"
+  for each cap in caps
+    set cstr to text.from using cap
+    if not (is_allowed_theme_capability using cstr)
+      give back record {ok: no, has_hooks_cap: no, error: "GRAB-E401: unauthorized theme capability: " joined with cstr}
+    end
+    if cstr is "hooks:theme"
+      set has_hooks_cap to yes
+    end
+  end
+  give back record {ok: yes, has_hooks_cap: has_hooks_cap, error: ""}
+end
+
+make validate_theme_hooks_block using manifest, has_hooks_cap
+  if manifest has "plugins" or manifest has "hooks"
+    give back record {ok: no, hooks: [], error: "GRAB-E401: unauthorized theme plugins or raw hooks block"}
+  end
+  if not (manifest has "themeHooks")
+    give back record {ok: yes, hooks: [], error: ""}
+  end
+  if not has_hooks_cap
+    give back record {ok: no, hooks: [], error: "GRAB-E401: themeHooks requires 'hooks:theme' capability"}
+  end
+  set raw_hooks to manifest at "themeHooks"
+  set out to []
+  for each item in raw_hooks
+    if (not (item has "hook")) or (not (item has "handler"))
+      give back record {ok: no, hooks: [], error: "GRAB-E401: themeHooks entry requires hook and handler"}
+    end
+    set hname to text.from using (item at "hook")
+    set handler to text.from using (item at "handler")
+    if not (is_allowed_theme_hook_name using hname)
+      give back record {ok: no, hooks: [], error: "GRAB-E401: disallowed theme hook target: " joined with hname}
+    end
+    if not (is_allowed_theme_handler using handler)
+      give back record {ok: no, hooks: [], error: "GRAB-E401: disallowed theme hook handler: " joined with handler}
+    end
+    set prio to 20
+    if item has "priority"
+      try
+        set prio to text.to_integer using (text.from using (item at "priority"))
+      catch err
+        give back record {ok: no, hooks: [], error: "GRAB-E401: invalid hook priority"}
+      end
+    end
+    set out to collections.append using out, record {hook: hname, priority: prio, handler: handler}
+  end
+  give back record {ok: yes, hooks: out, error: ""}
+end
+
+make resolve_theme_mode using manifest
+  set mode_val to ""
+  if manifest has "mode"
+    set mode_val to text.from using (manifest at "mode")
+  end
+  set engine_val to ""
+  if manifest has "engine"
+    set engine_val to text.from using (manifest at "engine")
+  end
+
+  if mode_val is ""
+    if engine_val is "coded"
+      give back record {ok: yes, mode: "coded", engine: "coded", error: ""}
+    end
+    if engine_val is "grex-visual"
+      give back record {ok: yes, mode: "visual", engine: "grex-visual", error: ""}
+    end
+    give back record {ok: no, mode: "", engine: "", error: "Theme engine must be coded or grex-visual"}
+  end
+
+  if mode_val is not "coded" and mode_val is not "visual"
+    give back record {ok: no, mode: "", engine: "", error: "Theme mode must be coded or visual"}
+  end
+
+  if engine_val is ""
+    if mode_val is "visual"
+      give back record {ok: yes, mode: "visual", engine: "grex-visual", error: ""}
+    end
+    give back record {ok: yes, mode: "coded", engine: "coded", error: ""}
+  end
+
+  if mode_val is "coded" and engine_val is not "coded"
+    give back record {ok: no, mode: "", engine: "", error: "Theme mode 'coded' conflicts with engine '" joined with engine_val joined with "'"}
+  end
+  if mode_val is "visual" and engine_val is not "grex-visual"
+    give back record {ok: no, mode: "", engine: "", error: "Theme mode 'visual' conflicts with engine '" joined with engine_val joined with "'"}
+  end
+
+  give back record {ok: yes, mode: mode_val, engine: engine_val, error: ""}
+end
+
+make validate_grex_elements_doc using doc
+  set required_slots to ["home", "single", "archive", "404"]
+  if not (doc has "templates")
+    give back record {ok: no, error: "grex.elements.json missing templates object"}
+  end
+  set tmpls to doc at "templates"
+  for each slot in required_slots
+    if not (has_map_key using tmpls, slot)
+      give back record {ok: no, error: "grex.elements.json missing required template slot: " joined with slot}
+    end
+    set node_res to validate_grex_node using (tmpls at slot), 0
+    if not node_res.ok
+      give back record {ok: no, error: "Grex template '" joined with slot joined with "': " joined with node_res.error}
+    end
+  end
+  set tkeys to collections.keys using tmpls
+  for each tk in tkeys
+    set node_res to validate_grex_node using (tmpls at tk), 0
+    if not node_res.ok
+      give back record {ok: no, error: "Grex template '" joined with tk joined with "': " joined with node_res.error}
+    end
+  end
+  if doc has "parts"
+    set parts_map to doc at "parts"
+    set pkeys to collections.keys using parts_map
+    for each pk in pkeys
+      if not (is_valid_slug using pk)
+        give back record {ok: no, error: "Invalid Grex template part key: " joined with pk}
+      end
+      set part_val to parts_map at pk
+      if part_val is not nothing
+        set p_res to validate_grex_node using part_val, 0
+        if not p_res.ok
+          give back record {ok: no, error: "Grex part '" joined with pk joined with "': " joined with p_res.error}
+        end
+      end
+    end
+  end
+  give back record {ok: yes, error: ""}
+end
+
+make walk_theme_dir_check using base_dir, rel_dir, depth, state_rec
+  if depth is greater than 8
+    give back record {ok: no, file_count: state_rec.file_count, total_bytes: state_rec.total_bytes, error: "GRAB-E401: theme directory depth exceeds limit (8)"}
+  end
+  set full_dir to base_dir
+  if rel_dir is not ""
+    set full_dir to base_dir joined with "/" joined with rel_dir
+  end
+  set names to []
+  try
+    set names to files.list_dir using full_dir
+  catch err
+    give back record {ok: no, file_count: state_rec.file_count, total_bytes: state_rec.total_bytes, error: "GRAB-E401: unable to inspect theme directory: " joined with full_dir}
+  end
+
+  set cur_count to state_rec.file_count
+  set cur_bytes to state_rec.total_bytes
+  for each name in names
+    if is_sensitive_segment using name
+      give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: sensitive entry disallowed in theme: " joined with name}
+    end
+    set child_rel to name
+    if rel_dir is not ""
+      set child_rel to rel_dir joined with "/" joined with name
+    end
+    if not (is_safe_theme_relpath using child_rel)
+      give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: unsafe theme path: " joined with child_rel}
+    end
+    set child_full to base_dir joined with "/" joined with child_rel
+    set is_sub to no
+    try
+      set sub_names to files.list_dir using child_full
+      set is_sub to yes
+    catch err
+      set is_sub to no
+    end
+    if is_sub
+      set sub_res to walk_theme_dir_check using base_dir, child_rel, (depth plus 1), record {file_count: cur_count, total_bytes: cur_bytes}
+      if not sub_res.ok
+        give back sub_res
+      end
+      set cur_count to sub_res.file_count
+      set cur_bytes to sub_res.total_bytes
+    otherwise
+      set cur_count to cur_count plus 1
+      if cur_count is greater than 250
+        give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: theme exceeds maximum file count (250)"}
+      end
+      if is_disallowed_executable_ext using child_rel
+        give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: disallowed executable extension in theme: " joined with child_rel}
+      end
+      if not (is_allowed_theme_file_ext using child_rel)
+        give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: disallowed file extension in theme: " joined with child_rel}
+      end
+      if is_text_theme_file using child_rel
+        try
+          set txt to files.read_text using child_full
+          set fbytes to text.length using txt
+          if fbytes is greater than 5242880
+            give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: theme file exceeds 5 MB limit: " joined with child_rel}
+          end
+          set cur_bytes to cur_bytes plus fbytes
+          if cur_bytes is greater than 26214400
+            give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: theme package exceeds 25 MB total limit"}
+          end
+        catch err
+          give back record {ok: no, file_count: cur_count, total_bytes: cur_bytes, error: "GRAB-E401: invalid UTF-8 or unreadable theme file: " joined with child_rel}
+        end
+      end
+    end
+  end
+  give back record {ok: yes, file_count: cur_count, total_bytes: cur_bytes, error: ""}
+end
+
 make validate_theme_manifest using slug
   if not (is_valid_theme_slug using slug)
-    give back record {ok: no, manifest: {}, raw: "", error: "Invalid theme slug"}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Invalid theme slug"}
   end
-  set manifest_path to "themes/" joined with slug joined with "/theme.json"
+  set base_dir to "themes/" joined with slug
+  set manifest_path to base_dir joined with "/theme.json"
   set exists_flag to no
   try
     set exists_flag to files.exists using manifest_path
   catch err
-    give back record {ok: no, manifest: {}, raw: "", error: "Unable to access theme manifest"}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Unable to access theme manifest"}
   end
   if not exists_flag
-    give back record {ok: no, manifest: {}, raw: "", error: "Theme manifest not found: " joined with manifest_path}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Theme manifest not found: " joined with manifest_path}
+  end
+
+  set dir_check to walk_theme_dir_check using base_dir, "", 0, record {file_count: 0, total_bytes: 0}
+  if not dir_check.ok
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: dir_check.error}
   end
 
   set raw_json to ""
@@ -486,52 +833,106 @@ make validate_theme_manifest using slug
     set raw_json to files.read_text using manifest_path
     set manifest to json.parse using raw_json
   catch err
-    give back record {ok: no, manifest: {}, raw: "", error: "Malformed theme.json"}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Malformed theme.json"}
   end
 
-  if (not (manifest has "schemaVersion")) or (not (manifest has "slug")) or (not (manifest has "name")) or (not (manifest has "version")) or (not (manifest has "engine")) or (not (manifest has "templates"))
-    give back record {ok: no, manifest: {}, raw: "", error: "theme.json missing required fields"}
+  if (not (manifest has "schemaVersion")) or (not (manifest has "slug")) or (not (manifest has "name")) or (not (manifest has "version"))
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "theme.json missing required fields"}
   end
-
-  if (manifest has "capabilities") or (manifest has "plugins") or (manifest has "hooks")
-    give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unauthorized theme capabilities block"}
+  if (not (manifest has "engine")) and (not (manifest has "mode"))
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "theme.json requires mode or engine"}
   end
-
   if (manifest at "schemaVersion") is not "1.0.0"
-    give back record {ok: no, manifest: {}, raw: "", error: "Unsupported theme schemaVersion"}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Unsupported theme schemaVersion"}
   end
-
   if (manifest at "slug") is not slug
-    give back record {ok: no, manifest: {}, raw: "", error: "theme.json slug does not match directory name"}
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: "theme.json slug does not match directory name"}
   end
 
-  set engine to manifest at "engine"
-  if engine is not "coded" and engine is not "grex-visual"
-    give back record {ok: no, manifest: {}, raw: "", error: "Theme engine must be coded or grex-visual"}
+  set cap_res to validate_theme_capabilities using manifest
+  if not cap_res.ok
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: cap_res.error}
+  end
+  set hooks_res to validate_theme_hooks_block using manifest, cap_res.has_hooks_cap
+  if not hooks_res.ok
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: hooks_res.error}
   end
 
-  set templates to manifest at "templates"
-  set required_slots to ["home", "single", "archive", "404"]
-  for each slot in required_slots
-    if not (has_map_key using templates, slot)
-      give back record {ok: no, manifest: {}, raw: "", error: "theme.json missing required template slot: " joined with slot}
-    end
+  set mode_res to resolve_theme_mode using manifest
+  if not mode_res.ok
+    give back record {ok: no, manifest: {}, raw: "", mode: "", error: mode_res.error}
   end
+  set mode to mode_res.mode
 
-  set tmpl_keys to collections.keys using templates
-  for each tkey in tmpl_keys
-    set trel to templates at tkey
-    if not (is_safe_theme_relpath using trel)
-      give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unsafe theme template path: " joined with trel}
+  if mode is "coded"
+    if not (manifest has "templates")
+      give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Coded theme.json missing templates"}
     end
-    if not (text.ends_with using trel, ".grab.html")
-      give back record {ok: no, manifest: {}, raw: "", error: "Theme templates must have .grab.html extension"}
-    end
-    if engine is "coded"
-      set disk_path to "themes/" joined with slug joined with "/" joined with trel
-      if not (files.exists using disk_path)
-        give back record {ok: no, manifest: {}, raw: "", error: "Missing theme template on disk: " joined with disk_path}
+    set templates to manifest at "templates"
+    set required_slots to ["home", "single", "archive", "404"]
+    for each slot in required_slots
+      if not (has_map_key using templates, slot)
+        give back record {ok: no, manifest: {}, raw: "", mode: "", error: "theme.json missing required template slot: " joined with slot}
       end
+    end
+    set tmpl_keys to collections.keys using templates
+    for each tkey in tmpl_keys
+      set trel to text.from using (templates at tkey)
+      if not (is_safe_theme_relpath using trel)
+        give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: unsafe theme template path: " joined with trel}
+      end
+      if not (text.ends_with using trel, ".grab.html")
+        give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Theme templates must have .grab.html extension"}
+      end
+      set disk_path to base_dir joined with "/" joined with trel
+      if not (files.exists using disk_path)
+        give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Missing theme template on disk: " joined with disk_path}
+      end
+    end
+    if manifest has "parts"
+      set parts to manifest at "parts"
+      set pkeys to collections.keys using parts
+      for each pkey in pkeys
+        if not (is_valid_slug using pkey)
+          give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Invalid template part key: " joined with pkey}
+        end
+        set prel_raw to parts at pkey
+        if prel_raw is not nothing
+          set prel to text.from using prel_raw
+          if not (is_safe_theme_relpath using prel)
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: unsafe theme part path: " joined with prel}
+          end
+          if not (text.ends_with using prel, ".grab.html")
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Coded theme parts must have .grab.html extension"}
+          end
+          set p_disk to base_dir joined with "/" joined with prel
+          if not (files.exists using p_disk)
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Missing theme part on disk: " joined with p_disk}
+          end
+        end
+      end
+    end
+  otherwise
+    set grex_rel to "grex.elements.json"
+    if manifest has "grexElements"
+      set grex_rel to text.from using (manifest at "grexElements")
+    end
+    if (not (is_safe_theme_relpath using grex_rel)) or (not (text.ends_with using grex_rel, ".json"))
+      give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: unsafe grexElements path"}
+    end
+    set grex_disk to base_dir joined with "/" joined with grex_rel
+    if not (files.exists using grex_disk)
+      give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Visual theme missing grex.elements.json: " joined with grex_disk}
+    end
+    try
+      set grex_raw to files.read_text using grex_disk
+      set grex_doc to json.parse using grex_raw
+      set grex_chk to validate_grex_elements_doc using grex_doc
+      if not grex_chk.ok
+        give back record {ok: no, manifest: {}, raw: "", mode: "", error: grex_chk.error}
+      end
+    catch err
+      give back record {ok: no, manifest: {}, raw: "", mode: "", error: "Malformed grex.elements.json"}
     end
   end
 
@@ -541,15 +942,129 @@ make validate_theme_manifest using slug
       if has_map_key using assets, asset_group
         set items to assets at asset_group
         for each arel in items
-          if not (is_safe_theme_relpath using arel)
-            give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unsafe theme asset path: " joined with arel}
+          set arel_str to text.from using arel
+          if not (is_safe_theme_relpath using arel_str)
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: unsafe theme asset path: " joined with arel_str}
+          end
+          if asset_group is "styles" and (not (text.ends_with using (text.lower using arel_str), ".css"))
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: theme style asset must be .css"}
+          end
+          if asset_group is "scripts" and ((not (text.ends_with using (text.lower using arel_str), ".js")) or (not (text.starts_with using (text.lower using arel_str), "assets/")))
+            give back record {ok: no, manifest: {}, raw: "", mode: "", error: "GRAB-E401: theme script asset must be under assets/*.js"}
           end
         end
       end
     end
   end
 
-  give back record {ok: yes, manifest: manifest, raw: raw_json, error: ""}
+  give back record {ok: yes, manifest: manifest, raw: raw_json, mode: mode, engine: mode_res.engine, error: ""}
+end
+
+make validate_theme_package_bundle using payload
+  if (not (payload has "slug")) or (not (payload has "manifest")) or (not (payload has "files"))
+    give back record {ok: no, error: "Package bundle requires slug, manifest, and files"}
+  end
+  set slug to normalize_slug using (text.from using (payload at "slug"))
+  if not (is_valid_theme_slug using slug)
+    give back record {ok: no, error: "Invalid theme slug"}
+  end
+  set manifest to payload at "manifest"
+  if (not (manifest has "schemaVersion")) or (not (manifest has "slug")) or (not (manifest has "name")) or (not (manifest has "version"))
+    give back record {ok: no, error: "Manifest missing required fields"}
+  end
+  if (manifest at "slug") is not slug
+    give back record {ok: no, error: "Manifest slug does not match package slug"}
+  end
+  set cap_res to validate_theme_capabilities using manifest
+  if not cap_res.ok
+    give back record {ok: no, error: cap_res.error}
+  end
+  set hooks_res to validate_theme_hooks_block using manifest, cap_res.has_hooks_cap
+  if not hooks_res.ok
+    give back record {ok: no, error: hooks_res.error}
+  end
+  set mode_res to resolve_theme_mode using manifest
+  if not mode_res.ok
+    give back record {ok: no, error: mode_res.error}
+  end
+
+  set file_entries to payload at "files"
+  set count to collections.length using file_entries
+  if count is greater than 250
+    give back record {ok: no, error: "GRAB-E401: package exceeds maximum file count (250)"}
+  end
+
+  set total_bytes to 0
+  set path_set to {}
+  for each f in file_entries
+    if not (f has "path")
+      give back record {ok: no, error: "Package file entry missing path"}
+    end
+    set rel to text.from using (f at "path")
+    if not (is_safe_theme_relpath using rel)
+      give back record {ok: no, error: "GRAB-E401: unsafe package file path: " joined with rel}
+    end
+    if is_disallowed_executable_ext using rel
+      give back record {ok: no, error: "GRAB-E401: disallowed executable extension: " joined with rel}
+    end
+    if not (is_allowed_theme_file_ext using rel)
+      give back record {ok: no, error: "GRAB-E401: disallowed file extension: " joined with rel}
+    end
+    set fsize to 0
+    if f has "size_bytes"
+      set fsize to text.to_integer using (text.from using (f at "size_bytes"))
+    otherwise
+      if f has "content"
+        set fsize to text.length using (text.from using (f at "content"))
+      end
+    end
+    if fsize is greater than 5242880
+      give back record {ok: no, error: "GRAB-E401: package file exceeds 5 MB limit: " joined with rel}
+    end
+    set total_bytes to total_bytes plus fsize
+    if total_bytes is greater than 26214400
+      give back record {ok: no, error: "GRAB-E401: package exceeds 25 MB total limit"}
+    end
+    set path_set to collections.put using path_set, rel, f
+  end
+
+  if mode_res.mode is "coded"
+    if not (manifest has "templates")
+      give back record {ok: no, error: "Coded theme manifest missing templates"}
+    end
+    set tmpls to manifest at "templates"
+    for each req_slot in ["home", "single", "archive", "404"]
+      if not (has_map_key using tmpls, req_slot)
+        give back record {ok: no, error: "Missing required template slot: " joined with req_slot}
+      end
+      set trel to text.from using (tmpls at req_slot)
+      if not (has_map_key using path_set, trel)
+        give back record {ok: no, error: "Package missing declared template file: " joined with trel}
+      end
+    end
+  otherwise
+    set grex_rel to "grex.elements.json"
+    if manifest has "grexElements"
+      set grex_rel to text.from using (manifest at "grexElements")
+    end
+    if not (has_map_key using path_set, grex_rel)
+      give back record {ok: no, error: "Visual theme package missing " joined with grex_rel}
+    end
+    set grex_entry to path_set at grex_rel
+    if grex_entry has "content"
+      try
+        set gdoc to json.parse using (text.from using (grex_entry at "content"))
+        set gchk to validate_grex_elements_doc using gdoc
+        if not gchk.ok
+          give back record {ok: no, error: gchk.error}
+        end
+      catch err
+        give back record {ok: no, error: "Malformed grex.elements.json in package"}
+      end
+    end
+  end
+
+  give back record {ok: yes, slug: slug, mode: mode_res.mode, file_count: count, total_bytes: total_bytes, error: ""}
 end
 
 make upsert_setting using stmts, key, val, now_iso, tx
@@ -564,9 +1079,9 @@ end
 make upsert_theme_row using stmts, slug, check_res, now_iso, tx
   set existing to data.one using stmts.get_theme_by_slug, record {slug: slug}, tx
   if existing is nothing
-    call data.execute using stmts.insert_theme, record {slug: slug, name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: (check_res.manifest at "engine"), is_active: 0, manifest_json: check_res.raw, installed_at: now_iso}, tx
+    call data.execute using stmts.insert_theme, record {slug: slug, name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: check_res.engine, is_active: 0, manifest_json: check_res.raw, installed_at: now_iso}, tx
   otherwise
-    call data.execute using stmts.update_theme_manifest, record {name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: (check_res.manifest at "engine"), manifest_json: check_res.raw, slug: slug}, tx
+    call data.execute using stmts.update_theme_manifest, record {name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: check_res.engine, manifest_json: check_res.raw, slug: slug}, tx
   end
 end
 
@@ -577,10 +1092,37 @@ make get_active_theme_context using stmts
   end
 
   set row to data.one using stmts.get_active_theme, record {}
-  set ctx to record {slug: "default-starter", name: "Default Starter", version: "1.0.0", engine: "coded", templates: {"home": "templates/home.grab.html", "single": "templates/single.grab.html", "archive": "templates/archive.grab.html", "404": "templates/404.grab.html"}}
+  set default_templates to {"home": "templates/home.grab.html", "single": "templates/single.grab.html", "archive": "templates/archive.grab.html", "404": "templates/404.grab.html", "search": "templates/search.grab.html"}
+  set default_parts to {"header": "templates/parts/header.grab.html", "footer": "templates/parts/footer.grab.html", "card": "templates/parts/card.grab.html", "sidebar": "templates/parts/sidebar.grab.html"}
+  set ctx to record {slug: "default-starter", name: "Default Starter", version: "1.0.0", engine: "coded", mode: "coded", templates: default_templates, parts: default_parts, themeHooks: [], assets: {}, grexElements: "grex.elements.json"}
   if row is not nothing
     set parsed to json.parse using row.manifest_json
-    set ctx to record {slug: row.slug, name: row.name, version: row.version, engine: row.engine, templates: (parsed at "templates")}
+    set mode_res to resolve_theme_mode using parsed
+    set mode to "coded"
+    if mode_res.ok
+      set mode to mode_res.mode
+    end
+    set tmpls to {}
+    if parsed has "templates"
+      set tmpls to parsed at "templates"
+    end
+    set parts to {}
+    if parsed has "parts"
+      set parts to parsed at "parts"
+    end
+    set thooks to []
+    if parsed has "themeHooks"
+      set thooks to parsed at "themeHooks"
+    end
+    set assets to {}
+    if parsed has "assets"
+      set assets to parsed at "assets"
+    end
+    set grex_el_path to "grex.elements.json"
+    if parsed has "grexElements"
+      set grex_el_path to text.from using (parsed at "grexElements")
+    end
+    set ctx to record {slug: row.slug, name: row.name, version: row.version, engine: row.engine, mode: mode, templates: tmpls, parts: parts, themeHooks: thooks, assets: assets, grexElements: grex_el_path}
   end
   call cache.set using stmts.cms_cache, "active_theme", ctx, 300000
   give back ctx
@@ -600,6 +1142,33 @@ make get_site_settings_map using stmts
   give back out
 end
 
+# ==============================================================================
+# Module 3: Cache Epochs & Deterministic Invalidation (use cache)
+# ==============================================================================
+
+make get_cache_epoch using stmts, epoch_key
+  set cached to cache.get using stmts.cms_cache, epoch_key
+  if cached.found
+    give back cached.value
+  end
+  call cache.set using stmts.cms_cache, epoch_key, 1, 86400000
+  give back 1
+end
+
+make bump_cache_epoch using stmts, epoch_key
+  set cur to get_cache_epoch using stmts, epoch_key
+  set nxt to cur plus 1
+  call cache.set using stmts.cms_cache, epoch_key, nxt, 86400000
+  give back nxt
+end
+
+make bump_query_cache_epochs using stmts, type_slug
+  call bump_cache_epoch using stmts, "cache_epoch:query"
+  if type_slug is not ""
+    call bump_cache_epoch using stmts, ("cache_epoch:type:" joined with type_slug)
+  end
+end
+
 make invalidate_route_caches using stmts, path_a, path_b, type_slug
   if path_a is not ""
     call cache.delete using stmts.cms_cache, ("route:" joined with path_a)
@@ -611,19 +1180,816 @@ make invalidate_route_caches using stmts, path_a, path_b, type_slug
     call cache.delete using stmts.cms_cache, ("archive:" joined with type_slug)
   end
   call cache.delete using stmts.cms_cache, "home_entries"
+  call bump_query_cache_epochs using stmts, type_slug
 end
 
-make render_theme_page using stmts, slot_name, page_data, status
+# ==============================================================================
+# Module 4: Native Hooks & Filters Registry (Core + Single Active Theme Only)
+# ==============================================================================
+
+make is_allowed_hook_handler_ref using source, handler_name
+  if source is "core"
+    set core_handlers to ["core_normalize_entry_before_save", "core_invalidate_after_publish", "core_default_head_meta", "core_prepare_render_context", "core_clamp_query_args"]
+    for each h in core_handlers
+      if h is handler_name
+        give back yes
+      end
+    end
+    give back no
+  end
+  give back is_allowed_theme_handler using handler_name
+end
+
+make create_hook_registry using active_slug
+  give back record {active_slug: active_slug, hooks: {}, filters: {}, next_seq: 0}
+end
+
+make validate_hook_source using registry, source
+  if source is "core"
+    give back yes
+  end
+  set expected to "theme:" joined with registry.active_slug
+  if source is expected
+    give back yes
+  end
+  give back no
+end
+
+make sort_registrations using items
+  set sorted to []
+  for each item in items
+    set inserted to no
+    set next_list to []
+    for each existing in sorted
+      if (not inserted) and ((item.priority is less than existing.priority) or (item.priority is existing.priority and item.seq is less than existing.seq))
+        set next_list to collections.append using next_list, item
+        set inserted to yes
+      end
+      set next_list to collections.append using next_list, existing
+    end
+    if not inserted
+      set next_list to collections.append using next_list, item
+    end
+    set sorted to next_list
+  end
+  give back sorted
+end
+
+make registerHook using registry, hook_name, source, priority, handler_name
+  if not (validate_hook_source using registry, source)
+    give back record {ok: no, registry: registry, error: "GRAB-E401: hook source denied (zero-plugin active-theme isolation): " joined with source}
+  end
+  if not (is_allowed_hook_handler_ref using source, handler_name)
+    give back record {ok: no, registry: registry, error: "GRAB-E401: unregistered or unsafe hook handler: " joined with handler_name}
+  end
+  set seq to registry.next_seq
+  set entry to record {name: hook_name, kind: "hook", source: source, priority: priority, seq: seq, handler: handler_name}
+  set existing to []
+  if has_map_key using registry.hooks, hook_name
+    set existing to registry.hooks at hook_name
+  end
+  set updated to sort_registrations using (collections.append using existing, entry)
+  set next_hooks to collections.put using registry.hooks, hook_name, updated
+  give back record {ok: yes, registry: (record {active_slug: registry.active_slug, hooks: next_hooks, filters: registry.filters, next_seq: (seq plus 1)}), error: ""}
+end
+
+make registerFilter using registry, filter_name, source, priority, handler_name
+  if not (validate_hook_source using registry, source)
+    give back record {ok: no, registry: registry, error: "GRAB-E401: filter source denied (zero-plugin active-theme isolation): " joined with source}
+  end
+  if not (is_allowed_hook_handler_ref using source, handler_name)
+    give back record {ok: no, registry: registry, error: "GRAB-E401: unregistered or unsafe filter handler: " joined with handler_name}
+  end
+  set seq to registry.next_seq
+  set entry to record {name: filter_name, kind: "filter", source: source, priority: priority, seq: seq, handler: handler_name}
+  set existing to []
+  if has_map_key using registry.filters, filter_name
+    set existing to registry.filters at filter_name
+  end
+  set updated to sort_registrations using (collections.append using existing, entry)
+  set next_filters to collections.put using registry.filters, filter_name, updated
+  give back record {ok: yes, registry: (record {active_slug: registry.active_slug, hooks: registry.hooks, filters: next_filters, next_seq: (seq plus 1)}), error: ""}
+end
+
+make execute_hook_handler using stmts, handler_name, payload
+  if handler_name is "core_invalidate_after_publish"
+    set full_path to ""
+    set old_path to ""
+    set type_slug to ""
+    if payload has "full_path"
+      set full_path to text.from using (payload at "full_path")
+    end
+    if payload has "old_path"
+      set old_path to text.from using (payload at "old_path")
+    end
+    if payload has "content_type_slug"
+      set type_slug to text.from using (payload at "content_type_slug")
+    end
+    call invalidate_route_caches using stmts, old_path, full_path, type_slug
+    give back record {ok: yes, executed: handler_name}
+  end
+  if handler_name is "core_prepare_render_context"
+    give back record {ok: yes, executed: handler_name}
+  end
+  if handler_name is "theme_before_render_badge"
+    give back record {ok: yes, executed: handler_name}
+  end
+  give back record {ok: yes, executed: handler_name}
+end
+
+make execute_filter_handler using handler_name, val, ctx
+  if handler_name is "core_normalize_entry_before_save"
+    set out to val
+    set title_val to ""
+    if has_map_key using out, "title"
+      set title_val to text.trim using (text.from using (out at "title"))
+      set out to collections.put using out, "title", title_val
+    end
+    if (not (has_map_key using out, "meta_title")) or ((out at "meta_title") is "")
+      set out to collections.put using out, "meta_title", title_val
+    end
+    if (not (has_map_key using out, "meta_description")) or ((out at "meta_description") is "")
+      if has_map_key using out, "body_html"
+        set ex to make_excerpt using (out at "body_html")
+        set out to collections.put using out, "meta_description", ex
+      end
+    end
+    give back out
+  end
+
+  if handler_name is "theme_before_save_meta"
+    set out to val
+    if has_map_key using out, "meta_title"
+      set mt to text.from using (out at "meta_title")
+      if mt is not "" and (has_map_key using ctx, "theme_name")
+        set suffix to " | " joined with (text.from using (ctx at "theme_name"))
+        if not (text.ends_with using mt, suffix)
+          set out to collections.put using out, "meta_title", (mt joined with suffix)
+        end
+      end
+    end
+    give back out
+  end
+
+  if handler_name is "core_default_head_meta"
+    set tags to val
+    set canon to "/"
+    if has_map_key using ctx, "canonical_path"
+      set canon to text.from using (ctx at "canonical_path")
+    end
+    if is_safe_url using canon
+      set tags to collections.append using tags, ("<link rel=\"canonical\" href=\"" joined with (escape_html using canon) joined with "\">")
+    end
+    set og_title to "GrabLab CMS"
+    if has_map_key using ctx, "page_title"
+      set og_title to text.from using (ctx at "page_title")
+    end
+    set tags to collections.append using tags, ("<meta property=\"og:title\" content=\"" joined with (escape_html using og_title) joined with "\">")
+    give back tags
+  end
+
+  if handler_name is "theme_meta_generator"
+    set tags to val
+    set tslug to "default-starter"
+    if has_map_key using ctx, "theme_slug"
+      set tslug to text.from using (ctx at "theme_slug")
+    end
+    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v0.2.0 (" joined with (escape_html using tslug) joined with ")\">")
+    give back tags
+  end
+
+  if handler_name is "theme_meta_brand"
+    set tags to val
+    set tname to "GrabLab Theme"
+    if has_map_key using ctx, "theme_name"
+      set tname to text.from using (ctx at "theme_name")
+    end
+    set tags to collections.append using tags, ("<meta name=\"theme-name\" content=\"" joined with (escape_html using tname) joined with "\">")
+    give back tags
+  end
+
+  if handler_name is "core_clamp_query_args"
+    set args to val
+    set p to args.page
+    if p is less than 1
+      set p to 1
+    end
+    set pp to args.per_page
+    if pp is less than 1
+      set pp to 1
+    end
+    if pp is greater than 100
+      set pp to 100
+    end
+    set st to args.status
+    if args.is_public
+      set st to "published"
+    end
+    give back record {content_type: args.content_type, status: st, field_key: args.field_key, field_op: args.field_op, field_value: args.field_value, sort_by: args.sort_by, sort_dir: args.sort_dir, page: p, per_page: pp, is_public: args.is_public}
+  end
+
+  if handler_name is "theme_query_defaults"
+    give back val
+  end
+
+  give back val
+end
+
+make runHook using stmts, registry, hook_name, payload
+  set executed to []
+  if not (has_map_key using registry.hooks, hook_name)
+    give back executed
+  end
+  set handlers to registry.hooks at hook_name
+  for each reg in handlers
+    call execute_hook_handler using stmts, reg.handler, payload
+    set executed to collections.append using executed, record {source: reg.source, priority: reg.priority, handler: reg.handler}
+  end
+  give back executed
+end
+
+make applyFilter using registry, filter_name, initial_val, ctx
+  set current to initial_val
+  if not (has_map_key using registry.filters, filter_name)
+    give back current
+  end
+  set handlers to registry.filters at filter_name
+  for each reg in handlers
+    set current to execute_filter_handler using reg.handler, current, ctx
+  end
+  give back current
+end
+
+make build_active_hook_registry using theme
+  set reg to create_hook_registry using theme.slug
+  set r1 to registerFilter using reg, "content:before_save", "core", 10, "core_normalize_entry_before_save"
+  set reg to r1.registry
+  set r2 to registerHook using reg, "content:after_publish", "core", 10, "core_invalidate_after_publish"
+  set reg to r2.registry
+  set r3 to registerFilter using reg, "theme:head_meta", "core", 10, "core_default_head_meta"
+  set reg to r3.registry
+  set r4 to registerHook using reg, "theme:before_render", "core", 10, "core_prepare_render_context"
+  set reg to r4.registry
+  set r5 to registerFilter using reg, "query:modify_args", "core", 10, "core_clamp_query_args"
+  set reg to r5.registry
+
+  set tsrc to "theme:" joined with theme.slug
+  for each th in theme.themeHooks
+    set hname to text.from using (th at "hook")
+    set handler to text.from using (th at "handler")
+    set prio to 20
+    if th has "priority"
+      set prio to text.to_integer using (text.from using (th at "priority"))
+    end
+    if hname is "theme:before_render" or hname is "content:after_publish"
+      set res to registerHook using reg, hname, tsrc, prio, handler
+      if res.ok
+        set reg to res.registry
+      end
+    otherwise
+      set res to registerFilter using reg, hname, tsrc, prio, handler
+      if res.ok
+        set reg to res.registry
+      end
+    end
+  end
+  give back reg
+end
+
+# ==============================================================================
+# Module 5: Query Loop Engine (query_entries + use cache Invalidation)
+# ==============================================================================
+
+make is_allowed_sort_by using raw
+  set allowed to ["published_at", "created_at", "updated_at", "title", "id"]
+  for each item in allowed
+    if item is raw
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_field_op using raw
+  set allowed to ["eq", "neq", "contains"]
+  for each item in allowed
+    if item is raw
+      give back yes
+    end
+  end
+  give back no
+end
+
+make normalize_query_args using raw_map, is_public
+  set ct to ""
+  if has_map_key using raw_map, "content_type"
+    set ct to normalize_slug using (text.from using (raw_map at "content_type"))
+    if ct is not "" and (not (is_valid_slug using ct))
+      give back record {ok: no, args: nothing, error: "Invalid content_type slug"}
+    end
+  end
+
+  set status to "published"
+  if (not is_public) and (has_map_key using raw_map, "status")
+    set st_raw to text.lower using (text.trim using (text.from using (raw_map at "status")))
+    if st_raw is not ""
+      if st_raw is not "published" and st_raw is not "draft" and st_raw is not "archived" and st_raw is not "all"
+        give back record {ok: no, args: nothing, error: "Invalid query status"}
+      end
+      set status to st_raw
+    end
+  end
+
+  set field_key to ""
+  if has_map_key using raw_map, "field_key"
+    set field_key to normalize_slug using (text.from using (raw_map at "field_key"))
+    if field_key is not "" and (not (is_valid_field_key using field_key))
+      give back record {ok: no, args: nothing, error: "Invalid field_key"}
+    end
+  end
+
+  set field_op to "eq"
+  if has_map_key using raw_map, "field_op"
+    set fop_raw to text.lower using (text.trim using (text.from using (raw_map at "field_op")))
+    if fop_raw is not ""
+      if not (is_allowed_field_op using fop_raw)
+        give back record {ok: no, args: nothing, error: "Unsupported field_op (allowed: eq, neq, contains)"}
+      end
+      set field_op to fop_raw
+    end
+  end
+
+  set field_value to ""
+  if has_map_key using raw_map, "field_value"
+    set field_value to text.from using (raw_map at "field_value")
+  end
+
+  set sort_by to "published_at"
+  if has_map_key using raw_map, "sort_by"
+    set sb_raw to text.lower using (text.trim using (text.from using (raw_map at "sort_by")))
+    if sb_raw is not ""
+      if not (is_allowed_sort_by using sb_raw)
+        give back record {ok: no, args: nothing, error: "Unsupported sort_by column"}
+      end
+      set sort_by to sb_raw
+    end
+  end
+
+  set sort_dir to "desc"
+  if has_map_key using raw_map, "sort_dir"
+    set sd_raw to text.lower using (text.trim using (text.from using (raw_map at "sort_dir")))
+    if sd_raw is not ""
+      if sd_raw is not "asc" and sd_raw is not "desc"
+        give back record {ok: no, args: nothing, error: "sort_dir must be asc or desc"}
+      end
+      set sort_dir to sd_raw
+    end
+  end
+
+  set page to 1
+  if has_map_key using raw_map, "page"
+    set p_raw to text.trim using (text.from using (raw_map at "page"))
+    if p_raw is not ""
+      try
+        set page to text.to_integer using p_raw
+      catch err
+        give back record {ok: no, args: nothing, error: "page must be an integer"}
+      end
+      if page is less than 1
+        give back record {ok: no, args: nothing, error: "page must be >= 1"}
+      end
+    end
+  end
+
+  set per_page to 10
+  if has_map_key using raw_map, "per_page"
+    set pp_raw to text.trim using (text.from using (raw_map at "per_page"))
+    if pp_raw is not ""
+      try
+        set per_page to text.to_integer using pp_raw
+      catch err
+        give back record {ok: no, args: nothing, error: "per_page must be an integer"}
+      end
+      if per_page is less than 1 or per_page is greater than 100
+        give back record {ok: no, args: nothing, error: "per_page must be between 1 and 100"}
+      end
+    end
+  end
+
+  give back record {ok: yes, args: (record {content_type: ct, status: status, field_key: field_key, field_op: field_op, field_value: field_value, sort_by: sort_by, sort_dir: sort_dir, page: page, per_page: per_page, is_public: is_public}), error: ""}
+end
+
+make select_query_stmt using stmts, sort_by, sort_dir
+  if sort_by is "published_at"
+    if sort_dir is "asc"
+      give back stmts.query_published_at_asc
+    end
+    give back stmts.query_published_at_desc
+  end
+  if sort_by is "created_at"
+    if sort_dir is "asc"
+      give back stmts.query_created_at_asc
+    end
+    give back stmts.query_created_at_desc
+  end
+  if sort_by is "updated_at"
+    if sort_dir is "asc"
+      give back stmts.query_updated_at_asc
+    end
+    give back stmts.query_updated_at_desc
+  end
+  if sort_by is "title"
+    if sort_dir is "asc"
+      give back stmts.query_title_asc
+    end
+    give back stmts.query_title_desc
+  end
+  if sort_dir is "asc"
+    give back stmts.query_id_asc
+  end
+  give back stmts.query_id_desc
+end
+
+make matches_custom_field_filter using cf_json_text, field_key, field_op, field_value
+  if field_key is ""
+    give back yes
+  end
+  try
+    set cf_map to json.parse using cf_json_text
+    if not (has_map_key using cf_map, field_key)
+      if field_op is "neq"
+        give back yes
+      end
+      give back no
+    end
+    set raw_val to text.from using (cf_map at field_key)
+    if field_op is "eq"
+      give back (raw_val is field_value)
+    end
+    if field_op is "neq"
+      give back (raw_val is not field_value)
+    end
+    if field_op is "contains"
+      give back (text.contains using (text.lower using raw_val), (text.lower using field_value))
+    end
+    give back no
+  catch err
+    give back no
+  end
+end
+
+make format_query_item using row
+  set cf_parsed to {}
+  try
+    set cf_parsed to json.parse using row.custom_fields_json
+  catch err
+    set cf_parsed to {}
+  end
+  set pub_at to ""
+  if row.published_at is not nothing
+    set pub_at to row.published_at
+  end
+  give back record {id: row.id, content_type_slug: row.content_type_slug, content_type_label: row.content_type_label, slug: row.slug, full_path: row.full_path, title: row.title, status: row.status, excerpt: (make_excerpt using row.body_html), custom_fields: cf_parsed, meta_title: row.meta_title, meta_description: row.meta_description, published_at: pub_at, created_at: row.created_at, updated_at: row.updated_at}
+end
+
+make compute_total_pages using total_items, per_page
+  if total_items is at most 0
+    give back 0
+  end
+  set pages to 0
+  set rem to total_items
+  while rem is greater than 0
+    set rem to rem minus per_page
+    set pages to pages plus 1
+  end
+  give back pages
+end
+
+make query_entries using stmts, theme, registry, raw_map, is_public
+  set norm_res to normalize_query_args using raw_map, is_public
+  if not norm_res.ok
+    give back record {ok: no, data: nothing, error: norm_res.error}
+  end
+  set args to applyFilter using registry, "query:modify_args", norm_res.args, {"theme_slug": theme.slug}
+
+  set t_epoch to get_cache_epoch using stmts, "cache_epoch:theme"
+  set g_epoch to get_cache_epoch using stmts, "cache_epoch:query"
+  set ct_epoch to 1
+  if args.content_type is not ""
+    set ct_epoch to get_cache_epoch using stmts, ("cache_epoch:type:" joined with args.content_type)
+  end
+  set epoch_tag to (text.from using t_epoch) joined with ":" joined with (text.from using g_epoch) joined with ":" joined with (text.from using ct_epoch)
+  set cache_key to "query:" joined with epoch_tag joined with ":" joined with theme.slug joined with ":" joined with args.content_type joined with ":" joined with args.status joined with ":" joined with args.sort_by joined with ":" joined with args.sort_dir joined with ":" joined with (text.from using args.page) joined with ":" joined with (text.from using args.per_page) joined with ":" joined with args.field_key joined with ":" joined with args.field_op joined with ":" joined with args.field_value
+
+  set cached to cache.get using stmts.cms_cache, cache_key
+  if cached.found
+    set hit_data to cached.value
+    give back record {ok: yes, data: (record {items: hit_data.items, pagination: hit_data.pagination, cache: (record {hit: yes, epoch: epoch_tag, key: cache_key})}), error: ""}
+  end
+
+  set filter_type to 0
+  set ct_id to 0
+  if args.content_type is not ""
+    set ct_row to data.one using stmts.get_type_by_slug, record {slug: args.content_type}
+    if ct_row is nothing
+      set empty_res to record {items: [], pagination: (record {page: args.page, per_page: args.per_page, total_items: 0, total_pages: 0, has_prev: no, has_next: no})}
+      call cache.set using stmts.cms_cache, cache_key, empty_res, 120000
+      give back record {ok: yes, data: (record {items: [], pagination: empty_res.pagination, cache: (record {hit: no, epoch: epoch_tag, key: cache_key})}), error: ""}
+    end
+    set filter_type to 1
+    set ct_id to ct_row.id
+  end
+
+  set filter_status to 1
+  set st_val to args.status
+  if st_val is "all"
+    set filter_status to 0
+    set st_val to ""
+  end
+
+  set stmt to select_query_stmt using stmts, args.sort_by, args.sort_dir
+  set items to []
+  set total_items to 0
+
+  if args.field_key is ""
+    set cnt_row to data.one using stmts.count_entries_filtered, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val}
+    if cnt_row is not nothing
+      set total_items to cnt_row.total
+    end
+    set offset_val to (args.page minus 1) times args.per_page
+    set rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: args.per_page, offset_rows: offset_val}
+    for each row in rows
+      set items to collections.append using items, (format_query_item using row)
+    end
+  otherwise
+    set all_rows to data.query using stmt, record {filter_type: filter_type, content_type_id: ct_id, filter_status: filter_status, status: st_val, limit_rows: 5000, offset_rows: 0}
+    set matched to []
+    for each row in all_rows
+      if matches_custom_field_filter using row.custom_fields_json, args.field_key, args.field_op, args.field_value
+        set matched to collections.append using matched, (format_query_item using row)
+      end
+    end
+    set total_items to collections.length using matched
+    set start_idx to (args.page minus 1) times args.per_page
+    if start_idx is less than total_items
+      set end_idx to start_idx plus args.per_page
+      if end_idx is greater than total_items
+        set end_idx to total_items
+      end
+      set items to collections.slice using matched, start_idx, end_idx
+    end
+  end
+
+  set total_pages to compute_total_pages using total_items, args.per_page
+  set has_prev to (args.page is greater than 1) and (total_pages is greater than 0)
+  set has_next to (args.page is less than total_pages)
+  set pagination to record {page: args.page, per_page: args.per_page, total_items: total_items, total_pages: total_pages, has_prev: has_prev, has_next: has_next}
+  set to_cache to record {items: items, pagination: pagination}
+  call cache.set using stmts.cms_cache, cache_key, to_cache, 120000
+  give back record {ok: yes, data: (record {items: items, pagination: pagination, cache: (record {hit: no, epoch: epoch_tag, key: cache_key})}), error: ""}
+end
+
+# ==============================================================================
+# Module 6: Reusable Template Parts & Grex Visual Theme Renderer
+# ==============================================================================
+
+make load_visual_grex_doc using stmts, theme
+  set ckey to "grex_doc:" joined with theme.slug
+  set cached to cache.get using stmts.cms_cache, ckey
+  if cached.found
+    give back cached.value
+  end
+  set path to "themes/" joined with theme.slug joined with "/" joined with theme.grexElements
+  set doc to {}
+  try
+    set raw to files.read_text using path
+    set doc to json.parse using raw
+  catch err
+    set doc to {}
+  end
+  call cache.set using stmts.cms_cache, ckey, doc, 300000
+  give back doc
+end
+
+make resolve_grex_bind_text using raw_text, ctx
+  set out to text.from using raw_text
+  set keys to collections.keys using ctx
+  for each k in keys
+    set token to "{" joined with k joined with "}"
+    if text.contains using out, token
+      set val_str to text.from using (ctx at k)
+      set out to text.replace using out, token, val_str
+    end
+  end
+  give back out
+end
+
+make default_tag_for_grex_element using el_name, props
+  if el_name is "Fragment" or el_name is "TemplatePart"
+    give back ""
+  end
+  if el_name is "Section"
+    give back "section"
+  end
+  if el_name is "Container" or el_name is "Stack" or el_name is "Grid"
+    give back "section"
+  end
+  if el_name is "Card"
+    give back "article"
+  end
+  if el_name is "Nav"
+    give back "nav"
+  end
+  if el_name is "Heading"
+    set lvl to "2"
+    if has_map_key using props, "level"
+      set lval to text.from using (props at "level")
+      if lval is "1" or lval is "2" or lval is "3" or lval is "4" or lval is "5" or lval is "6"
+        set lvl to lval
+      end
+    end
+    give back "h" joined with lvl
+  end
+  if el_name is "Text" or el_name is "RichText"
+    give back "p"
+  end
+  if el_name is "Link"
+    give back "a"
+  end
+  if el_name is "Button"
+    give back "button"
+  end
+  if el_name is "Image"
+    give back "img"
+  end
+  if el_name is "ForEach"
+    give back "section"
+  end
+  give back "section"
+end
+
+make render_grex_node using stmts, theme, registry, node, ctx, depth
+  if depth is greater than 24
+    give back ""
+  end
+  set el_name to text.from using (node at "element")
+  set props to {}
+  if node has "props"
+    set props to node at "props"
+  end
+
+  if el_name is "TemplatePart"
+    set pname to ""
+    if has_map_key using props, "name"
+      set pname to text.from using (props at "name")
+    end
+    if pname is ""
+      give back ""
+    end
+    give back render_part using stmts, theme, registry, pname, ctx
+  end
+
+  if el_name is "ForEach"
+    set qargs to {}
+    if has_map_key using props, "query"
+      set qargs to props at "query"
+    end
+    set qres to query_entries using stmts, theme, registry, qargs, yes
+    if not qres.ok
+      give back ""
+    end
+    set out_items to ""
+    for each item in qres.data.items
+      set item_ctx to collections.put using ctx, "title", item.title
+      set item_ctx to collections.put using item_ctx, "full_path", item.full_path
+      set item_ctx to collections.put using item_ctx, "content_type_label", item.content_type_label
+      set item_ctx to collections.put using item_ctx, "published_at", item.published_at
+      set item_ctx to collections.put using item_ctx, "excerpt", item.excerpt
+      if node has "children"
+        for each ch in (node at "children")
+          set out_items to out_items joined with (render_grex_node using stmts, theme, registry, ch, item_ctx, (depth plus 1))
+        end
+      otherwise
+        set out_items to out_items joined with (render_part using stmts, theme, registry, "card", item_ctx)
+      end
+    end
+    set cls_attr to ""
+    if has_map_key using props, "class"
+      set cls_attr to " class=\"" joined with (escape_html using (text.from using (props at "class"))) joined with "\""
+    end
+    set q_json to escape_html using (json.stringify using qargs)
+    give back "<section" joined with cls_attr joined with " data-grex-foreach=\"query\" data-grex-query=\"" joined with q_json joined with "\">" joined with out_items joined with "</section>"
+  end
+
+  set tag to default_tag_for_grex_element using el_name, props
+  if node has "tag"
+    set req_tag to text.lower using (text.from using (node at "tag"))
+    if is_allowed_grex_tag using req_tag
+      set tag to req_tag
+    end
+  end
+
+  set inner to ""
+  if has_map_key using props, "text"
+    set bound_txt to resolve_grex_bind_text using (text.from using (props at "text")), ctx
+    set inner to escape_html using bound_txt
+  end
+  if node has "children"
+    for each ch in (node at "children")
+      set inner to inner joined with (render_grex_node using stmts, theme, registry, ch, ctx, (depth plus 1))
+    end
+  end
+
+  if tag is ""
+    give back inner
+  end
+
+  set attrs to ""
+  if has_map_key using props, "class"
+    set attrs to attrs joined with " class=\"" joined with (escape_html using (text.from using (props at "class"))) joined with "\""
+  end
+  if has_map_key using props, "id"
+    set attrs to attrs joined with " data-grex-id=\"" joined with (escape_html using (text.from using (props at "id"))) joined with "\""
+  end
+  if has_map_key using props, "href"
+    set href_val to resolve_grex_bind_text using (text.from using (props at "href")), ctx
+    if is_safe_url using href_val
+      set attrs to attrs joined with " href=\"" joined with (escape_html using href_val) joined with "\""
+    end
+  end
+  if has_map_key using props, "src"
+    set src_val to resolve_grex_bind_text using (text.from using (props at "src")), ctx
+    if is_safe_url using src_val
+      set attrs to attrs joined with " src=\"" joined with (escape_html using src_val) joined with "\""
+    end
+  end
+  if has_map_key using props, "alt"
+    set alt_val to resolve_grex_bind_text using (text.from using (props at "alt")), ctx
+    set attrs to attrs joined with " alt=\"" joined with (escape_html using alt_val) joined with "\""
+  end
+  if has_map_key using props, "aria-label"
+    set aria_val to resolve_grex_bind_text using (text.from using (props at "aria-label")), ctx
+    set attrs to attrs joined with " aria-label=\"" joined with (escape_html using aria_val) joined with "\""
+  end
+
+  if tag is "img"
+    give back "<img" joined with attrs joined with ">"
+  end
+  give back "<" joined with tag joined with attrs joined with ">" joined with inner joined with "</" joined with tag joined with ">"
+end
+
+make render_part using stmts, theme, registry, part_name, ctx
+  if theme.mode is "visual"
+    set gdoc to load_visual_grex_doc using stmts, theme
+    if gdoc has "parts"
+      set gparts to gdoc at "parts"
+      if has_map_key using gparts, part_name
+        set pnode to gparts at part_name
+        if pnode is not nothing
+          give back render_grex_node using stmts, theme, registry, pnode, ctx, 0
+        end
+      end
+    end
+    give back ""
+  end
+
+  if not (has_map_key using theme.parts, part_name)
+    give back ""
+  end
+  set part_rel_raw to theme.parts at part_name
+  if part_rel_raw is nothing
+    give back ""
+  end
+  set part_rel to text.from using part_rel_raw
+  if part_rel is ""
+    give back ""
+  end
+  set tmpl_path to "../themes/" joined with theme.slug joined with "/" joined with part_rel
+  set rendered to server.html using tmpl_path, ctx, 200
+  give back rendered.body
+end
+
+make render_query_cards using stmts, theme, registry, items, base_ctx
+  set out to ""
+  for each item in items
+    set item_ctx to collections.put using base_ctx, "title", item.title
+    set item_ctx to collections.put using item_ctx, "full_path", item.full_path
+    set item_ctx to collections.put using item_ctx, "content_type_label", item.content_type_label
+    set item_ctx to collections.put using item_ctx, "published_at", item.published_at
+    set item_ctx to collections.put using item_ctx, "excerpt", item.excerpt
+    set out to out joined with (render_part using stmts, theme, registry, "card", item_ctx)
+  end
+  give back out
+end
+
+make render_theme_page using stmts, slot_name, page_data, status, query_items
   set theme to get_active_theme_context using stmts
   set settings to get_site_settings_map using stmts
-  set tmpl_rel to "templates/" joined with slot_name joined with ".grab.html"
-  if has_map_key using theme.templates, slot_name
-    set tmpl_rel to theme.templates at slot_name
-  end
-  set tmpl_path to "../themes/" joined with theme.slug joined with "/" joined with tmpl_rel
+  set registry to build_active_hook_registry using theme
 
   set tokens_css_url to safe_asset_url using "/static/grex/tokens.css"
   set theme_css_url to safe_asset_url using ("/static/themes/" joined with theme.slug joined with "/theme.css")
+  set grex_js_url to safe_asset_url using "/static/grex/grex.js"
 
   set merged to collections.put using page_data, "site_title", (settings at "site_title")
   set merged to collections.put using merged, "site_tagline", (settings at "site_tagline")
@@ -631,17 +1997,85 @@ make render_theme_page using stmts, slot_name, page_data, status
   set merged to collections.put using merged, "theme_slug", theme.slug
   set merged to collections.put using merged, "tokens_css_url", tokens_css_url
   set merged to collections.put using merged, "theme_css_url", theme_css_url
+  if not (has_map_key using merged, "published_count")
+    set merged to collections.put using merged, "published_count", "0"
+  end
 
-  give back server.html using tmpl_path, merged, status
+  call runHook using stmts, registry, "theme:before_render", {"slot": slot_name, "theme_slug": theme.slug}
+
+  set meta_title to settings at "site_title"
+  if has_map_key using merged, "page_title"
+    set meta_title to text.from using (merged at "page_title")
+  end
+  if has_map_key using merged, "meta_title"
+    set meta_title to text.from using (merged at "meta_title")
+  end
+  set canon_path to "/"
+  if has_map_key using merged, "full_path"
+    set canon_path to text.from using (merged at "full_path")
+  end
+  if has_map_key using merged, "archive_slug"
+    set canon_path to "/" joined with (text.from using (merged at "archive_slug"))
+  end
+  set head_tags to applyFilter using registry, "theme:head_meta", [], {"theme_slug": theme.slug, "theme_name": theme.name, "page_title": meta_title, "canonical_path": canon_path}
+  set head_meta_html to text.join using head_tags, "\n  "
+
+  if theme.mode is "visual"
+    set gdoc to load_visual_grex_doc using stmts, theme
+    set tmpls to gdoc at "templates"
+    set slot_node to tmpls at slot_name
+    set body_inner to render_grex_node using stmts, theme, registry, slot_node, merged, 0
+    set css_links to "<link rel=\"stylesheet\" href=\"" joined with (escape_html using tokens_css_url) joined with "\">"
+    if theme_css_url is not ""
+      set css_links to css_links joined with "\n  <link rel=\"stylesheet\" href=\"" joined with (escape_html using theme_css_url) joined with "\">"
+    end
+    set grex_script to ""
+    if grex_js_url is not ""
+      set grex_script to "\n  <script defer src=\"" joined with (escape_html using grex_js_url) joined with "\"></script>"
+    end
+    set doc_html to "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>" joined with (escape_html using meta_title) joined with " — " joined with (escape_html using (settings at "site_title")) joined with "</title>\n  " joined with css_links joined with "\n  " joined with head_meta_html joined with grex_script joined with "\n</head>\n<body>\n" joined with body_inner joined with "\n</body>\n</html>\n"
+    give back server.response using record {status: status, headers: {"Content-Type": "text/html; charset=utf-8"}, body: doc_html}
+  end
+
+  set tmpl_rel to "templates/" joined with slot_name joined with ".grab.html"
+  if has_map_key using theme.templates, slot_name
+    set tmpl_rel to text.from using (theme.templates at slot_name)
+  end
+  set tmpl_path to "../themes/" joined with theme.slug joined with "/" joined with tmpl_rel
+
+  set base_resp to server.html using tmpl_path, merged, status
+  set html_out to base_resp.body
+
+  if text.contains using html_out, "<!-- @hook:theme_head_meta -->"
+    set html_out to text.replace using html_out, "<!-- @hook:theme_head_meta -->", head_meta_html
+  end
+  if text.contains using html_out, "<!-- @part:header -->"
+    set header_html to render_part using stmts, theme, registry, "header", merged
+    set html_out to text.replace using html_out, "<!-- @part:header -->", header_html
+  end
+  if text.contains using html_out, "<!-- @part:footer -->"
+    set footer_html to render_part using stmts, theme, registry, "footer", merged
+    set html_out to text.replace using html_out, "<!-- @part:footer -->", footer_html
+  end
+  if text.contains using html_out, "<!-- @part:sidebar -->"
+    set sidebar_html to render_part using stmts, theme, registry, "sidebar", merged
+    set html_out to text.replace using html_out, "<!-- @part:sidebar -->", sidebar_html
+  end
+  if text.contains using html_out, "<!-- @part:query_cards -->"
+    set cards_html to render_query_cards using stmts, theme, registry, query_items, merged
+    set html_out to text.replace using html_out, "<!-- @part:query_cards -->", cards_html
+  end
+
+  give back server.response using record {status: status, headers: {"Content-Type": "text/html; charset=utf-8"}, body: html_out}
 end
 
 # ==============================================================================
-# Module 3: Pretty Permalink Resolution & 301 Redirect Helper
+# Module 7: Pretty Permalink Resolution & 301 Redirect Helper
 # ==============================================================================
 
-make build_entries_summary using entries
+make build_entries_summary using items
   set parts to []
-  for each e in entries
+  for each e in items
     set line to e.title joined with " (" joined with e.full_path joined with ")"
     set parts to collections.append using parts, line
   end
@@ -661,13 +2095,13 @@ make render_single_entry using stmts, entry
     set published_at to entry.published_at
   end
   set page_data to {"title": entry.title, "meta_title": meta_title, "meta_description": entry.meta_description, "content_type_label": entry.content_type_label, "full_path": entry.full_path, "published_at": published_at, "body_text": entry.body_html, "custom_fields_summary": entry.custom_fields_json}
-  give back render_theme_page using stmts, "single", page_data, 200
+  give back render_theme_page using stmts, "single", page_data, 200, []
 end
 
 make resolve_public_path using stmts, req_path
   set norm_path to normalize_path using req_path
   if (has_unsafe_path_chars using req_path) or (is_reserved_path using norm_path)
-    give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404
+    give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404, []
   end
 
   set entry to data.one using stmts.get_published_entry_by_path, record {full_path: norm_path}
@@ -680,7 +2114,7 @@ make resolve_public_path using stmts, req_path
     give back server.redirect using redir.target_path, 301
   end
 
-  give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404
+  give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404, []
 end
 
 # ==============================================================================
@@ -690,7 +2124,7 @@ end
 route "GET" "/admin"
   set settings to get_site_settings_map using stmts
   set theme to get_active_theme_context using stmts
-  give back server.json using 200, record {service: "grablab-cms", version: "0.1.0", active_theme: theme.slug, site_title: (settings at "site_title"), status: "reserved-admin-prefix"}
+  give back server.json using 200, record {service: "grablab-cms", version: "0.2.0", active_theme: theme.slug, active_theme_mode: theme.mode, site_title: (settings at "site_title"), status: "reserved-admin-prefix"}
 end
 
 route "GET" "/admin/{rest}" using req
@@ -770,6 +2204,7 @@ route "POST" "/api/content-types" using req
       call data.execute using stmts.insert_type, record {slug: slug, label_singular: (text.from using (payload at "label_singular")), label_plural: (text.from using (payload at "label_plural")), permalink_pattern: pattern, has_archive: has_archive, archive_slug: archive_slug, is_system: 0, created_at: now_rec.iso}, tx
       set created to data.one using stmts.get_type_by_slug, record {slug: slug}, tx
       call data.commit using tx
+      call bump_query_cache_epochs using stmts, slug
       give back server.json using 201, record {content_type: created}
     catch tx_err
       call data.rollback using tx
@@ -835,6 +2270,7 @@ route "POST" "/api/content-types/{slug}/fields" using req
       call data.execute using stmts.insert_field, record {content_type_id: ct.id, field_key: fkey, label: (text.from using (payload at "label")), field_type: ftype, is_required: is_req, default_value: def_val, sort_order: sort_order}, tx
       set created to data.one using stmts.get_field_by_key, record {content_type_id: ct.id, field_key: fkey}, tx
       call data.commit using tx
+      call bump_query_cache_epochs using stmts, ct.slug
       give back server.json using 201, record {field: created}
     catch tx_err
       call data.rollback using tx
@@ -846,7 +2282,7 @@ route "POST" "/api/content-types/{slug}/fields" using req
 end
 
 # ==============================================================================
-# Entry Store & Slug History API (/api/entries, /api/redirects)
+# Entry Store, Slug History & Hook Integration API (/api/entries, /api/redirects)
 # ==============================================================================
 
 route "GET" "/api/entries"
@@ -917,6 +2353,11 @@ route "POST" "/api/entries" using req
       set meta_desc to text.from using (payload at "meta_description")
     end
 
+    set active_theme to get_active_theme_context using stmts
+    set registry to build_active_hook_registry using active_theme
+    set draft_map to {"title": (text.from using (payload at "title")), "body_html": body_html, "meta_title": meta_title, "meta_description": meta_desc}
+    set filtered_draft to applyFilter using registry, "content:before_save", draft_map, {"theme_slug": active_theme.slug, "theme_name": active_theme.name, "content_type": ct.slug}
+
     set now_rec to call dates.now_utc
     set pub_at to nothing
     if status is "published"
@@ -928,10 +2369,14 @@ route "POST" "/api/entries" using req
       if status is "published"
         call data.execute using stmts.delete_redirect_by_old_path, record {old_path: full_path}, tx
       end
-      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (text.from using (payload at "title")), status: status, body_html: body_html, custom_fields_json: cf_res.json_text, meta_title: meta_title, meta_description: meta_desc, published_at: pub_at, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (filtered_draft at "title"), status: status, body_html: (filtered_draft at "body_html"), custom_fields_json: cf_res.json_text, meta_title: (filtered_draft at "meta_title"), meta_description: (filtered_draft at "meta_description"), published_at: pub_at, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
       set created to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}, tx
       call data.commit using tx
-      call invalidate_route_caches using stmts, full_path, "", ct.slug
+      if status is "published"
+        call runHook using stmts, registry, "content:after_publish", {"full_path": full_path, "old_path": "", "content_type_slug": ct.slug, "entry_id": created.id}
+      otherwise
+        call invalidate_route_caches using stmts, full_path, "", ct.slug
+      end
       give back server.json using 201, record {entry: created}
     catch tx_err
       call data.rollback using tx
@@ -1012,6 +2457,11 @@ route "PUT" "/api/entries/{id}" using req
       set new_meta_desc to text.from using (payload at "meta_description")
     end
 
+    set active_theme to get_active_theme_context using stmts
+    set registry to build_active_hook_registry using active_theme
+    set draft_map to {"title": new_title, "body_html": new_body, "meta_title": new_meta_title, "meta_description": new_meta_desc}
+    set filtered_draft to applyFilter using registry, "content:before_save", draft_map, {"theme_slug": active_theme.slug, "theme_name": active_theme.name, "content_type": ct.slug}
+
     set now_rec to call dates.now_utc
     set new_pub_at to existing.published_at
     if new_status is "published" and new_pub_at is nothing
@@ -1025,10 +2475,14 @@ route "PUT" "/api/entries/{id}" using req
         call data.execute using stmts.delete_redirect_by_old_path, record {old_path: existing.full_path}, tx
         call data.execute using stmts.insert_redirect, record {old_path: existing.full_path, entry_id: entry_id, created_at: now_rec.iso}, tx
       end
-      call data.execute using stmts.update_entry, record {slug: new_slug, full_path: new_full_path, title: new_title, status: new_status, body_html: new_body, custom_fields_json: new_cf_json, meta_title: new_meta_title, meta_description: new_meta_desc, published_at: new_pub_at, updated_at: now_rec.iso, id: entry_id}, tx
+      call data.execute using stmts.update_entry, record {slug: new_slug, full_path: new_full_path, title: (filtered_draft at "title"), status: new_status, body_html: (filtered_draft at "body_html"), custom_fields_json: new_cf_json, meta_title: (filtered_draft at "meta_title"), meta_description: (filtered_draft at "meta_description"), published_at: new_pub_at, updated_at: now_rec.iso, id: entry_id}, tx
       set updated to data.one using stmts.get_entry_by_id, record {id: entry_id}, tx
       call data.commit using tx
-      call invalidate_route_caches using stmts, existing.full_path, new_full_path, ct.slug
+      if new_status is "published" or existing.status is "published"
+        call runHook using stmts, registry, "content:after_publish", {"full_path": new_full_path, "old_path": existing.full_path, "content_type_slug": ct.slug, "entry_id": entry_id}
+      otherwise
+        call invalidate_route_caches using stmts, existing.full_path, new_full_path, ct.slug
+      end
       give back server.json using 200, record {entry: updated}
     catch tx_err
       call data.rollback using tx
@@ -1045,13 +2499,26 @@ route "GET" "/api/redirects"
 end
 
 # ==============================================================================
-# Exclusive Theme Manager API (/api/themes, /api/themes/register, /api/themes/activate)
+# Exclusive Theme Manager, Package Validation, Hooks & Query API
 # ==============================================================================
 
 route "GET" "/api/themes"
   set rows to data.query using stmts.list_themes, record {}
   set active to get_active_theme_context using stmts
-  give back server.json using 200, record {active_theme_slug: active.slug, themes: rows}
+  give back server.json using 200, record {active_theme_slug: active.slug, active_theme_mode: active.mode, themes: rows}
+end
+
+route "POST" "/api/themes/validate-package" using req
+  try
+    set payload to server.parse_json using req
+    set res to validate_theme_package_bundle using payload
+    if not res.ok
+      give back server.json using 400, record {ok: no, error: res.error}
+    end
+    give back server.json using 200, record {ok: yes, slug: res.slug, mode: res.mode, file_count: res.file_count, total_bytes: res.total_bytes}
+  catch err
+    give back server.json using 400, record {ok: no, error: err.message}
+  end
 end
 
 route "POST" "/api/themes/register" using req
@@ -1098,7 +2565,6 @@ route "POST" "/api/themes/activate" using req
     set tx to data.begin using stmts.db
     try
       call upsert_theme_row using stmts, slug, check_res, now_rec.iso, tx
-
       call data.execute using stmts.deactivate_all_themes, record {}, tx
       call data.execute using stmts.activate_theme_slug, record {slug: slug}, tx
       call upsert_setting using stmts, "active_theme_slug", slug, now_rec.iso, tx
@@ -1107,7 +2573,10 @@ route "POST" "/api/themes/activate" using req
 
       call cache.delete using stmts.cms_cache, "active_theme"
       call cache.delete using stmts.cms_cache, "site_settings"
-      give back server.json using 200, record {active_theme: active_row}
+      call cache.delete using stmts.cms_cache, ("grex_doc:" joined with slug)
+      call bump_cache_epoch using stmts, "cache_epoch:theme"
+      call bump_cache_epoch using stmts, "cache_epoch:query"
+      give back server.json using 200, record {active_theme: active_row, mode: check_res.mode}
     catch tx_err
       call data.rollback using tx
       give back server.json using 500, record {error: tx_err.message}
@@ -1117,15 +2586,88 @@ route "POST" "/api/themes/activate" using req
   end
 end
 
+route "GET" "/api/hooks"
+  set theme to get_active_theme_context using stmts
+  set reg to build_active_hook_registry using theme
+  give back server.json using 200, record {active_theme_slug: theme.slug, hooks: reg.hooks, filters: reg.filters}
+end
+
+route "POST" "/api/hooks/register-check" using req
+  try
+    set payload to server.parse_json using req
+    set theme to get_active_theme_context using stmts
+    set reg to create_hook_registry using theme.slug
+    if not (payload has "registrations")
+      give back server.json using 400, record {error: "Missing registrations array"}
+    end
+    set items to payload at "registrations"
+    for each item in items
+      set kind to text.from using (item at "kind")
+      set name to text.from using (item at "name")
+      set src to text.from using (item at "source")
+      set prio to text.to_integer using (text.from using (item at "priority"))
+      set handler to text.from using (item at "handler")
+      if kind is "hook"
+        set res to registerHook using reg, name, src, prio, handler
+        if not res.ok
+          give back server.json using 403, record {error: res.error}
+        end
+        set reg to res.registry
+      otherwise
+        set res to registerFilter using reg, name, src, prio, handler
+        if not res.ok
+          give back server.json using 403, record {error: res.error}
+        end
+        set reg to res.registry
+      end
+    end
+    give back server.json using 200, record {ok: yes, hooks: reg.hooks, filters: reg.filters}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/api/query" using req
+  set theme to get_active_theme_context using stmts
+  set registry to build_active_hook_registry using theme
+  set qres to query_entries using stmts, theme, registry, req.query, yes
+  if not qres.ok
+    give back server.json using 400, record {error: qres.error}
+  end
+  give back server.json using 200, qres.data
+end
+
 route "GET" "/api/{rest}" using req
   give back server.json using 404, record {error: "Unknown API endpoint", path: req.path}
 end
 
 # ==============================================================================
-# Pretty Permalink Public Routes (GET /, GET /{slug}, GET /{type_prefix}/{slug})
+# Pretty Permalink & Search Public Routes
 # ==============================================================================
 
-route "GET" "/"
+route "GET" "/search" using req
+  set q_text to ""
+  if req.query has "q"
+    set q_text to text.trim using (text.from using (req.query at "q"))
+  end
+  set theme to get_active_theme_context using stmts
+  set registry to build_active_hook_registry using theme
+  set qres to query_entries using stmts, theme, registry, {"per_page": "50", "sort_by": "published_at", "sort_dir": "desc"}, yes
+  set matched to []
+  if qres.ok
+    set q_lower to text.lower using q_text
+    for each item in qres.data.items
+      if q_lower is "" or (text.contains using (text.lower using item.title), q_lower) or (text.contains using (text.lower using item.excerpt), q_lower)
+        set matched to collections.append using matched, item
+      end
+    end
+  end
+  set summary to build_entries_summary using matched
+  set cnt to text.from using (collections.length using matched)
+  give back render_theme_page using stmts, "search", {"page_title": "Search", "query": q_text, "results_summary": summary, "published_count": cnt}, 200, matched
+end
+
+route "GET" "/" using req
   set settings to get_site_settings_map using stmts
   set home_id_raw to settings at "home_entry_id"
   if home_id_raw is not ""
@@ -1139,25 +2681,47 @@ route "GET" "/"
     end
   end
 
-  set entries to data.query using stmts.list_published_entries, record {}
-  set summary to build_entries_summary using entries
-  set cnt to text.from using (collections.length using entries)
-  give back render_theme_page using stmts, "home", {"page_title": "Home", "meta_description": (settings at "site_tagline"), "published_count": cnt, "entries_summary": summary}, 200
+  set theme to get_active_theme_context using stmts
+  set registry to build_active_hook_registry using theme
+  set q_map to {"per_page": "10", "sort_by": "published_at", "sort_dir": "desc"}
+  if req.query has "page"
+    set q_map to collections.put using q_map, "page", (req.query at "page")
+  end
+  set qres to query_entries using stmts, theme, registry, q_map, yes
+  set items to []
+  set cnt to "0"
+  if qres.ok
+    set items to qres.data.items
+    set cnt to text.from using qres.data.pagination.total_items
+  end
+  set summary to build_entries_summary using items
+  give back render_theme_page using stmts, "home", {"page_title": "Home", "meta_description": (settings at "site_tagline"), "published_count": cnt, "entries_summary": summary}, 200, items
 end
 
 route "GET" "/{slug}" using req
   set slug_norm to normalize_slug using req.params.slug
   set full_path to "/" joined with slug_norm
   if is_reserved_path using full_path
-    give back render_theme_page using stmts, "404", {"requested_path": full_path}, 404
+    give back render_theme_page using stmts, "404", {"requested_path": full_path}, 404, []
   end
 
   set archive_type to data.one using stmts.get_type_by_archive, record {archive_slug: slug_norm}
   if archive_type is not nothing
-    set entries to data.query using stmts.list_published_by_type, record {content_type_id: archive_type.id}
-    set summary to build_entries_summary using entries
-    set cnt to text.from using (collections.length using entries)
-    give back render_theme_page using stmts, "archive", {"archive_label": archive_type.label_plural, "archive_slug": slug_norm, "meta_description": archive_type.label_plural joined with " archive", "entry_count": cnt, "entries_summary": summary}, 200
+    set theme to get_active_theme_context using stmts
+    set registry to build_active_hook_registry using theme
+    set q_map to {"content_type": archive_type.slug, "per_page": "10", "sort_by": "published_at", "sort_dir": "desc"}
+    if req.query has "page"
+      set q_map to collections.put using q_map, "page", (req.query at "page")
+    end
+    set qres to query_entries using stmts, theme, registry, q_map, yes
+    set items to []
+    set cnt to "0"
+    if qres.ok
+      set items to qres.data.items
+      set cnt to text.from using qres.data.pagination.total_items
+    end
+    set summary to build_entries_summary using items
+    give back render_theme_page using stmts, "archive", {"archive_label": archive_type.label_plural, "archive_slug": slug_norm, "meta_description": archive_type.label_plural joined with " archive", "entry_count": cnt, "published_count": cnt, "entries_summary": summary}, 200, items
   end
 
   give back resolve_public_path using stmts, full_path
