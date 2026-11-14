@@ -11,7 +11,7 @@
 - None for `grablab-cms v1.0.0` (Production CMS Release is complete; maintenance patch releases `v1.0.x` follow `GRABLAB-SPEC-100.md` frozen `v1.x` contracts).
 - **Planned `v1.1.0` Milestone (`docs/ROADMAP.md` — Specification Pending Approval):**
   - **SEO Redirect Manager (`/admin/redirects` & `/api/admin/redirects`):** Inspect automatic `slug_history` `301` redirects and manage manual `301` / `302` redirects with cycle/loop prevention, reserved path protection, RBAC + CSRF, and `use cache` invalidation.
-  - **Built-In Per-Entry & Per-Image Groxy AI SEO Assist (`groxy_assist_enabled`):** Native toggle in all content type editors and Media Library image items dispatching structured entry + media context via `content:after_publish` or **Audit with Groxy** through `grab mcp` for reviewable SEO/copy/WCAG `alt` suggestions without overwriting live human copy.
+  - **Built-In Per-Entry & Per-Image Groxy AI SEO Assist (`groxy_assist_enabled`):** Native toggle in all content type editors and Media Library image items. When ON, clicking **Publish** opens a **Pre-Publish SEO & Performance Grade Review Screen** (`A+`–`F` / `0–100` across On-Page SEO, Content & WCAG Accessibility, Performance & Clean DOM, and Off-Page / Internal Linking Readiness) with **"Make This Live"** or **🚀 "Let Groxy Boost This"** (side-by-side diff + refreshed grades requiring explicit **"Approve & Make This Live"** confirmation before going public).
 
 ---
 
