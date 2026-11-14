@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "slug": "default-starter",
+  "name": "Default Starter",
+  "version": "1.0.0",
+  "engine": "coded",
+  "author": "Urbanspress",
+  "grexJsVersion": "1.0.0",
+  "templates": {
+    "home": "templates/home.grab.html",
+    "single": "templates/single.grab.html",
+    "archive": "templates/archive.grab.html",
+    "header": "templates/parts/header.grab.html",
+    "footer": "templates/parts/footer.grab.html",
+    "404": "templates/404.grab.html",
+    "search": "templates/search.grab.html"
+  },
+  "assets": {
+    "styles": ["assets/theme.css"],
+    "scripts": []
+  }
+}

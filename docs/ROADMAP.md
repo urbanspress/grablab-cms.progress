@@ -13,7 +13,7 @@
 
 ## `v0.1` — Core Content Types, Custom Fields, Pretty Permalinks & 301 Slug History
 
-**Status:** Draft / In Review (`specifications/GRABLAB-SPEC-001.md`)
+**Status:** Complete (`specifications/GRABLAB-SPEC-001.md`)
 
 Scope:
 - `use data` schema & migrations for `site_settings`, `content_types`, `field_definitions`, `entries`, `slug_history`, and `themes` (SQLite-first, MariaDB/PostgreSQL-compatible, exact `GrabDecimal`/`GrabInteger` types).

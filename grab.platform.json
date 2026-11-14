@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "caches": {
+    "cms": {
+      "driver": "memory",
+      "namespace": "grablab-dev",
+      "max_keys": 10000,
+      "max_bytes": 16777216
+    }
+  }
+}

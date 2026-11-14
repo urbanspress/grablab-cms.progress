@@ -1,0 +1,87 @@
+use data
+use dates
+use files
+use json
+
+set db to data.open using "main"
+set now_rec to call dates.now_utc
+set now_iso to now_rec.iso
+
+set check_setting to data.prepare using db, "SELECT value FROM site_settings WHERE key = :key", record {params: record {key: "text"}, columns: record {value: "text"}}
+set insert_setting to data.prepare using db, "INSERT INTO site_settings (key, value, updated_at) VALUES (:key, :value, :updated_at)", record {params: record {key: "text", value: "text", updated_at: "text"}, columns: record {}}
+
+set find_type to data.prepare using db, "SELECT id FROM content_types WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer"}}
+set insert_type to data.prepare using db, "INSERT INTO content_types (slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at) VALUES (:slug, :label_singular, :label_plural, :permalink_pattern, :has_archive, :archive_slug, :is_system, :created_at)", record {params: record {slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}, columns: record {}}
+
+set find_field to data.prepare using db, "SELECT id FROM field_definitions WHERE content_type_id = :content_type_id AND field_key = :field_key", record {params: record {content_type_id: "integer", field_key: "text"}, columns: record {id: "integer"}}
+set insert_field to data.prepare using db, "INSERT INTO field_definitions (content_type_id, field_key, label, field_type, is_required, default_value, sort_order) VALUES (:content_type_id, :field_key, :label, :field_type, :is_required, :default_value, :sort_order)", record {params: record {content_type_id: "integer", field_key: "text", label: "text", field_type: "text", is_required: "integer", default_value: record {type: "text", nullable: yes}, sort_order: "integer"}, columns: record {}}
+
+set find_entry to data.prepare using db, "SELECT id FROM entries WHERE full_path = :full_path", record {params: record {full_path: "text"}, columns: record {id: "integer"}}
+set insert_entry to data.prepare using db, "INSERT INTO entries (content_type_id, slug, full_path, title, status, body_html, custom_fields_json, meta_title, meta_description, published_at, created_at, updated_at) VALUES (:content_type_id, :slug, :full_path, :title, :status, :body_html, :custom_fields_json, :meta_title, :meta_description, :published_at, :created_at, :updated_at)", record {params: record {content_type_id: "integer", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
+
+set find_theme to data.prepare using db, "SELECT slug, is_active FROM themes WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {slug: "text", is_active: "integer"}}
+set count_active_themes to data.prepare using db, "SELECT count(*) AS total FROM themes WHERE is_active = 1", record {params: record {}, columns: record {total: "integer"}}
+set insert_theme to data.prepare using db, "INSERT INTO themes (slug, name, version, engine, is_active, manifest_json, installed_at) VALUES (:slug, :name, :version, :engine, :is_active, :manifest_json, :installed_at)", record {params: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}, columns: record {}}
+
+set starter_manifest_raw to files.read_text using "themes/default-starter/theme.json"
+set starter_manifest to json.parse using starter_manifest_raw
+
+set tx to data.begin using db
+
+set defaults to [record {key: "site_title", value: "GrabLab CMS"}, record {key: "site_tagline", value: "Zero-plugin CMS built on GRAB v1.0.1 and Grex JS v1.0.0"}, record {key: "active_theme_slug", value: "default-starter"}, record {key: "home_entry_id", value: ""}]
+for each item in defaults
+  set existing_setting to data.one using check_setting, record {key: item.key}, tx
+  if existing_setting is nothing
+    call data.execute using insert_setting, record {key: item.key, value: item.value, updated_at: now_iso}, tx
+  end
+end
+
+set page_row to data.one using find_type, record {slug: "page"}, tx
+if page_row is nothing
+  call data.execute using insert_type, record {slug: "page", label_singular: "Page", label_plural: "Pages", permalink_pattern: "/:slug", has_archive: 0, archive_slug: nothing, is_system: 1, created_at: now_iso}, tx
+  set page_row to data.one using find_type, record {slug: "page"}, tx
+end
+
+set post_row to data.one using find_type, record {slug: "post"}, tx
+if post_row is nothing
+  call data.execute using insert_type, record {slug: "post", label_singular: "Post", label_plural: "Posts", permalink_pattern: "/blog/:slug", has_archive: 1, archive_slug: "blog", is_system: 1, created_at: now_iso}, tx
+  set post_row to data.one using find_type, record {slug: "post"}, tx
+end
+
+set page_subtitle to data.one using find_field, record {content_type_id: page_row.id, field_key: "subtitle"}, tx
+if page_subtitle is nothing
+  call data.execute using insert_field, record {content_type_id: page_row.id, field_key: "subtitle", label: "Subtitle", field_type: "text", is_required: 0, default_value: "", sort_order: 1}, tx
+end
+
+set post_subtitle to data.one using find_field, record {content_type_id: post_row.id, field_key: "subtitle"}, tx
+if post_subtitle is nothing
+  call data.execute using insert_field, record {content_type_id: post_row.id, field_key: "subtitle", label: "Subtitle", field_type: "text", is_required: 0, default_value: "", sort_order: 1}, tx
+end
+
+set post_minutes to data.one using find_field, record {content_type_id: post_row.id, field_key: "reading_minutes"}, tx
+if post_minutes is nothing
+  call data.execute using insert_field, record {content_type_id: post_row.id, field_key: "reading_minutes", label: "Reading Minutes", field_type: "integer", is_required: 0, default_value: "3", sort_order: 2}, tx
+end
+
+set about_entry to data.one using find_entry, record {full_path: "/about"}, tx
+if about_entry is nothing
+  call data.execute using insert_entry, record {content_type_id: page_row.id, slug: "about", full_path: "/about", title: "About GrabLab CMS", status: "published", body_html: "GrabLab CMS is a zero-plugin, security-first CMS built on GRAB v1.0.1 and Grex JS v1.0.0.", custom_fields_json: "{\"subtitle\":\"Clean core architecture\"}", meta_title: "About GrabLab CMS", meta_description: "Learn about GrabLab CMS.", published_at: now_iso, created_at: now_iso, updated_at: now_iso}, tx
+end
+
+set hello_entry to data.one using find_entry, record {full_path: "/blog/hello-world"}, tx
+if hello_entry is nothing
+  call data.execute using insert_entry, record {content_type_id: post_row.id, slug: "hello-world", full_path: "/blog/hello-world", title: "Hello, GrabLab CMS", status: "published", body_html: "Welcome to GrabLab CMS v0.1.0 featuring typed custom fields, pretty permalinks, and automatic 301 slug history.", custom_fields_json: "{\"subtitle\":\"First post on GrabLab\",\"reading_minutes\":\"2\"}", meta_title: "Hello, GrabLab CMS", meta_description: "First post on GrabLab CMS.", published_at: now_iso, created_at: now_iso, updated_at: now_iso}, tx
+end
+
+set starter_row to data.one using find_theme, record {slug: "default-starter"}, tx
+if starter_row is nothing
+  set active_count_row to data.one using count_active_themes, record {}, tx
+  set make_active to 0
+  if active_count_row.total is 0
+    set make_active to 1
+  end
+  call data.execute using insert_theme, record {slug: starter_manifest at "slug", name: starter_manifest at "name", version: starter_manifest at "version", engine: starter_manifest at "engine", is_active: make_active, manifest_json: starter_manifest_raw, installed_at: now_iso}, tx
+end
+
+call data.commit using tx
+show "GrabLab CMS v0.1.0 seed completed."

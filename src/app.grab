@@ -1,0 +1,1171 @@
+use cache
+use collections
+use data
+use dates
+use files
+use json
+use server
+use text
+
+# ==============================================================================
+# Startup: Open Database, Open Cache, and Prepare All Parameterized SQL
+# ==============================================================================
+
+set db to data.open using "main"
+set cms_cache to cache.open using "cms"
+
+set stmt_get_setting to data.prepare using db, "SELECT value FROM site_settings WHERE key = :key", record {params: record {key: "text"}, columns: record {value: "text"}}
+set stmt_list_settings to data.prepare using db, "SELECT key, value FROM site_settings ORDER BY key", record {params: record {}, columns: record {key: "text", value: "text"}}
+set stmt_upsert_setting_update to data.prepare using db, "UPDATE site_settings SET value = :value, updated_at = :updated_at WHERE key = :key", record {params: record {value: "text", updated_at: "text", key: "text"}, columns: record {}}
+set stmt_upsert_setting_insert to data.prepare using db, "INSERT INTO site_settings (key, value, updated_at) VALUES (:key, :value, :updated_at)", record {params: record {key: "text", value: "text", updated_at: "text"}, columns: record {}}
+
+set stmt_list_types to data.prepare using db, "SELECT id, slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at FROM content_types ORDER BY id", record {params: record {}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}}
+set stmt_get_type_by_slug to data.prepare using db, "SELECT id, slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at FROM content_types WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}}
+set stmt_get_type_by_id to data.prepare using db, "SELECT id, slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at FROM content_types WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}}
+set stmt_get_type_by_archive to data.prepare using db, "SELECT id, slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at FROM content_types WHERE has_archive = 1 AND archive_slug = :archive_slug", record {params: record {archive_slug: "text"}, columns: record {id: "integer", slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}}
+set stmt_insert_type to data.prepare using db, "INSERT INTO content_types (slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at) VALUES (:slug, :label_singular, :label_plural, :permalink_pattern, :has_archive, :archive_slug, :is_system, :created_at)", record {params: record {slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}, columns: record {}}
+
+set stmt_list_fields_by_type to data.prepare using db, "SELECT id, content_type_id, field_key, label, field_type, is_required, default_value, sort_order FROM field_definitions WHERE content_type_id = :content_type_id ORDER BY sort_order, id", record {params: record {content_type_id: "integer"}, columns: record {id: "integer", content_type_id: "integer", field_key: "text", label: "text", field_type: "text", is_required: "integer", default_value: record {type: "text", nullable: yes}, sort_order: "integer"}}
+set stmt_get_field_by_key to data.prepare using db, "SELECT id, content_type_id, field_key, label, field_type, is_required, default_value, sort_order FROM field_definitions WHERE content_type_id = :content_type_id AND field_key = :field_key", record {params: record {content_type_id: "integer", field_key: "text"}, columns: record {id: "integer", content_type_id: "integer", field_key: "text", label: "text", field_type: "text", is_required: "integer", default_value: record {type: "text", nullable: yes}, sort_order: "integer"}}
+set stmt_insert_field to data.prepare using db, "INSERT INTO field_definitions (content_type_id, field_key, label, field_type, is_required, default_value, sort_order) VALUES (:content_type_id, :field_key, :label, :field_type, :is_required, :default_value, :sort_order)", record {params: record {content_type_id: "integer", field_key: "text", label: "text", field_type: "text", is_required: "integer", default_value: record {type: "text", nullable: yes}, sort_order: "integer"}, columns: record {}}
+
+set stmt_list_entries to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id ORDER BY e.id DESC", record {params: record {}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_list_published_entries to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE e.status = 'published' ORDER BY e.id DESC", record {params: record {}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_list_published_by_type to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE e.content_type_id = :content_type_id AND e.status = 'published' ORDER BY e.id DESC", record {params: record {content_type_id: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_entry_by_id to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE e.id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_entry_by_full_path to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE e.full_path = :full_path", record {params: record {full_path: "text"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_get_published_entry_by_path to data.prepare using db, "SELECT e.id, e.content_type_id, ct.slug AS content_type_slug, ct.label_singular AS content_type_label, e.slug, e.full_path, e.title, e.status, e.body_html, e.custom_fields_json, e.meta_title, e.meta_description, e.published_at, e.created_at, e.updated_at FROM entries e JOIN content_types ct ON ct.id = e.content_type_id WHERE e.full_path = :full_path AND e.status = 'published'", record {params: record {full_path: "text"}, columns: record {id: "integer", content_type_id: "integer", content_type_slug: "text", content_type_label: "text", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}}
+set stmt_insert_entry to data.prepare using db, "INSERT INTO entries (content_type_id, slug, full_path, title, status, body_html, custom_fields_json, meta_title, meta_description, published_at, created_at, updated_at) VALUES (:content_type_id, :slug, :full_path, :title, :status, :body_html, :custom_fields_json, :meta_title, :meta_description, :published_at, :created_at, :updated_at)", record {params: record {content_type_id: "integer", slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, created_at: "text", updated_at: "text"}, columns: record {}}
+set stmt_update_entry to data.prepare using db, "UPDATE entries SET slug = :slug, full_path = :full_path, title = :title, status = :status, body_html = :body_html, custom_fields_json = :custom_fields_json, meta_title = :meta_title, meta_description = :meta_description, published_at = :published_at, updated_at = :updated_at WHERE id = :id", record {params: record {slug: "text", full_path: "text", title: "text", status: "text", body_html: "text", custom_fields_json: "text", meta_title: "text", meta_description: "text", published_at: record {type: "text", nullable: yes}, updated_at: "text", id: "integer"}, columns: record {}}
+
+set stmt_find_redirect_by_old_path to data.prepare using db, "SELECT s.id, s.old_path, s.entry_id, e.full_path AS target_path FROM slug_history s JOIN entries e ON e.id = s.entry_id WHERE s.old_path = :old_path AND e.status = 'published'", record {params: record {old_path: "text"}, columns: record {id: "integer", old_path: "text", entry_id: "integer", target_path: "text"}}
+set stmt_list_redirects to data.prepare using db, "SELECT s.id, s.old_path, s.entry_id, e.full_path AS target_path, s.created_at FROM slug_history s JOIN entries e ON e.id = s.entry_id ORDER BY s.id DESC", record {params: record {}, columns: record {id: "integer", old_path: "text", entry_id: "integer", target_path: "text", created_at: "text"}}
+set stmt_delete_redirect_by_old_path to data.prepare using db, "DELETE FROM slug_history WHERE old_path = :old_path", record {params: record {old_path: "text"}, columns: record {}}
+set stmt_insert_redirect to data.prepare using db, "INSERT INTO slug_history (old_path, entry_id, created_at) VALUES (:old_path, :entry_id, :created_at)", record {params: record {old_path: "text", entry_id: "integer", created_at: "text"}, columns: record {}}
+
+set stmt_list_themes to data.prepare using db, "SELECT slug, name, version, engine, is_active, manifest_json, installed_at FROM themes ORDER BY slug", record {params: record {}, columns: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}}
+set stmt_get_theme_by_slug to data.prepare using db, "SELECT slug, name, version, engine, is_active, manifest_json, installed_at FROM themes WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}}
+set stmt_get_active_theme to data.prepare using db, "SELECT slug, name, version, engine, is_active, manifest_json, installed_at FROM themes WHERE is_active = 1", record {params: record {}, columns: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}}
+set stmt_insert_theme to data.prepare using db, "INSERT INTO themes (slug, name, version, engine, is_active, manifest_json, installed_at) VALUES (:slug, :name, :version, :engine, :is_active, :manifest_json, :installed_at)", record {params: record {slug: "text", name: "text", version: "text", engine: "text", is_active: "integer", manifest_json: "text", installed_at: "text"}, columns: record {}}
+set stmt_update_theme_manifest to data.prepare using db, "UPDATE themes SET name = :name, version = :version, engine = :engine, manifest_json = :manifest_json WHERE slug = :slug", record {params: record {name: "text", version: "text", engine: "text", manifest_json: "text", slug: "text"}, columns: record {}}
+set stmt_deactivate_all_themes to data.prepare using db, "UPDATE themes SET is_active = 0", record {params: record {}, columns: record {}}
+set stmt_activate_theme_slug to data.prepare using db, "UPDATE themes SET is_active = 1 WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {}}
+
+set stmts to record {db: db, cms_cache: cms_cache, get_setting: stmt_get_setting, list_settings: stmt_list_settings, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, list_types: stmt_list_types, get_type_by_slug: stmt_get_type_by_slug, get_type_by_id: stmt_get_type_by_id, get_type_by_archive: stmt_get_type_by_archive, insert_type: stmt_insert_type, list_fields_by_type: stmt_list_fields_by_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, list_entries: stmt_list_entries, list_published_entries: stmt_list_published_entries, list_published_by_type: stmt_list_published_by_type, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, get_published_entry_by_path: stmt_get_published_entry_by_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, find_redirect_by_old_path: stmt_find_redirect_by_old_path, list_redirects: stmt_list_redirects, delete_redirect_by_old_path: stmt_delete_redirect_by_old_path, insert_redirect: stmt_insert_redirect, list_themes: stmt_list_themes, get_theme_by_slug: stmt_get_theme_by_slug, get_active_theme: stmt_get_active_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, deactivate_all_themes: stmt_deactivate_all_themes, activate_theme_slug: stmt_activate_theme_slug}
+
+# ==============================================================================
+# Shared Helpers: Normalization, Identifier & URL Safety, Reserved Prefixes
+# ==============================================================================
+
+make is_allowed_chars using raw, allowed_str, min_len, max_len
+  set n to text.length using raw
+  if n is less than min_len or n is greater than max_len
+    give back no
+  end
+  set chars to text.split using raw, ""
+  for each ch in chars
+    if not (text.contains using allowed_str, ch)
+      give back no
+    end
+  end
+  give back yes
+end
+
+make is_valid_slug using raw
+  give back is_allowed_chars using raw, "abcdefghijklmnopqrstuvwxyz0123456789_-", 1, 64
+end
+
+make is_valid_field_key using raw
+  give back is_allowed_chars using raw, "abcdefghijklmnopqrstuvwxyz0123456789_", 1, 64
+end
+
+make is_valid_theme_slug using raw
+  give back is_allowed_chars using raw, "abcdefghijklmnopqrstuvwxyz0123456789-", 1, 64
+end
+
+make is_valid_entry_slug using raw
+  give back is_allowed_chars using raw, "abcdefghijklmnopqrstuvwxyz0123456789_-", 1, 190
+end
+
+make normalize_slug using raw
+  set cleaned to text.lower using (text.trim using raw)
+  give back cleaned
+end
+
+make normalize_path using raw_path
+  set cleaned to text.lower using (text.trim using raw_path)
+  if cleaned is ""
+    give back "/"
+  end
+  if not (text.starts_with using cleaned, "/")
+    set cleaned to "/" joined with cleaned
+  end
+  while (text.length using cleaned) is greater than 1 and (text.ends_with using cleaned, "/")
+    set chars to text.split using cleaned, ""
+    set last_idx to (collections.length using chars) minus 1
+    set sliced to collections.slice using chars, 0, last_idx
+    set cleaned to text.join using sliced, ""
+  end
+  give back cleaned
+end
+
+make has_unsafe_path_chars using raw_path
+  if (text.contains using raw_path, "..") or (text.contains using raw_path, "\\") or (text.contains using raw_path, "?") or (text.contains using raw_path, "#") or (text.contains using raw_path, "\r") or (text.contains using raw_path, "\n")
+    give back yes
+  end
+  give back no
+end
+
+make is_reserved_path using raw_path
+  set p to normalize_path using raw_path
+  if p is "/admin" or (text.starts_with using p, "/admin/")
+    give back yes
+  end
+  if p is "/api" or (text.starts_with using p, "/api/")
+    give back yes
+  end
+  if p is "/static" or (text.starts_with using p, "/static/")
+    give back yes
+  end
+  if p is "/_health" or p is "/_ready" or p is "/robots.txt" or p is "/sitemap.xml" or p is "/favicon.ico"
+    give back yes
+  end
+  give back no
+end
+
+make is_safe_url using raw_url
+  set u to text.trim using raw_url
+  if u is "" or (text.contains using u, "\r") or (text.contains using u, "\n") or (text.contains using u, "\\") or (text.contains using u, " ")
+    give back no
+  end
+  set lower to text.lower using u
+  if (text.starts_with using lower, "javascript:") or (text.starts_with using lower, "data:") or (text.starts_with using lower, "vbscript:")
+    give back no
+  end
+  if (text.starts_with using lower, "//")
+    give back no
+  end
+  if (text.starts_with using lower, "http://") or (text.starts_with using lower, "https://")
+    set after_scheme to ""
+    if text.starts_with using lower, "https://"
+      set after_scheme to text.replace using lower, "https://", ""
+    otherwise
+      set after_scheme to text.replace using lower, "http://", ""
+    end
+    if after_scheme is "" or (text.starts_with using after_scheme, "/")
+      give back no
+    end
+    give back yes
+  end
+  if text.starts_with using lower, "/"
+    give back yes
+  end
+  give back no
+end
+
+make safe_asset_url using raw_path
+  try
+    give back server.asset using raw_path
+  catch err
+    give back raw_path
+  end
+end
+
+# ==============================================================================
+# Module 1: Content Type, Custom Field & Grex JS v1.0.0 Layout Validation
+# ==============================================================================
+
+make is_valid_field_type using ftype
+  set allowed to ["text", "rich_text", "integer", "decimal", "boolean", "date", "url", "json"]
+  for each item in allowed
+    if item is ftype
+      give back yes
+    end
+  end
+  give back no
+end
+
+make is_allowed_grex_element using el_name
+  set allowed to ["Section", "Container", "Grid", "Stack", "Card", "Heading", "Text", "RichText", "Link", "Button", "Image", "Icon", "Form", "Input", "Select", "Tabs", "Accordion", "Modal", "Nav", "ForEach"]
+  for each item in allowed
+    if item is el_name
+      give back yes
+    end
+  end
+  give back no
+end
+
+make validate_grex_node using node, depth
+  if depth is greater than 24
+    give back record {ok: no, error: "Grex layout nesting exceeds maximum depth (24)"}
+  end
+  try
+    if not (node has "element")
+      give back record {ok: no, error: "Grex layout node requires an element field"}
+    end
+    set el_name to text.from using (node at "element")
+    if not (is_allowed_grex_element using el_name)
+      give back record {ok: no, error: "Unsupported or unsafe Grex element: " joined with el_name}
+    end
+    if node has "tag"
+      set tag_name to text.lower using (text.from using (node at "tag"))
+      if tag_name is "div" or tag_name is "script" or tag_name is "iframe" or tag_name is "object"
+        give back record {ok: no, error: "Disallowed HTML tag in Grex layout: " joined with tag_name}
+      end
+    end
+    if node has "props"
+      set props to node at "props"
+      set prop_keys to collections.keys using props
+      for each pk in prop_keys
+        set pkl to text.lower using pk
+        if text.starts_with using pkl, "on"
+          give back record {ok: no, error: "Inline event handler prop not allowed: " joined with pk}
+        end
+        if pkl is "href" or pkl is "src" or pkl is "action"
+          set url_val to text.from using (props at pk)
+          if not (is_safe_url using url_val)
+            give back record {ok: no, error: "Unsafe URL in Grex prop: " joined with pk}
+          end
+        end
+      end
+    end
+    if node has "children"
+      set kids to node at "children"
+      for each child in kids
+        set child_res to validate_grex_node using child, (depth plus 1)
+        if not child_res.ok
+          give back child_res
+        end
+      end
+    end
+    give back record {ok: yes, error: ""}
+  catch err
+    give back record {ok: no, error: "Invalid Grex layout node structure"}
+  end
+end
+
+make validate_single_field_value using ftype, raw_val
+  set as_str to ""
+  try
+    set as_str to text.from using raw_val
+  catch err
+    give back record {ok: no, value: "", error: "Field value is not serializable"}
+  end
+
+  if ftype is "text"
+    give back record {ok: yes, value: as_str, error: ""}
+  end
+
+  if ftype is "rich_text"
+    set lower to text.lower using as_str
+    if (text.contains using lower, "<script") or (text.contains using lower, "javascript:")
+      give back record {ok: no, value: "", error: "Unsafe script content in rich_text field"}
+    end
+    give back record {ok: yes, value: as_str, error: ""}
+  end
+
+  if ftype is "integer"
+    try
+      set parsed_int to text.to_integer using as_str
+      give back record {ok: yes, value: (text.from using parsed_int), error: ""}
+    catch err
+      give back record {ok: no, value: "", error: "Expected exact integer value"}
+    end
+  end
+
+  if ftype is "decimal"
+    try
+      if text.contains using as_str, "."
+        set parsed_dec to text.to_decimal using as_str
+        give back record {ok: yes, value: as_str, error: ""}
+      otherwise
+        set parsed_int to text.to_integer using as_str
+        give back record {ok: yes, value: as_str, error: ""}
+      end
+    catch err
+      give back record {ok: no, value: "", error: "Expected exact base-10 decimal string"}
+    end
+  end
+
+  if ftype is "boolean"
+    set lower to text.lower using (text.trim using as_str)
+    if lower is "yes" or lower is "true" or lower is "1"
+      give back record {ok: yes, value: yes, error: ""}
+    end
+    if lower is "no" or lower is "false" or lower is "0"
+      give back record {ok: yes, value: no, error: ""}
+    end
+    give back record {ok: no, value: "", error: "Expected boolean value"}
+  end
+
+  if ftype is "date"
+    try
+      set parsed_dt to dates.parse_iso using as_str
+      give back record {ok: yes, value: parsed_dt.iso, error: ""}
+    catch err
+      give back record {ok: no, value: "", error: "Expected ISO-8601 date or UTC timestamp"}
+    end
+  end
+
+  if ftype is "url"
+    if not (is_safe_url using as_str)
+      give back record {ok: no, value: "", error: "Unsafe or invalid URL"}
+    end
+    give back record {ok: yes, value: as_str, error: ""}
+  end
+
+  if ftype is "json"
+    set parsed_json to nothing
+    if as_str is (json.stringify using raw_val)
+      set parsed_json to raw_val
+    otherwise
+      try
+        set parsed_json to json.parse using as_str
+      catch err
+        set parsed_json to raw_val
+      end
+    end
+    try
+      set encoded to json.stringify using parsed_json
+      if not ((text.starts_with using encoded, "{") or (text.starts_with using encoded, "["))
+        give back record {ok: no, value: "", error: "JSON field must be a JSON object or array"}
+      end
+      if (text.starts_with using encoded, "{") and (parsed_json has "element")
+        set grex_res to validate_grex_node using parsed_json, 0
+        if not grex_res.ok
+          give back record {ok: no, value: "", error: grex_res.error}
+        end
+      end
+      give back record {ok: yes, value: parsed_json, error: ""}
+    catch err
+      give back record {ok: no, value: "", error: "Invalid JSON field payload"}
+    end
+  end
+
+  give back record {ok: no, value: "", error: "Unknown field type: " joined with ftype}
+end
+
+make has_map_key using m, key
+  if m is nothing
+    give back no
+  end
+  set ks to collections.keys using m
+  for each k in ks
+    if k is key
+      give back yes
+    end
+  end
+  give back no
+end
+
+make validate_custom_fields using stmts, content_type_id, input_map
+  set defs to data.query using stmts.list_fields_by_type, record {content_type_id: content_type_id}
+  set validated to {}
+  set def_keys to {}
+
+  for each fdef in defs
+    set fkey to fdef.field_key
+    set def_keys to collections.put using def_keys, fkey, yes
+    set has_val to has_map_key using input_map, fkey
+    set raw_val to nothing
+    if has_val
+      set raw_val to input_map at fkey
+    end
+
+    if (not has_val) or (raw_val is nothing)
+      if fdef.is_required is 1
+        give back record {ok: no, json_text: "{}", error: "Missing required custom field: " joined with fkey}
+      end
+      if fdef.default_value is not nothing and fdef.default_value is not ""
+        set def_res to validate_single_field_value using fdef.field_type, fdef.default_value
+        if not def_res.ok
+          give back record {ok: no, json_text: "{}", error: "Invalid default for " joined with fkey joined with ": " joined with def_res.error}
+        end
+        set validated to collections.put using validated, fkey, def_res.value
+      end
+    otherwise
+      set val_res to validate_single_field_value using fdef.field_type, raw_val
+      if not val_res.ok
+        give back record {ok: no, json_text: "{}", error: "Field '" joined with fkey joined with "': " joined with val_res.error}
+      end
+      set validated to collections.put using validated, fkey, val_res.value
+    end
+  end
+
+  set in_keys to collections.keys using input_map
+  for each ikey in in_keys
+    if not (has_map_key using def_keys, ikey)
+      give back record {ok: no, json_text: "{}", error: "Undefined custom field key: " joined with ikey}
+    end
+  end
+
+  give back record {ok: yes, json_text: (json.stringify using validated), error: ""}
+end
+
+make normalize_and_validate_body using raw_val
+  set body_text to ""
+  set is_obj to no
+  try
+    set test_keys to collections.keys using raw_val
+    set is_obj to yes
+  catch err
+    set is_obj to no
+  end
+  if is_obj
+    set body_text to json.stringify using raw_val
+  otherwise
+    set body_text to text.from using raw_val
+  end
+  set trimmed to text.trim using body_text
+  if text.starts_with using trimmed, "{"
+    try
+      set parsed_body to json.parse using trimmed
+      if parsed_body has "element"
+        set grex_chk to validate_grex_node using parsed_body, 0
+        if not grex_chk.ok
+          give back record {ok: no, body_html: "", error: grex_chk.error}
+        end
+      end
+    catch err
+    end
+  end
+  give back record {ok: yes, body_html: body_text, error: ""}
+end
+
+make compute_full_path using permalink_pattern, slug
+  set raw to text.replace using permalink_pattern, ":slug", slug
+  give back normalize_path using raw
+end
+
+# ==============================================================================
+# Module 2: Exclusive Active Theme Manager & Cache Invalidation
+# ==============================================================================
+
+make is_sensitive_segment using seg
+  set s to text.lower using seg
+  if s is ".git" or s is ".env" or s is ".ssh" or s is "id_rsa" or s is "id_ed25519"
+    give back yes
+  end
+  if (text.starts_with using s, ".env.") or (text.ends_with using s, ".pem") or (text.ends_with using s, ".key")
+    give back yes
+  end
+  give back no
+end
+
+make is_safe_theme_relpath using rel
+  if rel is "" or (text.starts_with using rel, "/") or (text.contains using rel, ":") or (text.contains using rel, "\\") or (text.contains using rel, "..")
+    give back no
+  end
+  set segs to text.split using rel, "/"
+  for each seg in segs
+    if seg is "" or seg is "." or seg is ".." or (is_sensitive_segment using seg)
+      give back no
+    end
+  end
+  give back yes
+end
+
+make validate_theme_manifest using slug
+  if not (is_valid_theme_slug using slug)
+    give back record {ok: no, manifest: {}, raw: "", error: "Invalid theme slug"}
+  end
+  set manifest_path to "themes/" joined with slug joined with "/theme.json"
+  set exists_flag to no
+  try
+    set exists_flag to files.exists using manifest_path
+  catch err
+    give back record {ok: no, manifest: {}, raw: "", error: "Unable to access theme manifest"}
+  end
+  if not exists_flag
+    give back record {ok: no, manifest: {}, raw: "", error: "Theme manifest not found: " joined with manifest_path}
+  end
+
+  set raw_json to ""
+  set manifest to {}
+  try
+    set raw_json to files.read_text using manifest_path
+    set manifest to json.parse using raw_json
+  catch err
+    give back record {ok: no, manifest: {}, raw: "", error: "Malformed theme.json"}
+  end
+
+  if (not (manifest has "schemaVersion")) or (not (manifest has "slug")) or (not (manifest has "name")) or (not (manifest has "version")) or (not (manifest has "engine")) or (not (manifest has "templates"))
+    give back record {ok: no, manifest: {}, raw: "", error: "theme.json missing required fields"}
+  end
+
+  if (manifest has "capabilities") or (manifest has "plugins") or (manifest has "hooks")
+    give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unauthorized theme capabilities block"}
+  end
+
+  if (manifest at "schemaVersion") is not "1.0.0"
+    give back record {ok: no, manifest: {}, raw: "", error: "Unsupported theme schemaVersion"}
+  end
+
+  if (manifest at "slug") is not slug
+    give back record {ok: no, manifest: {}, raw: "", error: "theme.json slug does not match directory name"}
+  end
+
+  set engine to manifest at "engine"
+  if engine is not "coded" and engine is not "grex-visual"
+    give back record {ok: no, manifest: {}, raw: "", error: "Theme engine must be coded or grex-visual"}
+  end
+
+  set templates to manifest at "templates"
+  set required_slots to ["home", "single", "archive", "404"]
+  for each slot in required_slots
+    if not (has_map_key using templates, slot)
+      give back record {ok: no, manifest: {}, raw: "", error: "theme.json missing required template slot: " joined with slot}
+    end
+  end
+
+  set tmpl_keys to collections.keys using templates
+  for each tkey in tmpl_keys
+    set trel to templates at tkey
+    if not (is_safe_theme_relpath using trel)
+      give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unsafe theme template path: " joined with trel}
+    end
+    if not (text.ends_with using trel, ".grab.html")
+      give back record {ok: no, manifest: {}, raw: "", error: "Theme templates must have .grab.html extension"}
+    end
+    if engine is "coded"
+      set disk_path to "themes/" joined with slug joined with "/" joined with trel
+      if not (files.exists using disk_path)
+        give back record {ok: no, manifest: {}, raw: "", error: "Missing theme template on disk: " joined with disk_path}
+      end
+    end
+  end
+
+  if manifest has "assets"
+    set assets to manifest at "assets"
+    for each asset_group in ["styles", "scripts"]
+      if has_map_key using assets, asset_group
+        set items to assets at asset_group
+        for each arel in items
+          if not (is_safe_theme_relpath using arel)
+            give back record {ok: no, manifest: {}, raw: "", error: "GRAB-E401: unsafe theme asset path: " joined with arel}
+          end
+        end
+      end
+    end
+  end
+
+  give back record {ok: yes, manifest: manifest, raw: raw_json, error: ""}
+end
+
+make upsert_setting using stmts, key, val, now_iso, tx
+  set existing to data.one using stmts.get_setting, record {key: key}, tx
+  if existing is nothing
+    call data.execute using stmts.upsert_setting_insert, record {key: key, value: val, updated_at: now_iso}, tx
+  otherwise
+    call data.execute using stmts.upsert_setting_update, record {value: val, updated_at: now_iso, key: key}, tx
+  end
+end
+
+make upsert_theme_row using stmts, slug, check_res, now_iso, tx
+  set existing to data.one using stmts.get_theme_by_slug, record {slug: slug}, tx
+  if existing is nothing
+    call data.execute using stmts.insert_theme, record {slug: slug, name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: (check_res.manifest at "engine"), is_active: 0, manifest_json: check_res.raw, installed_at: now_iso}, tx
+  otherwise
+    call data.execute using stmts.update_theme_manifest, record {name: (check_res.manifest at "name"), version: (check_res.manifest at "version"), engine: (check_res.manifest at "engine"), manifest_json: check_res.raw, slug: slug}, tx
+  end
+end
+
+make get_active_theme_context using stmts
+  set cached to cache.get using stmts.cms_cache, "active_theme"
+  if cached.found
+    give back cached.value
+  end
+
+  set row to data.one using stmts.get_active_theme, record {}
+  set ctx to record {slug: "default-starter", name: "Default Starter", version: "1.0.0", engine: "coded", templates: {"home": "templates/home.grab.html", "single": "templates/single.grab.html", "archive": "templates/archive.grab.html", "404": "templates/404.grab.html"}}
+  if row is not nothing
+    set parsed to json.parse using row.manifest_json
+    set ctx to record {slug: row.slug, name: row.name, version: row.version, engine: row.engine, templates: (parsed at "templates")}
+  end
+  call cache.set using stmts.cms_cache, "active_theme", ctx, 300000
+  give back ctx
+end
+
+make get_site_settings_map using stmts
+  set cached to cache.get using stmts.cms_cache, "site_settings"
+  if cached.found
+    give back cached.value
+  end
+  set rows to data.query using stmts.list_settings, record {}
+  set out to {"site_title": "GrabLab CMS", "site_tagline": "Zero-plugin CMS", "active_theme_slug": "default-starter", "home_entry_id": ""}
+  for each r in rows
+    set out to collections.put using out, r.key, r.value
+  end
+  call cache.set using stmts.cms_cache, "site_settings", out, 300000
+  give back out
+end
+
+make invalidate_route_caches using stmts, path_a, path_b, type_slug
+  if path_a is not ""
+    call cache.delete using stmts.cms_cache, ("route:" joined with path_a)
+  end
+  if path_b is not ""
+    call cache.delete using stmts.cms_cache, ("route:" joined with path_b)
+  end
+  if type_slug is not ""
+    call cache.delete using stmts.cms_cache, ("archive:" joined with type_slug)
+  end
+  call cache.delete using stmts.cms_cache, "home_entries"
+end
+
+make render_theme_page using stmts, slot_name, page_data, status
+  set theme to get_active_theme_context using stmts
+  set settings to get_site_settings_map using stmts
+  set tmpl_rel to "templates/" joined with slot_name joined with ".grab.html"
+  if has_map_key using theme.templates, slot_name
+    set tmpl_rel to theme.templates at slot_name
+  end
+  set tmpl_path to "../themes/" joined with theme.slug joined with "/" joined with tmpl_rel
+
+  set tokens_css_url to safe_asset_url using "/static/grex/tokens.css"
+  set theme_css_url to safe_asset_url using ("/static/themes/" joined with theme.slug joined with "/theme.css")
+
+  set merged to collections.put using page_data, "site_title", (settings at "site_title")
+  set merged to collections.put using merged, "site_tagline", (settings at "site_tagline")
+  set merged to collections.put using merged, "theme_name", theme.name
+  set merged to collections.put using merged, "theme_slug", theme.slug
+  set merged to collections.put using merged, "tokens_css_url", tokens_css_url
+  set merged to collections.put using merged, "theme_css_url", theme_css_url
+
+  give back server.html using tmpl_path, merged, status
+end
+
+# ==============================================================================
+# Module 3: Pretty Permalink Resolution & 301 Redirect Helper
+# ==============================================================================
+
+make build_entries_summary using entries
+  set parts to []
+  for each e in entries
+    set line to e.title joined with " (" joined with e.full_path joined with ")"
+    set parts to collections.append using parts, line
+  end
+  if (collections.length using parts) is 0
+    give back "No published entries yet."
+  end
+  give back text.join using parts, " | "
+end
+
+make render_single_entry using stmts, entry
+  set meta_title to entry.meta_title
+  if meta_title is ""
+    set meta_title to entry.title
+  end
+  set published_at to ""
+  if entry.published_at is not nothing
+    set published_at to entry.published_at
+  end
+  set page_data to {"title": entry.title, "meta_title": meta_title, "meta_description": entry.meta_description, "content_type_label": entry.content_type_label, "full_path": entry.full_path, "published_at": published_at, "body_text": entry.body_html, "custom_fields_summary": entry.custom_fields_json}
+  give back render_theme_page using stmts, "single", page_data, 200
+end
+
+make resolve_public_path using stmts, req_path
+  set norm_path to normalize_path using req_path
+  if (has_unsafe_path_chars using req_path) or (is_reserved_path using norm_path)
+    give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404
+  end
+
+  set entry to data.one using stmts.get_published_entry_by_path, record {full_path: norm_path}
+  if entry is not nothing
+    give back render_single_entry using stmts, entry
+  end
+
+  set redir to data.one using stmts.find_redirect_by_old_path, record {old_path: norm_path}
+  if redir is not nothing
+    give back server.redirect using redir.target_path, 301
+  end
+
+  give back render_theme_page using stmts, "404", {"requested_path": norm_path}, 404
+end
+
+# ==============================================================================
+# Reserved System Routes (/admin, /api, /_health, /_ready)
+# ==============================================================================
+
+route "GET" "/admin"
+  set settings to get_site_settings_map using stmts
+  set theme to get_active_theme_context using stmts
+  give back server.json using 200, record {service: "grablab-cms", version: "0.1.0", active_theme: theme.slug, site_title: (settings at "site_title"), status: "reserved-admin-prefix"}
+end
+
+route "GET" "/admin/{rest}" using req
+  give back server.json using 404, record {error: "Reserved admin route", path: req.path}
+end
+
+# ==============================================================================
+# Content Type & Custom Field Registry API (/api/content-types)
+# ==============================================================================
+
+route "GET" "/api/content-types"
+  set types to data.query using stmts.list_types, record {}
+  set enriched to []
+  for each ct in types
+    set fields to data.query using stmts.list_fields_by_type, record {content_type_id: ct.id}
+    set enriched to collections.append using enriched, record {id: ct.id, slug: ct.slug, label_singular: ct.label_singular, label_plural: ct.label_plural, permalink_pattern: ct.permalink_pattern, has_archive: ct.has_archive, archive_slug: ct.archive_slug, is_system: ct.is_system, fields: fields}
+  end
+  give back server.json using 200, record {content_types: enriched}
+end
+
+route "POST" "/api/content-types" using req
+  try
+    set payload to server.parse_json using req
+    if (not (payload has "slug")) or (not (payload has "label_singular")) or (not (payload has "label_plural")) or (not (payload has "permalink_pattern"))
+      give back server.json using 400, record {error: "Missing required fields: slug, label_singular, label_plural, permalink_pattern"}
+    end
+
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    if not (is_valid_slug using slug)
+      give back server.json using 400, record {error: "Invalid content type slug"}
+    end
+
+    set pattern to text.lower using (text.trim using (text.from using (payload at "permalink_pattern")))
+    if (not (text.starts_with using pattern, "/")) or (not (text.contains using pattern, ":slug")) or (has_unsafe_path_chars using pattern)
+      give back server.json using 400, record {error: "permalink_pattern must start with '/' and contain ':slug'"}
+    end
+    set test_sample to compute_full_path using pattern, "sample"
+    if is_reserved_path using test_sample
+      give back server.json using 400, record {error: "permalink_pattern collides with a reserved system prefix"}
+    end
+
+    set has_archive to 1
+    if payload has "has_archive"
+      set ha_val to text.lower using (text.from using (payload at "has_archive"))
+      if ha_val is "no" or ha_val is "false" or ha_val is "0"
+        set has_archive to 0
+      end
+    end
+
+    set archive_slug to nothing
+    if has_archive is 1
+      if payload has "archive_slug" and (payload at "archive_slug") is not nothing
+        set archive_slug to normalize_slug using (text.from using (payload at "archive_slug"))
+      otherwise
+        set archive_slug to slug
+      end
+      if not (is_valid_slug using archive_slug)
+        give back server.json using 400, record {error: "Invalid archive_slug"}
+      end
+      if is_reserved_path using ("/" joined with archive_slug)
+        give back server.json using 400, record {error: "archive_slug collides with a reserved system prefix"}
+      end
+      set archive_clash to data.one using stmts.get_type_by_archive, record {archive_slug: archive_slug}
+      if archive_clash is not nothing
+        give back server.json using 409, record {error: "archive_slug is already used by another content type"}
+      end
+    end
+
+    set existing to data.one using stmts.get_type_by_slug, record {slug: slug}
+    if existing is not nothing
+      give back server.json using 409, record {error: "Content type slug already exists"}
+    end
+
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.insert_type, record {slug: slug, label_singular: (text.from using (payload at "label_singular")), label_plural: (text.from using (payload at "label_plural")), permalink_pattern: pattern, has_archive: has_archive, archive_slug: archive_slug, is_system: 0, created_at: now_rec.iso}, tx
+      set created to data.one using stmts.get_type_by_slug, record {slug: slug}, tx
+      call data.commit using tx
+      give back server.json using 201, record {content_type: created}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/content-types/{slug}/fields" using req
+  try
+    set ct_slug to normalize_slug using req.params.slug
+    set ct to data.one using stmts.get_type_by_slug, record {slug: ct_slug}
+    if ct is nothing
+      give back server.json using 404, record {error: "Content type not found"}
+    end
+
+    set payload to server.parse_json using req
+    if (not (payload has "field_key")) or (not (payload has "label")) or (not (payload has "field_type"))
+      give back server.json using 400, record {error: "Missing required fields: field_key, label, field_type"}
+    end
+
+    set fkey to normalize_slug using (text.from using (payload at "field_key"))
+    if not (is_valid_field_key using fkey)
+      give back server.json using 400, record {error: "Invalid field_key"}
+    end
+
+    set ftype to text.lower using (text.trim using (text.from using (payload at "field_type")))
+    if not (is_valid_field_type using ftype)
+      give back server.json using 400, record {error: "Unsupported field_type"}
+    end
+
+    set is_req to 0
+    if payload has "is_required"
+      set req_str to text.lower using (text.from using (payload at "is_required"))
+      if req_str is "yes" or req_str is "true" or req_str is "1"
+        set is_req to 1
+      end
+    end
+
+    set def_val to nothing
+    if payload has "default_value" and (payload at "default_value") is not nothing
+      set def_check to validate_single_field_value using ftype, (payload at "default_value")
+      if not def_check.ok
+        give back server.json using 400, record {error: "Invalid default_value: " joined with def_check.error}
+      end
+      set def_val to text.from using (payload at "default_value")
+    end
+
+    set sort_order to 0
+    if payload has "sort_order"
+      set sort_order to text.to_integer using (text.from using (payload at "sort_order"))
+    end
+
+    set dup to data.one using stmts.get_field_by_key, record {content_type_id: ct.id, field_key: fkey}
+    if dup is not nothing
+      give back server.json using 409, record {error: "Field key already exists on content type"}
+    end
+
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.insert_field, record {content_type_id: ct.id, field_key: fkey, label: (text.from using (payload at "label")), field_type: ftype, is_required: is_req, default_value: def_val, sort_order: sort_order}, tx
+      set created to data.one using stmts.get_field_by_key, record {content_type_id: ct.id, field_key: fkey}, tx
+      call data.commit using tx
+      give back server.json using 201, record {field: created}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+# ==============================================================================
+# Entry Store & Slug History API (/api/entries, /api/redirects)
+# ==============================================================================
+
+route "GET" "/api/entries"
+  set rows to data.query using stmts.list_entries, record {}
+  give back server.json using 200, record {entries: rows}
+end
+
+route "POST" "/api/entries" using req
+  try
+    set payload to server.parse_json using req
+    if (not (payload has "content_type")) or (not (payload has "slug")) or (not (payload has "title"))
+      give back server.json using 400, record {error: "Missing required fields: content_type, slug, title"}
+    end
+
+    set ct_slug to normalize_slug using (text.from using (payload at "content_type"))
+    set ct to data.one using stmts.get_type_by_slug, record {slug: ct_slug}
+    if ct is nothing
+      give back server.json using 404, record {error: "Content type not found"}
+    end
+
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    if not (is_valid_entry_slug using slug)
+      give back server.json using 400, record {error: "Invalid entry slug"}
+    end
+
+    set full_path to compute_full_path using ct.permalink_pattern, slug
+    if is_reserved_path using full_path
+      give back server.json using 400, record {error: "Computed permalink collides with a reserved system prefix"}
+    end
+
+    set conflict to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}
+    if conflict is not nothing
+      give back server.json using 409, record {error: "An entry already exists at " joined with full_path}
+    end
+
+    set status to "draft"
+    if payload has "status"
+      set status to text.lower using (text.trim using (text.from using (payload at "status")))
+    end
+    if status is not "draft" and status is not "published" and status is not "archived"
+      give back server.json using 400, record {error: "Status must be draft, published, or archived"}
+    end
+
+    set body_html to ""
+    if payload has "body_html" and (payload at "body_html") is not nothing
+      set body_res to normalize_and_validate_body using (payload at "body_html")
+      if not body_res.ok
+        give back server.json using 400, record {error: body_res.error}
+      end
+      set body_html to body_res.body_html
+    end
+
+    set cf_input to {}
+    if payload has "custom_fields" and (payload at "custom_fields") is not nothing
+      set cf_input to payload at "custom_fields"
+    end
+    set cf_res to validate_custom_fields using stmts, ct.id, cf_input
+    if not cf_res.ok
+      give back server.json using 400, record {error: cf_res.error}
+    end
+
+    set meta_title to ""
+    if payload has "meta_title" and (payload at "meta_title") is not nothing
+      set meta_title to text.from using (payload at "meta_title")
+    end
+    set meta_desc to ""
+    if payload has "meta_description" and (payload at "meta_description") is not nothing
+      set meta_desc to text.from using (payload at "meta_description")
+    end
+
+    set now_rec to call dates.now_utc
+    set pub_at to nothing
+    if status is "published"
+      set pub_at to now_rec.iso
+    end
+
+    set tx to data.begin using stmts.db
+    try
+      if status is "published"
+        call data.execute using stmts.delete_redirect_by_old_path, record {old_path: full_path}, tx
+      end
+      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (text.from using (payload at "title")), status: status, body_html: body_html, custom_fields_json: cf_res.json_text, meta_title: meta_title, meta_description: meta_desc, published_at: pub_at, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      set created to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}, tx
+      call data.commit using tx
+      call invalidate_route_caches using stmts, full_path, "", ct.slug
+      give back server.json using 201, record {entry: created}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "PUT" "/api/entries/{id}" using req
+  try
+    set entry_id to text.to_integer using req.params.id
+    set existing to data.one using stmts.get_entry_by_id, record {id: entry_id}
+    if existing is nothing
+      give back server.json using 404, record {error: "Entry not found"}
+    end
+
+    set ct to data.one using stmts.get_type_by_id, record {id: existing.content_type_id}
+    set payload to server.parse_json using req
+
+    set new_slug to existing.slug
+    if payload has "slug" and (payload at "slug") is not nothing
+      set new_slug to normalize_slug using (text.from using (payload at "slug"))
+    end
+    if not (is_valid_entry_slug using new_slug)
+      give back server.json using 400, record {error: "Invalid entry slug"}
+    end
+
+    set new_full_path to compute_full_path using ct.permalink_pattern, new_slug
+    if is_reserved_path using new_full_path
+      give back server.json using 400, record {error: "Computed permalink collides with a reserved system prefix"}
+    end
+
+    set collision to data.one using stmts.get_entry_by_full_path, record {full_path: new_full_path}
+    if collision is not nothing and collision.id is not entry_id
+      give back server.json using 409, record {error: "Another entry already owns " joined with new_full_path}
+    end
+
+    set new_title to existing.title
+    if payload has "title" and (payload at "title") is not nothing
+      set new_title to text.from using (payload at "title")
+    end
+
+    set new_status to existing.status
+    if payload has "status" and (payload at "status") is not nothing
+      set new_status to text.lower using (text.trim using (text.from using (payload at "status")))
+    end
+    if new_status is not "draft" and new_status is not "published" and new_status is not "archived"
+      give back server.json using 400, record {error: "Status must be draft, published, or archived"}
+    end
+
+    set new_body to existing.body_html
+    if payload has "body_html" and (payload at "body_html") is not nothing
+      set body_res to normalize_and_validate_body using (payload at "body_html")
+      if not body_res.ok
+        give back server.json using 400, record {error: body_res.error}
+      end
+      set new_body to body_res.body_html
+    end
+
+    set new_cf_json to existing.custom_fields_json
+    if payload has "custom_fields" and (payload at "custom_fields") is not nothing
+      set cf_res to validate_custom_fields using stmts, ct.id, (payload at "custom_fields")
+      if not cf_res.ok
+        give back server.json using 400, record {error: cf_res.error}
+      end
+      set new_cf_json to cf_res.json_text
+    end
+
+    set new_meta_title to existing.meta_title
+    if payload has "meta_title" and (payload at "meta_title") is not nothing
+      set new_meta_title to text.from using (payload at "meta_title")
+    end
+
+    set new_meta_desc to existing.meta_description
+    if payload has "meta_description" and (payload at "meta_description") is not nothing
+      set new_meta_desc to text.from using (payload at "meta_description")
+    end
+
+    set now_rec to call dates.now_utc
+    set new_pub_at to existing.published_at
+    if new_status is "published" and new_pub_at is nothing
+      set new_pub_at to now_rec.iso
+    end
+
+    set tx to data.begin using stmts.db
+    try
+      call data.execute using stmts.delete_redirect_by_old_path, record {old_path: new_full_path}, tx
+      if (new_full_path is not existing.full_path) and (existing.status is "published") and (new_status is "published")
+        call data.execute using stmts.delete_redirect_by_old_path, record {old_path: existing.full_path}, tx
+        call data.execute using stmts.insert_redirect, record {old_path: existing.full_path, entry_id: entry_id, created_at: now_rec.iso}, tx
+      end
+      call data.execute using stmts.update_entry, record {slug: new_slug, full_path: new_full_path, title: new_title, status: new_status, body_html: new_body, custom_fields_json: new_cf_json, meta_title: new_meta_title, meta_description: new_meta_desc, published_at: new_pub_at, updated_at: now_rec.iso, id: entry_id}, tx
+      set updated to data.one using stmts.get_entry_by_id, record {id: entry_id}, tx
+      call data.commit using tx
+      call invalidate_route_caches using stmts, existing.full_path, new_full_path, ct.slug
+      give back server.json using 200, record {entry: updated}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/api/redirects"
+  set rows to data.query using stmts.list_redirects, record {}
+  give back server.json using 200, record {redirects: rows}
+end
+
+# ==============================================================================
+# Exclusive Theme Manager API (/api/themes, /api/themes/register, /api/themes/activate)
+# ==============================================================================
+
+route "GET" "/api/themes"
+  set rows to data.query using stmts.list_themes, record {}
+  set active to get_active_theme_context using stmts
+  give back server.json using 200, record {active_theme_slug: active.slug, themes: rows}
+end
+
+route "POST" "/api/themes/register" using req
+  try
+    set payload to server.parse_json using req
+    if not (payload has "slug")
+      give back server.json using 400, record {error: "Missing theme slug"}
+    end
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    set check_res to validate_theme_manifest using slug
+    if not check_res.ok
+      give back server.json using 400, record {error: check_res.error}
+    end
+
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call upsert_theme_row using stmts, slug, check_res, now_rec.iso, tx
+      set row to data.one using stmts.get_theme_by_slug, record {slug: slug}, tx
+      call data.commit using tx
+      give back server.json using 200, record {theme: row}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/themes/activate" using req
+  try
+    set payload to server.parse_json using req
+    if not (payload has "slug")
+      give back server.json using 400, record {error: "Missing theme slug"}
+    end
+    set slug to normalize_slug using (text.from using (payload at "slug"))
+    set check_res to validate_theme_manifest using slug
+    if not check_res.ok
+      give back server.json using 400, record {error: check_res.error}
+    end
+
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      call upsert_theme_row using stmts, slug, check_res, now_rec.iso, tx
+
+      call data.execute using stmts.deactivate_all_themes, record {}, tx
+      call data.execute using stmts.activate_theme_slug, record {slug: slug}, tx
+      call upsert_setting using stmts, "active_theme_slug", slug, now_rec.iso, tx
+      set active_row to data.one using stmts.get_theme_by_slug, record {slug: slug}, tx
+      call data.commit using tx
+
+      call cache.delete using stmts.cms_cache, "active_theme"
+      call cache.delete using stmts.cms_cache, "site_settings"
+      give back server.json using 200, record {active_theme: active_row}
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "GET" "/api/{rest}" using req
+  give back server.json using 404, record {error: "Unknown API endpoint", path: req.path}
+end
+
+# ==============================================================================
+# Pretty Permalink Public Routes (GET /, GET /{slug}, GET /{type_prefix}/{slug})
+# ==============================================================================
+
+route "GET" "/"
+  set settings to get_site_settings_map using stmts
+  set home_id_raw to settings at "home_entry_id"
+  if home_id_raw is not ""
+    try
+      set home_id to text.to_integer using home_id_raw
+      set home_entry to data.one using stmts.get_entry_by_id, record {id: home_id}
+      if home_entry is not nothing and home_entry.status is "published"
+        give back render_single_entry using stmts, home_entry
+      end
+    catch err
+    end
+  end
+
+  set entries to data.query using stmts.list_published_entries, record {}
+  set summary to build_entries_summary using entries
+  set cnt to text.from using (collections.length using entries)
+  give back render_theme_page using stmts, "home", {"page_title": "Home", "meta_description": (settings at "site_tagline"), "published_count": cnt, "entries_summary": summary}, 200
+end
+
+route "GET" "/{slug}" using req
+  set slug_norm to normalize_slug using req.params.slug
+  set full_path to "/" joined with slug_norm
+  if is_reserved_path using full_path
+    give back render_theme_page using stmts, "404", {"requested_path": full_path}, 404
+  end
+
+  set archive_type to data.one using stmts.get_type_by_archive, record {archive_slug: slug_norm}
+  if archive_type is not nothing
+    set entries to data.query using stmts.list_published_by_type, record {content_type_id: archive_type.id}
+    set summary to build_entries_summary using entries
+    set cnt to text.from using (collections.length using entries)
+    give back render_theme_page using stmts, "archive", {"archive_label": archive_type.label_plural, "archive_slug": slug_norm, "meta_description": archive_type.label_plural joined with " archive", "entry_count": cnt, "entries_summary": summary}, 200
+  end
+
+  give back resolve_public_path using stmts, full_path
+end
+
+route "GET" "/{type_prefix}/{slug}" using req
+  set prefix_norm to normalize_slug using req.params.type_prefix
+  set slug_norm to normalize_slug using req.params.slug
+  set full_path to "/" joined with prefix_norm joined with "/" joined with slug_norm
+  give back resolve_public_path using stmts, full_path
+end

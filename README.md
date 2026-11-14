@@ -11,15 +11,30 @@
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js`)
-2. **Step 2 — `grablab-cms`:** Active (`urbanspress/grablab-cms`) — *Specification `GRABLAB-SPEC-001.md` in review*
+2. **Step 2 — `grablab-cms`:** Active (`urbanspress/grablab-cms`) — **`v0.1.0` Complete** (`v0.2.0` planned)
 3. **Step 3 — `grex-builder`:** Planned (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
 4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai`) — Autonomous MCP design & CMS agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard`) — Desktop VPS control panel & 1-click installer
 
-## Governance & Specifications
+## Quickstart (`v0.1.0`)
+
+```bash
+grab migrate --config grab.data.json
+grab run migrations/seed.grab --config grab.data.json
+grab serve --platform-config grab.platform.json src/app.grab
+```
+
+Verify formatting, type checks, and the full HTTP/database integration suite:
+
+```bash
+python tests/integration_test.py
+```
+
+## Governance, Specifications & Release Guides
 
 - [`GRABLAB-EXPERT.md`](GRABLAB-EXPERT.md) — Non-negotiable engineering & security invariants
 - [`AGENTS.md`](AGENTS.md) — Engineering workflow, model routing, and verification gates
 - [`HANDOFF.md`](HANDOFF.md) — Current ownership and pending milestone tasks
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.0.0`)
-- [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — Draft `v0.1` architecture & schema specification (awaiting approval)
+- [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — `v0.1.0` architecture & schema specification (`Complete`)
+- [`docs/releases/pdf/GRABLAB-v0.1.0-Guide.pdf`](docs/releases/pdf/GRABLAB-v0.1.0-Guide.pdf) — Plain-English `v0.1.0` walkthrough guide for site owners and designers

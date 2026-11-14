@@ -1,0 +1,93 @@
+:root {
+  --cms-bg: #f8fafc;
+  --cms-surface: #ffffff;
+  --cms-ink: #0f172a;
+  --cms-muted: #475569;
+  --cms-border: #e2e8f0;
+  --cms-accent: #0284c7;
+  --cms-accent-ink: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--grex-font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  background: var(--cms-bg);
+  color: var(--cms-ink);
+  line-height: 1.6;
+}
+
+.cms-header,
+.cms-main,
+.cms-footer {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.cms-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--cms-border);
+}
+
+.cms-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--cms-ink);
+  text-decoration: none;
+}
+
+.cms-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cms-nav a {
+  color: var(--cms-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cms-nav a:hover {
+  color: var(--cms-accent);
+}
+
+.cms-hero,
+.cms-card,
+.cms-article {
+  background: var(--cms-surface);
+  border: 1px solid var(--cms-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.cms-meta {
+  color: var(--cms-muted);
+  font-size: 0.9rem;
+}
+
+.cms-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cms-footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--cms-border);
+  color: var(--cms-muted);
+  font-size: 0.875rem;
+}

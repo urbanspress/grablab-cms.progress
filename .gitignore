@@ -1,0 +1,8 @@
+storage/*.db
+storage/*.db-journal
+storage/*.db-wal
+storage/*.db-shm
+themes/_test-*
+tmp/
+.env
+.env.*
