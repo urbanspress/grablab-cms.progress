@@ -11,12 +11,12 @@
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js`)
-2. **Step 2 — `grablab-cms`:** Active (`urbanspress/grablab-cms`) — **`v0.4.0` Complete** (`v1.0.0` planned)
-3. **Step 3 — `grex-builder`:** Planned (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
+2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms`) — **`v1.0.0` Production CMS Release**
+3. **Step 3 — `grex-builder`:** Ready next (`urbanspress/grex-builder`) — Installable Visual Theme & Page/Theme Studio
 4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai`) — Autonomous MCP design & CMS agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard`) — Desktop VPS control panel & 1-click installer
 
-## Quickstart (`v0.4.0` on `GRAB v1.1.0`)
+## Quickstart (`v1.0.0` on `GRAB v1.1.0`)
 
 ```bash
 grab migrate --db-config grab.data.json --allow-db main:migrate migrations/003_v04_schema.grab
@@ -26,20 +26,26 @@ grab serve --addr 127.0.0.1:8080 --allow-scripts --db-config grab.data.json --al
 
 On first launch without a bootstrap admin, open `http://127.0.0.1:8080/setup` to create the primary administrator account, then manage entries, media, menus, taxonomies, types, themes, settings, and users under `/admin`.
 
-Verify formatting, type checks, and the full HTTP/auth/database integration suite:
+For production container hosting with a `--read-only` root filesystem and scoped writable `storage/`, `uploads/`, and `/static/grex/` (`public/grex/`) mounts, see [`deploy/docker-compose.yml`](deploy/docker-compose.yml) and [`deploy/README.md`](deploy/README.md).
+
+Verify formatting, compiler checks, integration contracts, and the full `v1.0.0` clean-install E2E release suite:
 
 ```bash
 python tests/integration_test.py
+python tests/release_v100_test.py
 ```
 
 ## Governance, Specifications & Release Guides
 
 - [`GRABLAB-EXPERT.md`](GRABLAB-EXPERT.md) — Non-negotiable engineering & security invariants
 - [`AGENTS.md`](AGENTS.md) — Engineering workflow, model routing, and verification gates
-- [`HANDOFF.md`](HANDOFF.md) — Current ownership and pending milestone tasks
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.0.0`)
+- [`HANDOFF.md`](HANDOFF.md) — Current ownership and milestone log
+- [`CHANGELOG.md`](CHANGELOG.md) — Complete version history (`v0.1.0` → `v1.0.0`)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.0.0` Complete)
+- [`deploy/README.md`](deploy/README.md) — Hardened `--read-only` Docker Compose & Grisp deployment guide
 - [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — `v0.1.0` core architecture & schema (`Complete`)
 - [`specifications/GRABLAB-SPEC-002.md`](specifications/GRABLAB-SPEC-002.md) — `v0.2.0` exclusive theme engine, template parts, hooks & query loop (`Complete`)
 - [`specifications/GRABLAB-SPEC-003.md`](specifications/GRABLAB-SPEC-003.md) — `v0.3.0` users, roles/capabilities, auth, OAuth2/PKCE & Grex admin (`Complete`)
 - [`specifications/GRABLAB-SPEC-004.md`](specifications/GRABLAB-SPEC-004.md) — `v0.4.0` media library, navigation menus, taxonomies & `grab mcp` CMS tools (`Complete`)
-- [`docs/releases/pdf/GrabLab-v0.4.0-Guide.pdf`](docs/releases/pdf/GrabLab-v0.4.0-Guide.pdf) — Plain-English `v0.4.0` walkthrough guide for site owners and designers
+- [`specifications/GRABLAB-SPEC-100.md`](specifications/GRABLAB-SPEC-100.md) — `v1.0.0` Production `v1.x` Stability & Hardening Freeze (`Approved & Frozen`)
+- [`docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf) — Plain-English `v1.0.0` Production Walkthrough Guide for site owners, designers, and operators

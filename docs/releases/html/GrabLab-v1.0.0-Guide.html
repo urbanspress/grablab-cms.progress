@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GrabLab CMS v1.0.0 — Production CMS Release Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 16mm 18mm 16mm;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      line-height: 1.55;
+      font-size: 10.2pt;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+      color: #ffffff;
+      padding: 26px 28px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .eyebrow {
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #99f6e4;
+      font-weight: 700;
+      margin: 0 0 6px 0;
+    }
+    .hero h1 {
+      margin: 0 0 8px 0;
+      font-size: 21pt;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      margin: 0;
+      color: #e2e8f0;
+      font-size: 10.5pt;
+    }
+    .pill-row {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+    h2 {
+      font-size: 13.5pt;
+      color: #0f766e;
+      border-bottom: 2px solid #ccfbf1;
+      padding-bottom: 4px;
+      margin: 22px 0 10px 0;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      color: #0f172a;
+      margin: 14px 0 6px 0;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 9px 0; }
+    ul, ol { margin: 0 0 10px 0; padding-left: 20px; }
+    li { margin-bottom: 4px; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      border-radius: 9px;
+      padding: 12px 14px;
+      break-inside: avoid;
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #0f766e;
+      font-size: 10.5pt;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 14px 0;
+      font-size: 9.3pt;
+      break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+    code {
+      font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+      font-size: 8.8pt;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 11px 13px;
+      border-radius: 8px;
+      font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+      font-size: 8.4pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 6px 0 12px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      break-inside: avoid;
+    }
+    .callout {
+      border-left: 4px solid #0f766e;
+      background: #f0fdfa;
+      padding: 10px 13px;
+      border-radius: 0 8px 8px 0;
+      margin: 10px 0 14px 0;
+      font-size: 9.6pt;
+      break-inside: avoid;
+    }
+    .footer-note {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 8.5pt;
+      color: #64748b;
+      text-align: center;
+    }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <p class="eyebrow">GrabLab CMS &bull; Official Release Documentation</p>
+    <h1>GrabLab CMS v1.0.0 — Production CMS Release</h1>
+    <p>A fast, zero-plugin Content Management System built on GRAB, Grisp, and Grex JS — locked, verified, and ready for production hosting.</p>
+    <section class="pill-row" aria-label="Release highlights">
+      <span class="pill">v1.x Contract Freeze (SPEC-100)</span>
+      <span class="pill">Zero Wrapper &lt;div&gt; Architecture</span>
+      <span class="pill">--read-only Docker Ready</span>
+      <span class="pill">Grex Visual Builder Ready</span>
+    </section>
+  </header>
+
+  <h2>1. What GrabLab CMS v1.0.0 Means for You</h2>
+  <p>Version <strong>1.0.0</strong> marks GrabLab CMS as production-ready. With the core features from <code>v0.1.0</code> through <code>v0.4.0</code> complete, this release freezes the public data structures, theme format, APIs, AI authoring guardrails, and server deployment setup so your website and themes can grow without breaking changes across all <code>v1.x</code> releases.</p>
+
+  <section class="grid-2" aria-label="Audience benefits">
+    <article class="card">
+      <h3>For Site Owners &amp; Editors</h3>
+      <ul>
+        <li><strong>Safe by Design:</strong> No third-party plugin ecosystem to break updates or open backdoors.</li>
+        <li><strong>Smart Redirect Memory:</strong> Rename a post or product web address anytime — GrabLab automatically creates a permanent <code>301</code> redirect from the old link and updates navigation menus cleanly.</li>
+        <li><strong>Exact Numbers &amp; Prices:</strong> Custom currency or decimal fields preserve exact trailing digits (such as <code>149.9500</code>) via <code>GrabDecimal</code>.</li>
+        <li><strong>One-Time Setup Lock:</strong> Once your first administrator creates an account at <code>/setup</code>, public signup closes automatically.</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h3>For Designers &amp; Theme Builders</h3>
+      <ul>
+        <li><strong>One Active Theme Rule:</strong> Only one theme renders the site at a time, eliminating conflicting stylesheets and template overrides.</li>
+        <li><strong>Coded or Visual Themes:</strong> Build traditional <code>.grab.html</code> templates (like <code>default-starter</code>) or design visually via <strong>Grex Theme Builder</strong> (<code>mode: "visual"</code> + <code>grex.elements.json</code>).</li>
+        <li><strong>Zero Bloat HTML:</strong> Starter templates, visual renders, and Admin screens contain zero wrapper <code>&lt;div&gt;</code> tags — using native semantic elements throughout.</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h3>For AI-Assisted Publishing (<code>grab mcp</code>)</h3>
+      <ul>
+        <li><strong>Scoped Access Tokens:</strong> Generate role-based MCP tokens inside the dashboard.</li>
+        <li><strong>Draft-Only Safety:</strong> AI tools can prepare new posts (<code>create_entry_draft</code>), but GrabLab strictly forces every AI-created entry into <code>draft</code> status for human review.</li>
+        <li><strong>Accessibility Gate:</strong> Layout updates via <code>update_entry_layout</code> automatically block unsafe HTML, missing image descriptions, or skipped heading levels with a clear <code>422</code> error.</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <h3>For Operators &amp; Hosting</h3>
+      <ul>
+        <li><strong>Immutable Container Profile:</strong> Ready-to-run <code>deploy/docker-compose.yml</code> executes with a <code>--read-only</code> root filesystem.</li>
+        <li><strong>Isolated Writable Storage:</strong> Only <code>storage/</code>, <code>uploads/</code>, and <code>/static/grex/</code> are writable.</li>
+        <li><strong>Multi-Database Parity:</strong> Cumulative migrations (<code>001</code>–<code>003</code>) work consistently across SQLite, PostgreSQL, and MariaDB.</li>
+        <li><strong>Built-In Health Probes:</strong> Ready for load balancers and containers via <code>/_health</code> and <code>/_ready</code>.</li>
+      </ul>
+    </article>
+  </section>
+
+  <h2>2. Frozen v1.x Public Contracts (<code>GRABLAB-SPEC-100</code>)</h2>
+  <p>All contracts frozen in <code>specifications/GRABLAB-SPEC-100.md</code> are guaranteed backward-compatible across the <code>v1.x</code> series:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Surface</th>
+        <th>Frozen Contract Summary</th>
+        <th>Key Files / Endpoints</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Database Migrations (001–003)</strong></td>
+        <td>15 relational tables + indexes supporting both incremental upgrades (<code>001 &rarr; 002 &rarr; 003</code>) and clean direct install via <code>003</code> on SQLite, PostgreSQL, and MariaDB.</td>
+        <td><code>migrations/001_*</code>, <code>002_*</code>, <code>003_*</code>, <code>migrations/seed.grab</code></td>
+      </tr>
+      <tr>
+        <td><strong>Exclusive Active Theme</strong></td>
+        <td>Strict <code>theme.json</code> manifest (<code>schemaVersion: "1.0.0"</code>, <code>mode: "coded"</code> or <code>"visual"</code>), <code>GRAB-E401</code> plugin blocking, archive/extension caps, atomic 1-click switching.</td>
+        <td><code>themes/*/theme.json</code>, <code>grex.elements.json</code>, <code>POST /api/admin/themes/activate</code></td>
+      </tr>
+      <tr>
+        <td><strong>Native Hooks &amp; Filters</strong></td>
+        <td>Deterministic priority-ordered pipeline scoped strictly to <code>core</code> and the active theme (<code>theme:&lt;slug&gt;</code>).</td>
+        <td><code>registerHook</code>, <code>runHook</code>, <code>registerFilter</code>, <code>applyFilter</code></td>
+      </tr>
+      <tr>
+        <td><strong>Query Loop &amp; Caching</strong></td>
+        <td>Unified filtering by content type, custom fields (<code>eq</code>, <code>neq</code>, <code>contains</code>), hierarchical taxonomy terms (<code>filter_by_term</code>), search, and automatic cache epoch invalidation.</td>
+        <td><code>query_entries</code>, <code>GET /api/query</code></td>
+      </tr>
+      <tr>
+        <td><strong>AI MCP Tooling</strong></td>
+        <td>Six frozen tools over JSON-RPC 2.0 &amp; REST with Bearer token RBAC, draft enforcement, and semantic Grex validation.</td>
+        <td><code>POST /api/mcp</code>, <code>GET /api/mcp/tools</code>, <code>POST /api/auth/mcp-token</code></td>
+      </tr>
+      <tr>
+        <td><strong>Hardened Deployment</strong></td>
+        <td>Read-only container rootfs (<code>read_only: true</code>) with writable mounts solely on <code>storage/</code>, <code>uploads/</code>, and <code>/static/grex/</code> (<code>public/grex</code>).</td>
+        <td><code>deploy/docker-compose.yml</code>, <code>deploy/README.md</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>3. From v0.1.0 to v1.0.0: Release Progression</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Focus</th>
+        <th>What Shipped</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>v0.1.0</code></td>
+        <td>Core Architecture &amp; Spec Foundation</td>
+        <td>Prepared SQLite migrations, custom content types + <code>GrabDecimal</code>, <code>301</code> slug history, query cache invalidation, and zero-<code>&lt;div&gt;</code> coded starter theme.</td>
+      </tr>
+      <tr>
+        <td><code>v0.2.0</code></td>
+        <td>Admin Shell &amp; Core Hardening</td>
+        <td>Grex JS Admin SPA, <code>theme.json</code> archive bounds, native Hooks/Filters API, and PostgreSQL/MariaDB migration parity.</td>
+      </tr>
+      <tr>
+        <td><code>v0.3.0</code></td>
+        <td>Authentication, RBAC &amp; Visual Themes</td>
+        <td>One-time <code>/setup</code> lock, <code>argon2id</code> passwords, CSRF protection, role permissions (<code>admin</code>, <code>editor</code>, <code>author</code>, <code>viewer</code>), OAuth, and Grex visual mode.</td>
+      </tr>
+      <tr>
+        <td><code>v0.4.0</code></td>
+        <td>Media, Menus, Taxonomies &amp; AI MCP</td>
+        <td>Magic-byte validated image/PDF uploads, hierarchical navigation menus with auto-updating links, hierarchical categories + tags, and 6 capability-gated <code>grab mcp</code> tools.</td>
+      </tr>
+      <tr>
+        <td><code>v1.0.0</code></td>
+        <td><strong>Production Stability &amp; Release Freeze</strong></td>
+        <td><strong><code>GRABLAB-SPEC-100</code> contract freeze, full clean-install to theme-switch end-to-end release suite, <code>--read-only</code> Docker bundle, and zero-secrets deployment docs.</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4. Quickstart &amp; Production Deployment Guide</h2>
+
+  <h3>A. Local Quickstart (Windows / Development)</h3>
+  <pre>grab migrate --db-config grab.data.json --allow-db main:migrate migrations/003_v04_schema.grab
+grab run --db-config grab.data.json --allow-db main:read-write --allow-read . migrations/seed.grab
+grab serve --addr 127.0.0.1:8080 --allow-scripts --db-config grab.data.json --allow-db main:read-write --platform-config grab.platform.json --allow-cache cms:read-write --allow-cache cms:limit --allow-env GRABLAB_MASTER_KEY,GRABLAB_UPLOAD_DIR,GRABLAB_MAX_UPLOAD_BYTES --allow-read . --allow-write uploads --static public src/app.grab</pre>
+  <p>Then open <code>http://127.0.0.1:8080/setup</code> in your browser to create your primary administrator account.</p>
+
+  <h3>B. Production Hardened Docker Deployment (<code>--read-only</code>)</h3>
+  <p>Use the bundled template in <code>deploy/docker-compose.yml</code>. Keep all secrets (like <code>GRABLAB_MASTER_KEY</code>) and real server IP addresses in an untracked <code>.env</code> file outside Git:</p>
+  <pre># Inside deploy/ (after placing secrets in .env)
+docker compose up -d</pre>
+  <section class="callout">
+    <strong>Why mount <code>/static/grex/</code> writable inside a <code>--read-only</code> container?</strong><br>
+    Keeping the container root filesystem read-only prevents runtime tampering with application code (<code>src/app.grab</code> and starter templates). Mounting <code>storage/</code>, <code>uploads/</code>, and <code>public/grex/</code> (<code>/static/grex/</code>) as explicit writable volumes lets database state, media uploads, and visual builder design tokens update safely without rebuilding containers.
+  </section>
+
+  <h2>5. Automated Verification Gate</h2>
+  <p>Every <code>v1.0.0</code> file passes GrabLab's strict production release verification:</p>
+  <ul>
+    <li><strong>Static Compiler &amp; Canonical Formatting:</strong> <code>grab check</code> and canonical <code>grab format</code> verification across every <code>.grab</code> file and <code>.grab.html</code> template in the repository.</li>
+    <li><strong>HTML Hygiene:</strong> Zero wrapper <code>&lt;div&gt;</code> tags across all starter theme templates, Admin views, live public pages, and AI-updated Grex layouts.</li>
+    <li><strong>Baseline Contract Suite (<code>tests/integration_test.py</code>):</strong> End-to-end checks covering RBAC, OAuth, brute-force limiting, CSRF, media security headers, taxonomy hierarchies, and MCP permissions.</li>
+    <li><strong>Production Release Suite (<code>tests/release_v100_test.py</code>):</strong> Isolated fresh-install run from empty SQLite (<code>001 &rarr; 002 &rarr; 003</code> and direct <code>003</code>) + PostgreSQL/MariaDB parity + <code>seed.grab</code> + <code>/setup</code> lock + full content/media/taxonomy/301-redirect/menu/cache/MCP/exclusive-theme-switch lifecycle.</li>
+  </ul>
+
+  <pre>python tests/integration_test.py
+python tests/release_v100_test.py</pre>
+
+  <footer class="footer-note">
+    GrabLab CMS v1.0.0 &bull; urbanspress/grablab-cms &bull; Built on GRAB, Grisp, and Grex JS
+  </footer>
+
+</body>
+</html>

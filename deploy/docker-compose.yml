@@ -1,0 +1,95 @@
+# GrabLab CMS v1.0.0 — Production Hardened Docker Compose Template
+#
+# Demonstrates an immutable --read-only container root filesystem running on
+# GRAB CLI + Grisp HTTP Engine, with writable runtime mounts strictly scoped to:
+#   1. ./storage       -> /app/storage          (SQLite DB / storage state)
+#   2. ./uploads       -> /app/uploads          (Binary media uploads via --allow-write)
+#   3. ./public/grex   -> /app/public/grex      (/static/grex/ Grex runtime & visual builder assets)
+#
+# SECURITY: Never commit real passwords, signing keys, OAuth secrets, or
+# production IP addresses to Git. Supply secrets via runtime environment or .env.
+
+services:
+  grablab-cms:
+    image: ${GRABLAB_IMAGE:-grablab-cms:v1.0.0}
+    container_name: grablab-cms
+    restart: unless-stopped
+
+    # Equivalent to `docker run --read-only`: immutable container root filesystem.
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+
+    # Bind host port to loopback so a reverse proxy (Caddy/Nginx/TLS) terminates HTTPS.
+    ports:
+      - "127.0.0.1:${GRABLAB_PORT:-8080}:8080"
+
+    working_dir: /app
+
+    # Scoped writable volumes only; application source/themes remain immutable.
+    volumes:
+      - ../storage:/app/storage:rw
+      - ../uploads:/app/uploads:rw
+      - ../public/grex:/app/public/grex:rw
+      # Optional: mount a custom Active Theme or production DB manifests read-only:
+      # - ../themes:/app/themes:ro
+      # - ./grab.data.prod.json:/app/grab.data.json:ro
+
+    environment:
+      GRABLAB_MASTER_KEY: ${GRABLAB_MASTER_KEY:?Set GRABLAB_MASTER_KEY in .env or secret manager}
+      GRABLAB_UPLOAD_DIR: /app/uploads
+      GRABLAB_MAX_UPLOAD_BYTES: ${GRABLAB_MAX_UPLOAD_BYTES:-10485760}
+      # Optional unattended /setup admin bootstrap (only read when users table is empty):
+      GRABLAB_ADMIN_EMAIL: ${GRABLAB_ADMIN_EMAIL:-}
+      GRABLAB_ADMIN_PASSWORD: ${GRABLAB_ADMIN_PASSWORD:-}
+      GRABLAB_ADMIN_NAME: ${GRABLAB_ADMIN_NAME:-}
+
+    command:
+      - grab
+      - serve
+      - --addr
+      - 0.0.0.0:8080
+      - --allow-public
+      - --allow-scripts
+      - --diagnostics
+      - production
+      - --log-format
+      - json
+      - --trusted-proxy
+      - ${GRABLAB_TRUSTED_PROXY:-127.0.0.1}
+      - --allow-read
+      - /app
+      - --allow-write
+      - /app/uploads
+      - --allow-env
+      - GRABLAB_MASTER_KEY,GRABLAB_UPLOAD_DIR,GRABLAB_MAX_UPLOAD_BYTES,GRABLAB_ADMIN_EMAIL,GRABLAB_ADMIN_PASSWORD,GRABLAB_ADMIN_NAME
+      - --db-config
+      - /app/grab.data.json
+      - --allow-db
+      - main:read-write
+      - --platform-config
+      - /app/grab.platform.json
+      - --allow-cache
+      - cms:read-write
+      - --allow-cache
+      - cms:limit
+      - --static
+      - /app/public
+      - --max-body-bytes
+      - "15728640"
+      - --workers
+      - "${GRABLAB_WORKERS:-1}"
+      - --worker-base-port
+      - "${GRABLAB_WORKER_BASE_PORT:-18080}"
+      - /app/src/app.grab
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/_health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

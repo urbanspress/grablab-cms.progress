@@ -1963,7 +1963,7 @@ make execute_filter_handler using handler_name, val, ctx
     if has_map_key using ctx, "theme_slug"
       set tslug to text.from using (ctx at "theme_slug")
     end
-    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v0.3.0 (" joined with (escape_html using tslug) joined with ")\">")
+    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v1.0.0 (" joined with (escape_html using tslug) joined with ")\">")
     give back tags
   end
 
@@ -4538,7 +4538,7 @@ route "GET" "/api/auth/oauth/{provider}/callback" using req
     set email_verified to no
 
     if endpoints.userinfo_url is not ""
-      set ures to http.get using endpoints.userinfo_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/0.3.0"}, timeout_ms: 5000}
+      set ures to http.get using endpoints.userinfo_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.0.0"}, timeout_ms: 5000}
       if not ures.ok
         give back server.json using 502, record {error: "OAuth profile fetch failed"}
       end
@@ -4570,7 +4570,7 @@ route "GET" "/api/auth/oauth/{provider}/callback" using req
     end
 
     if (not email_verified or email_raw is "") and provider is "github" and endpoints.emails_url is not ""
-      set eres to http.get using endpoints.emails_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/0.3.0"}, timeout_ms: 5000}
+      set eres to http.get using endpoints.emails_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.0.0"}, timeout_ms: 5000}
       if eres.ok
         set elist to json.parse using eres.body
         for each eitem in elist
@@ -6526,7 +6526,7 @@ route "POST" "/api/mcp" using req
       set method to text.from using (rpc at "method")
     end
     if method is "initialize"
-      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "0.4.0"}), capabilities: (record {tools: {}})})}
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "1.0.0"}), capabilities: (record {tools: {}})})}
     end
     if method is "ping"
       give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: {}}

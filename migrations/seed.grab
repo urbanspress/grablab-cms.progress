@@ -174,4 +174,4 @@ if menu_cnt_row is not nothing and menu_cnt_row.total is 0
 end
 
 call data.commit using tx
-show "GrabLab CMS v0.4.0 seed completed."
+show "GrabLab CMS v1.0.0 seed completed."
