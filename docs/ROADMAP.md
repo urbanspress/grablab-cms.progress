@@ -89,3 +89,15 @@ Scope:
     - **"Make This Live"**: Publishes the entry immediately as-is.
     - **🚀 "Let Groxy Boost This"** *(rocket icon button)*: Calls **Groxy AI** via `grab mcp` to automatically resolve flagged SEO, copy, internal-linking, `schema.org`, and missing `alt`-text issues, then shows a side-by-side diff + refreshed grades so the author always reviews and clicks **"Approve & Make This Live"** before anything goes public.
   - Authors can also trigger **Audit with Groxy** (or post-publish non-blocking `content:after_publish` checks) to receive safe, reviewable suggestions/draft diffs without silently overwriting live human copy.
+
+---
+
+## `v1.2.0` — Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue
+
+**Status:** Planned — Backwards-Compatible Minor Feature
+
+Scope:
+- **Universal Commerce Webhooks:** Signed ingestion endpoints for **Stripe**, **PayPal**, **LemonSqueezy**, and **Paddle** using constant-time HMAC-SHA256 verification (`use crypto`) and strict `event_id` idempotency against replay or duplicate processing.
+- **Exact Money & Order Ledger (`ADR-025c`):** Records purchases, subscriptions, and refunds in a SQLite/PostgreSQL/MariaDB-compatible order/refund ledger using exact base-10 `GrabDecimal` amounts (zero floating-point drift).
+- **Consent & Compliance Guardrails:** Enforces CAN-SPAM / GDPR unsubscribe tokens, explicit marketing consent flags, and suppression checks before queuing non-transactional messages.
+- **Event-Triggered Transactional `email_outbox`:** Persistent outbox worker and lifecycle triggers for `commerce:purchase_completed`, `commerce:abandoned_checkout`, `commerce:subscription_renewed`, and `commerce:refund_issued`, pairing cleanly with Grex Theme Builder (`mode: "email"`) and Groxy AI (`v1.3.0`).
