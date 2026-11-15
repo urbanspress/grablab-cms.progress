@@ -14,6 +14,8 @@
   - **Built-In Per-Entry & Per-Image Groxy AI SEO Assist (`groxy_assist_enabled`):** Native toggle in all content type editors and Media Library image items. When ON, clicking **Publish** opens a **Pre-Publish SEO & Performance Grade Review Screen** (`A+`–`F` / `0–100` across On-Page SEO, Content & WCAG Accessibility, Performance & Clean DOM, and Off-Page / Internal Linking Readiness) with **"Make This Live"** or **🚀 "Let Groxy Boost This"** (side-by-side diff + refreshed grades requiring explicit **"Approve & Make This Live"** confirmation before going public).
 - **Planned `v1.2.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
   - **Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue:** Constant-time HMAC-SHA256 webhook verification (`use crypto`), strict `event_id` idempotency, `ADR-025c` `GrabDecimal` order/refund ledger, CAN-SPAM/GDPR unsubscribe & consent enforcement, and persistent transactional `email_outbox` triggers (`commerce:purchase_completed`, `commerce:abandoned_checkout`, `commerce:subscription_renewed`, `commerce:refund_issued`).
+- **Planned `v1.3.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
+  - **Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`):** Exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`), gating any schema/data adjustments behind single-use `approval_token` + `X-CSRF-Token` + automatic pre-migration snapshots.
 
 ---
 

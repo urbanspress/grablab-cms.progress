@@ -101,3 +101,13 @@ Scope:
 - **Exact Money & Order Ledger (`ADR-025c`):** Records purchases, subscriptions, and refunds in a SQLite/PostgreSQL/MariaDB-compatible order/refund ledger using exact base-10 `GrabDecimal` amounts (zero floating-point drift).
 - **Consent & Compliance Guardrails:** Enforces CAN-SPAM / GDPR unsubscribe tokens, explicit marketing consent flags, and suppression checks before queuing non-transactional messages.
 - **Event-Triggered Transactional `email_outbox`:** Persistent outbox worker and lifecycle triggers for `commerce:purchase_completed`, `commerce:abandoned_checkout`, `commerce:subscription_renewed`, and `commerce:refund_issued`, pairing cleanly with Grex Theme Builder (`mode: "email"`) and Groxy AI (`v1.3.0`).
+
+---
+
+## `v1.3.0` — Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`)
+
+**Status:** Planned — Backwards-Compatible Minor Feature
+
+Scope:
+- **Opt-In Consultant Tab (`groxy_db_consultant_enabled`):** Disabled by default; when enabled by a site administrator, exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, table/column metadata, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`).
+- **Human-in-the-Loop Impact & Snapshot Gate:** Any schema migration or data adjustment proposed by the consultant requires an explicit plain-English **Impact & Risk Assessment** preview, single-use `approval_token` + `X-CSRF-Token` confirmation, and an automatic pre-migration snapshot before execution.
