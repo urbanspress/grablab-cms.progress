@@ -11,9 +11,9 @@
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js.progress` / `urbanspress/grex-js.stable`)
-2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.0.0` Production CMS Release**
-3. **Step 3 — Grex Theme Builder:** Active (`urbanspress/grex-builder.progress` / `urbanspress/grex-builder.stable`) — Installable Visual Theme & Page/Theme Studio
-4. **Step 4 — `groxy-ai`:** Planned (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous MCP design & CMS agent
+2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.0.1` Cross-Layer Audit & Production CMS Release**
+3. **Step 3 — Grex Theme Builder:** Complete (`urbanspress/grex-builder.progress` / `urbanspress/grex-builder.stable`) — **`v1.0.0` Installable Visual Theme & Page/Theme Studio**
+4. **Step 4 — `groxy-ai`:** Ready to launch (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous MCP design & SEO agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel & 1-click installer
 
 ## Quickstart (`v1.0.0` on `GRAB v1.1.0`)
@@ -40,8 +40,8 @@ python tests/release_v100_test.py
 - [`GRABLAB-EXPERT.md`](GRABLAB-EXPERT.md) — Non-negotiable engineering & security invariants
 - [`AGENTS.md`](AGENTS.md) — Engineering workflow, model routing, and verification gates
 - [`HANDOFF.md`](HANDOFF.md) — Current ownership and milestone log
-- [`CHANGELOG.md`](CHANGELOG.md) — Complete version history (`v0.1.0` → `v1.0.0`)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.0.0` Complete)
+- [`CHANGELOG.md`](CHANGELOG.md) — Complete version history (`v0.1.0` → `v1.0.1`)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.0.1` Complete, `v1.1.0` Planned)
 - [`deploy/README.md`](deploy/README.md) — Hardened `--read-only` Docker Compose & Grisp deployment guide
 - [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — `v0.1.0` core architecture & schema (`Complete`)
 - [`specifications/GRABLAB-SPEC-002.md`](specifications/GRABLAB-SPEC-002.md) — `v0.2.0` exclusive theme engine, template parts, hooks & query loop (`Complete`)
@@ -49,3 +49,4 @@ python tests/release_v100_test.py
 - [`specifications/GRABLAB-SPEC-004.md`](specifications/GRABLAB-SPEC-004.md) — `v0.4.0` media library, navigation menus, taxonomies & `grab mcp` CMS tools (`Complete`)
 - [`specifications/GRABLAB-SPEC-100.md`](specifications/GRABLAB-SPEC-100.md) — `v1.0.0` Production `v1.x` Stability & Hardening Freeze (`Approved & Frozen`)
 - [`docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf) — Plain-English `v1.0.0` Production Walkthrough Guide for site owners, designers, and operators
+- [`docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf) — Plain-English `v1.0.1` Pre-Step-4 Cross-Layer Audit & Patch Guide

@@ -2,6 +2,24 @@
 
 All notable releases of **GrabLab CMS** (`urbanspress/grablab-cms`) are documented in this file.
 
+## `[v1.0.1]` — 2026-11-14 (Cross-Layer Audit & Hardening Patch)
+
+### Added
+- **Vendored `grex.elements.json` Catalog Parity (`public/grex/grex.elements.json`):** Bundled `grex.elements.json` directly alongside `grex-js-v1.0.0.js`, `grex.js`, and `tokens.css` with verified SHA-256 parity to `C:\Development\grex-js\grex.elements.json` and exposed at `/static/grex/grex.elements.json`.
+- **Extended `v1.0.1` Regression Coverage (`tests/release_v100_test.py`):** Verified `/static/grex/grex.elements.json` serving, JSON-RPC `-32602` error metadata on `422` validation failures, `SPEC-100` parameter aliases on `create_entry_draft` and `update_entry_layout`, WCAG AA contrast ratio (`GREX-A11Y-001`) and focus outline (`GREX-A11Y-005`) enforcement on `styles.base`, `Image` `decorative: true`, expanded semantic tags (`blockquote`, `time`, etc.), and `list_menus` `location` filtering.
+- **Plain-English Patch Release Guide (`docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf`):** Generated via `docs/releases/generate_v101_guide.py`.
+
+### Fixed & Hardened
+- **`grab mcp` `SPEC-100` Contract Parity & JSON-RPC `-32602` Metadata (`src/app.grab`):**
+  - `query_entries` now forwards `content_type_slug`, `field_key`, `field_op`, `field_value`, `sort_by`, `sort_dir`, `page`, and `per_page` consistently (and filters/paginates properly for `author` callers).
+  - `create_entry_draft` now supports `content_type_slug`, `body`, `excerpt`, and optional `grex_layout` / `layout` (validating layouts through `audit_grex_tree_walk` and rejecting violations with `422` / `-32602` while strictly enforcing `status: "draft"`).
+  - `update_entry_layout` now accepts both `layout` and `grex_layout` and returns `code: -32602` + `mcp_error` metadata on `422` validation errors; JSON-RPC `POST /api/mcp` includes `errorCode: -32602` on `422` and `400` `tools/call` errors.
+  - `list_menus` now honors the optional `location` filter.
+- **`Grex Theme Builder v1.0.0` & WCAG AA Schema Parity (`src/app.grab`):** Expanded `is_allowed_grex_tag` to cover all `grex.elements.json` semantic tags (`small`, `strong`, `em`, `blockquote`, `time`, `code`, `svg`, `dialog`, `details`, `summary`, `textarea`, `tbody`, `figure`, `figcaption`); added `"type"` node alias and `"decorative": true` image support; enforced security checks on `attrs`, `srcdoc` (`GREX-SEC-SRCDOC`), `poster`/`cite` URLs, and CSS expressions (`GREX-SEC-CSS`); added WCAG AA contrast (`4.5:1` / `3.0:1` large text, `GREX-A11Y-001`) across inherited backgrounds and focus outline checks (`GREX-A11Y-005`) inside `styles` / `styles.base`.
+- **`301` Self-Loop & Reserved-Target Guard (`src/app.grab`):** Guarded `resolve_public_path` against issuing `301` redirects where `target_path == norm_path` or targets a reserved system prefix.
+
+---
+
 ## `[v1.0.0]` — 2026-11-14 (Production CMS Release)
 
 ### Added

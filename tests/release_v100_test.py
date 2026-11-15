@@ -256,9 +256,9 @@ def verify_fresh_migrations_and_parity(tmp_dir):
 
     # Idempotent seed on sequential fresh DB
     s1 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.0.0 seed completed" in s1.stdout, s1.stdout
+    assert "v1.0.1 seed completed" in s1.stdout, s1.stdout
     s2 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.0.0 seed completed" in s2.stdout, s2.stdout
+    assert "v1.0.1 seed completed" in s2.stdout, s2.stdout
 
     con = sqlite3.connect(seq_db)
     try:
@@ -363,9 +363,11 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         st, _, _, _, rjs = http_req(port, "GET", "/_ready")
         assert st == 200 and rjs and rjs.get("status") == "ready", rjs
 
-        # Verify /static/grex/ assets load cleanly
+        # Verify /static/grex/ assets load cleanly (including grex.elements.json parity)
         assert http_req(port, "GET", "/static/grex/tokens.css")[0] == 200
         assert http_req(port, "GET", "/static/grex/grex.js")[0] == 200
+        st_el, _, _, _, el_json = http_req(port, "GET", "/static/grex/grex.elements.json")
+        assert st_el == 200 and isinstance(el_json, dict) and "Section" in el_json.get("elements", el_json), (st_el, el_json)
 
         # /setup screen -> admin creation -> permanent lock
         st, _, _, setup_html, _ = http_req(port, "GET", "/setup")
@@ -501,7 +503,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         st, _, _, _, pm = http_req(port, "GET", "/api/menus/primary")
         assert st == 200 and pm["menu"]["items"][1]["url"] == "/catalog/v1-production-showcase", pm
         st, _, _, home_html, _ = http_req(port, "GET", "/")
-        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.0.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
+        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.0.1 (default-starter)"' in home_html and "<div" not in home_html.lower()
 
         # 6) Query Loop + `use cache` hit & invalidation on entry update
         q_url = "/api/query?content_type=catalog_item&taxonomy=category&term_slug=guides&include_children=true"
@@ -514,7 +516,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         q3 = http_req(port, "GET", q_url)[4]
         assert q3["cache"]["hit"] is False and q3["items"][0]["title"] == "GrabLab v1.0.0 Showcase Updated"
 
-        # 7) `grab mcp` JSON-RPC 1.0.0 + draft enforcement + Grex/WCAG 422 gate
+        # 7) `grab mcp` JSON-RPC 1.0.1 + SPEC-100 aliases + -32602 + WCAG/Grex 422 gate
         mcp_tok = admin.request("POST", "/api/auth/mcp-token", {})[4]["token"]
         st, _, _, _, rpc_init = http_req(
             port,
@@ -523,7 +525,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
-        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.0.0", rpc_init
+        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.0.1", rpc_init
 
         st, _, _, _, rpc_tools = http_req(
             port,
@@ -566,13 +568,94 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             {"arguments": {"entry_id": mcp_entry_id, "layout": bad_tree}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
-        assert st == 422 and bad_res.get("error") == "grex_validation_failed", (st, bad_res)
+        assert st == 422 and bad_res.get("error") == "grex_validation_failed" and bad_res.get("code") == -32602, (st, bad_res)
+
+        # JSON-RPC tools/call validation failure returns errorCode -32602 + WCAG contrast/outline rules
+        low_contrast_tree = {
+            "type": "Section",
+            "styles": {"base": {"backgroundColor": "#ffffff"}},
+            "children": [
+                {"element": "Text", "styles": {"base": {"color": "#999999", "outline": "none"}}, "props": {"text": "Hard to read"}}
+            ],
+        }
+        st, _, _, _, rpc_bad = http_req(
+            port,
+            "POST",
+            "/api/mcp",
+            {
+                "jsonrpc": "2.0",
+                "id": 12,
+                "method": "tools/call",
+                "params": {"name": "update_entry_layout", "arguments": {"entry_id": mcp_entry_id, "grex_layout": low_contrast_tree}},
+            },
+            headers={"Authorization": f"Bearer {mcp_tok}"},
+        )
+        assert st == 200 and rpc_bad["result"]["isError"] is True and rpc_bad["result"].get("errorCode") == -32602, rpc_bad
+        rpc_sc = rpc_bad["result"]["structuredContent"]
+        assert rpc_sc.get("code") == -32602 and {"GREX-A11Y-001", "GREX-A11Y-005"}.issubset({v["rule"] for v in rpc_sc.get("violations", [])}), rpc_sc
+
+        # SPEC-100 create_entry_draft aliases + grex_layout validation gate
+        st, _, _, _, alias_bad_draft = http_req(
+            port,
+            "POST",
+            "/api/mcp/tools/create_entry_draft",
+            {
+                "arguments": {
+                    "content_type_slug": "post",
+                    "slug": "mcp-alias-bad",
+                    "title": "Bad Alias Draft",
+                    "body": "Body fallback",
+                    "excerpt": "Excerpt fallback",
+                    "grex_layout": low_contrast_tree,
+                }
+            },
+            headers={"Authorization": f"Bearer {mcp_tok}"},
+        )
+        assert st == 422 and alias_bad_draft.get("code") == -32602, (st, alias_bad_draft)
+
+        valid_alias_layout = {
+            "element": "Section",
+            "tag": "article",
+            "children": [
+                {"element": "Heading", "props": {"level": 1, "text": "v1.0.1 Spec-100 Alias Layout"}},
+                {"element": "Text", "tag": "blockquote", "props": {"text": "Semantic blockquote text."}},
+                {"element": "Text", "tag": "time", "props": {"text": "2026-11-14"}},
+                {"element": "Image", "props": {"src": "/media/1/decor.png", "decorative": True}},
+            ],
+        }
+        st, _, _, _, alias_good_draft = http_req(
+            port,
+            "POST",
+            "/api/mcp/tools/create_entry_draft",
+            {
+                "arguments": {
+                    "content_type_slug": "post",
+                    "slug": "mcp-alias-good",
+                    "title": "Good Alias Draft",
+                    "excerpt": "Alias meta excerpt",
+                    "status": "published",
+                    "grex_layout": valid_alias_layout,
+                }
+            },
+            headers={"Authorization": f"Bearer {mcp_tok}"},
+        )
+        assert st == 201 and alias_good_draft["status_enforced"] == "draft" and alias_good_draft["entry"]["meta_description"] == "Alias meta excerpt" and "<blockquote" in alias_good_draft["entry"]["body_html"], (st, alias_good_draft)
+
+        # list_menus with optional location filter
+        st, _, _, _, menus_filtered = http_req(
+            port,
+            "POST",
+            "/api/mcp/tools/list_menus",
+            {"arguments": {"location": "primary"}},
+            headers={"Authorization": f"Bearer {mcp_tok}"},
+        )
+        assert st == 200 and len(menus_filtered.get("menus", [])) >= 1 and all((m.get("location") or "").lower() == "primary" for m in menus_filtered["menus"]), menus_filtered
 
         good_tree = {
             "element": "Section",
             "tag": "article",
             "children": [
-                {"element": "Heading", "props": {"level": 1, "text": "v1.0.0 Production AI Layout"}},
+                {"element": "Heading", "props": {"level": 1, "text": "v1.0.1 Production AI Layout"}},
                 {"element": "Image", "props": {"media_id": media["id"]}},
                 {"element": "Text", "props": {"text": "Validated Grex semantic HTML output."}},
             ],
@@ -581,7 +664,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             port,
             "POST",
             "/api/mcp/tools/update_entry_layout",
-            {"arguments": {"entry_id": mcp_entry_id, "layout": good_tree}},
+            {"arguments": {"entry_id": mcp_entry_id, "grex_layout": good_tree}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
         assert st == 200 and "<article>" in good_res["body_html"] and "<div" not in good_res["body_html"].lower(), good_res

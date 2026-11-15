@@ -848,7 +848,7 @@ make is_allowed_grex_element using el_name
 end
 
 make is_allowed_grex_tag using tag_name
-  set allowed to ["section", "main", "header", "footer", "article", "aside", "nav", "h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "button", "img", "ul", "ol", "li", "form", "input", "select", "label"]
+  set allowed to ["section", "main", "header", "footer", "article", "aside", "nav", "h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "button", "img", "ul", "ol", "li", "form", "input", "select", "label", "small", "strong", "em", "blockquote", "time", "code", "svg", "dialog", "details", "summary", "textarea", "tbody", "figure", "figcaption"]
   for each item in allowed
     if item is tag_name
       give back yes
@@ -868,44 +868,323 @@ make is_binding_token using raw
   give back no
 end
 
+make is_record_value using val
+  if val is nothing
+    give back no
+  end
+  try
+    set ks to collections.keys using val
+    give back yes
+  catch err
+    give back no
+  end
+end
+
+make resolve_grex_element_name using node
+  if not (is_record_value using node)
+    give back ""
+  end
+  if node has "element" and (node at "element") is not nothing
+    give back text.from using (node at "element")
+  end
+  if node has "type" and (node at "type") is not nothing
+    give back text.from using (node at "type")
+  end
+  give back ""
+end
+
+make text_contains_unsafe_markup using raw
+  set low to text.lower using raw
+  if (text.contains using low, "<script") or (text.contains using low, "<iframe") or (text.contains using low, "<object") or (text.contains using low, "<div") or (text.contains using low, "javascript:") or (text.contains using low, "onerror=") or (text.contains using low, "onload=") or (text.contains using low, "onclick=") or (text.contains using low, "eval(")
+    give back yes
+  end
+  give back no
+end
+
+make hex_digit_val using ch
+  set digits to "0123456789abcdef"
+  set chars to text.split using digits, ""
+  set idx to 0
+  for each c in chars
+    if c is ch
+      give back idx
+    end
+    set idx to idx plus 1
+  end
+  give back -1
+end
+
+make parse_css_color using raw_color
+  set s to text.lower using (text.trim using (text.from using raw_color))
+  if (text.starts_with using s, "rgba(") or (text.starts_with using s, "rgb(")
+    if text.ends_with using s, ")"
+      set inner to text.replace using s, "rgba(", ""
+      set inner to text.replace using inner, "rgb(", ""
+      set inner to text.replace using inner, ")", ""
+      set parts to text.split using inner, ","
+      if (collections.length using parts) is at least 3
+        try
+          set cr to math.clamp using (text.to_integer using (text.trim using (parts at 0))), 0, 255
+          set cg to math.clamp using (text.to_integer using (text.trim using (parts at 1))), 0, 255
+          set cb to math.clamp using (text.to_integer using (text.trim using (parts at 2))), 0, 255
+          give back record {r: cr, g: cg, b: cb}
+        catch cerr
+          give back nothing
+        end
+      end
+    end
+    give back nothing
+  end
+  if not (text.starts_with using s, "#")
+    give back nothing
+  end
+  set chars to text.split using s, ""
+  set n to collections.length using chars
+  if n is 4
+    set r0 to hex_digit_val using (chars at 1)
+    set g0 to hex_digit_val using (chars at 2)
+    set b0 to hex_digit_val using (chars at 3)
+    if r0 is less than 0 or g0 is less than 0 or b0 is less than 0
+      give back nothing
+    end
+    give back record {r: (r0 times 17), g: (g0 times 17), b: (b0 times 17)}
+  end
+  if n is 7
+    set r1 to hex_digit_val using (chars at 1)
+    set r2 to hex_digit_val using (chars at 2)
+    set g1 to hex_digit_val using (chars at 3)
+    set g2 to hex_digit_val using (chars at 4)
+    set b1 to hex_digit_val using (chars at 5)
+    set b2 to hex_digit_val using (chars at 6)
+    if r1 is less than 0 or r2 is less than 0 or g1 is less than 0 or g2 is less than 0 or b1 is less than 0 or b2 is less than 0
+      give back nothing
+    end
+    give back record {r: ((r1 times 16) plus r2), g: ((g1 times 16) plus g2), b: ((b1 times 16) plus b2)}
+  end
+  give back nothing
+end
+
+make linearize_channel using c255
+  set x to (c255 times 1.0) divided by 255.0
+  if x is at most 0.04045
+    give back x divided by 12.92
+  end
+  set inner to 0.59538671 minus (0.11764913 times x)
+  set inner to 0.55729664 plus (x times inner)
+  set inner to -0.03665408 plus (x times inner)
+  set val to 0.0013962 plus (x times inner)
+  if val is less than 0.0
+    give back 0.0
+  end
+  if val is greater than 1.0
+    give back 1.0
+  end
+  give back val
+end
+
+make compute_contrast_ratio using fg_color, bg_color
+  set fg to parse_css_color using fg_color
+  set bg to parse_css_color using bg_color
+  if fg is nothing or bg is nothing
+    give back nothing
+  end
+  set lf to (0.2126 times (linearize_channel using fg.r)) plus (0.7152 times (linearize_channel using fg.g)) plus (0.0722 times (linearize_channel using fg.b))
+  set lb to (0.2126 times (linearize_channel using bg.r)) plus (0.7152 times (linearize_channel using bg.g)) plus (0.0722 times (linearize_channel using bg.b))
+  set lighter to math.max using lf, lb
+  set darker to math.min using lf, lb
+  give back math.round using (((lighter plus 0.05) divided by (darker plus 0.05)) times 1.0), 2
+end
+
+make parse_px_number using raw_val
+  set s to text.lower using (text.trim using (text.from using raw_val))
+  if not (text.ends_with using s, "px")
+    give back nothing
+  end
+  set num_s to text.trim using (text.replace using s, "px", "")
+  if num_s is ""
+    give back nothing
+  end
+  try
+    if text.contains using num_s, "."
+      give back (text.to_decimal using num_s) times 1.0
+    otherwise
+      give back (text.to_integer using num_s) times 1.0
+    end
+  catch err
+    give back nothing
+  end
+end
+
+make is_large_text_style using style_map
+  set fs_raw to ""
+  if has_map_key using style_map, "fontSize"
+    set fs_raw to style_map at "fontSize"
+  otherwise
+    if has_map_key using style_map, "font-size"
+      set fs_raw to style_map at "font-size"
+    end
+  end
+  set px to parse_px_number using fs_raw
+  if px is nothing
+    give back no
+  end
+  if px is at least 24.0
+    give back yes
+  end
+  set fw_raw to ""
+  if has_map_key using style_map, "fontWeight"
+    set fw_raw to text.lower using (text.trim using (text.from using (style_map at "fontWeight")))
+  otherwise
+    if has_map_key using style_map, "font-weight"
+      set fw_raw to text.lower using (text.trim using (text.from using (style_map at "font-weight")))
+    end
+  end
+  set is_bold to fw_raw is "bold"
+  if (not is_bold) and fw_raw is not ""
+    try
+      if (text.to_integer using fw_raw) is at least 700
+        set is_bold to yes
+      end
+    catch err
+    end
+  end
+  give back (is_bold and (px is at least 18.66))
+end
+
+make extract_grex_style_maps using st_obj
+  set maps to []
+  if not (is_record_value using st_obj)
+    give back maps
+  end
+  if (has_map_key using st_obj, "base") or (has_map_key using st_obj, "tablet") or (has_map_key using st_obj, "mobile")
+    for each bp in ["base", "tablet", "mobile"]
+      if has_map_key using st_obj, bp
+        set sub_m to st_obj at bp
+        if sub_m is not nothing
+          set maps to collections.append using maps, sub_m
+        end
+      end
+    end
+  otherwise
+    set maps to [st_obj]
+  end
+  give back maps
+end
+
+make extract_style_bg using style_map
+  if not (is_record_value using style_map)
+    give back ""
+  end
+  if has_map_key using style_map, "backgroundColor"
+    give back text.from using (style_map at "backgroundColor")
+  end
+  if has_map_key using style_map, "background-color"
+    give back text.from using (style_map at "background-color")
+  end
+  if has_map_key using style_map, "background"
+    give back text.from using (style_map at "background")
+  end
+  give back ""
+end
+
+make collect_attr_map_violations using attr_map, scope_name, allow_bindings, check_markup
+  set out to []
+  if not (is_record_value using attr_map)
+    give back [record {rule: "schema-invalid-attrs", message: "Grex " joined with scope_name joined with " must be a JSON object"}]
+  end
+  set ks to collections.keys using attr_map
+  for each pk in ks
+    set pkl to text.lower using pk
+    if text.starts_with using pkl, "on"
+      set out to collections.append using out, record {rule: "security-no-inline-events", message: "Inline event handler not allowed in " joined with scope_name joined with ": " joined with pk}
+    end
+    if pkl is "dangerouslysetinnerhtml" or pkl is "innerhtml" or pkl is "outerhtml"
+      set out to collections.append using out, record {rule: "zero-innerHTML", message: "Unsafe raw HTML sink not allowed in " joined with scope_name joined with ": " joined with pk}
+    end
+    if pkl is "srcdoc"
+      set out to collections.append using out, record {rule: "GREX-SEC-SRCDOC", message: "Unsafe srcdoc attribute not allowed in " joined with scope_name joined with ": " joined with pk}
+    end
+    if pkl is "href" or pkl is "src" or pkl is "action" or pkl is "formaction" or pkl is "poster" or pkl is "cite"
+      set url_val to text.from using (attr_map at pk)
+      if (not (is_safe_url using url_val)) and (not (allow_bindings and (is_binding_token using url_val)))
+        set out to collections.append using out, record {rule: "url-protocol-check", message: "Unsafe URL in " joined with scope_name joined with ": " joined with pk}
+      end
+    end
+    if check_markup and (pkl is "text" or pkl is "html" or pkl is "content")
+      set txt_val to text.from using (attr_map at pk)
+      if text_contains_unsafe_markup using txt_val
+        set out to collections.append using out, record {rule: "csp-safe", message: "Unsafe script/div/event markup inside " joined with pk}
+      end
+    end
+  end
+  give back out
+end
+
+make collect_style_violations using st_obj, check_outline
+  set out to []
+  if not (is_record_value using st_obj)
+    give back [record {rule: "schema-invalid-styles", message: "Grex styles must be a JSON object"}]
+  end
+  set style_maps to extract_grex_style_maps using st_obj
+  for each sm in style_maps
+    if not (is_record_value using sm)
+      set out to collections.append using out, record {rule: "schema-invalid-styles", message: "Grex breakpoint style map must be a JSON object"}
+    otherwise
+      for each sk in (collections.keys using sm)
+        set skl to text.lower using sk
+        set sv to text.lower using (text.from using (sm at sk))
+        if (text.contains using sv, "expression(") or (text.contains using sv, "javascript:") or (text.contains using sv, "vbscript:") or (text.contains using sv, "-moz-binding") or (text.contains using sv, "<script")
+          set out to collections.append using out, record {rule: "GREX-SEC-CSS", message: "Unsafe CSS value in styles." joined with sk}
+        end
+        if check_outline and skl is "outline"
+          set sv_t to text.trim using sv
+          if sv_t is "none" or sv_t is "0"
+            set out to collections.append using out, record {rule: "GREX-A11Y-005", message: "Removing focus outline violates WCAG keyboard accessibility"}
+          end
+        end
+      end
+    end
+  end
+  give back out
+end
+
 make validate_grex_node using node, depth
   if depth is greater than 24
     give back record {ok: no, error: "Grex layout nesting exceeds maximum depth (24)"}
   end
   try
-    if not (node has "element")
+    set el_name to resolve_grex_element_name using node
+    if el_name is ""
       give back record {ok: no, error: "Grex layout node requires an element field"}
     end
-    set el_name to text.from using (node at "element")
     if not (is_allowed_grex_element using el_name)
       give back record {ok: no, error: "Unsupported or unsafe Grex element: " joined with el_name}
     end
-    if node has "tag"
+    if node has "tag" and (node at "tag") is not nothing
       set tag_name to text.lower using (text.from using (node at "tag"))
-      if tag_name is "div" or tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "style" or (not (is_allowed_grex_tag using tag_name))
+      if tag_name is "div" or tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "embed" or tag_name is "style" or tag_name is "link" or tag_name is "meta" or tag_name is "base" or (not (is_allowed_grex_tag using tag_name))
         give back record {ok: no, error: "Disallowed HTML tag in Grex layout: " joined with tag_name}
       end
     end
-    if node has "props"
-      set props to node at "props"
-      set prop_keys to collections.keys using props
-      for each pk in prop_keys
-        set pkl to text.lower using pk
-        if text.starts_with using pkl, "on"
-          give back record {ok: no, error: "Inline event handler prop not allowed: " joined with pk}
-        end
-        if pkl is "dangerouslysetinnerhtml" or pkl is "innerhtml" or pkl is "outerhtml"
-          give back record {ok: no, error: "Unsafe raw HTML prop not allowed: " joined with pk}
-        end
-        if pkl is "href" or pkl is "src" or pkl is "action" or pkl is "formaction"
-          set url_val to text.from using (props at pk)
-          if (not (is_safe_url using url_val)) and (not (is_binding_token using url_val))
-            give back record {ok: no, error: "Unsafe URL in Grex prop: " joined with pk}
-          end
-        end
+    if node has "props" and (node at "props") is not nothing
+      set pvs to collect_attr_map_violations using (node at "props"), "prop", yes, no
+      if (collections.length using pvs) is greater than 0
+        give back record {ok: no, error: (pvs at 0).message}
       end
     end
-    if node has "children"
+    if node has "attrs" and (node at "attrs") is not nothing
+      set avs to collect_attr_map_violations using (node at "attrs"), "attrs", yes, no
+      if (collections.length using avs) is greater than 0
+        give back record {ok: no, error: (avs at 0).message}
+      end
+    end
+    if node has "styles" and (node at "styles") is not nothing
+      set svs to collect_style_violations using (node at "styles"), no
+      if (collections.length using svs) is greater than 0
+        give back record {ok: no, error: (svs at 0).message}
+      end
+    end
+    if node has "children" and (node at "children") is not nothing
       set kids to node at "children"
       for each child in kids
         set child_res to validate_grex_node using child, (depth plus 1)
@@ -1006,7 +1285,7 @@ make validate_single_field_value using ftype, raw_val
       if not ((text.starts_with using encoded, "{") or (text.starts_with using encoded, "["))
         give back record {ok: no, value: "", error: "JSON field must be a JSON object or array"}
       end
-      if (text.starts_with using encoded, "{") and (parsed_json has "element")
+      if (text.starts_with using encoded, "{") and (is_record_value using parsed_json) and ((parsed_json has "element") or ((parsed_json has "type") and (is_allowed_grex_element using (text.from using (parsed_json at "type")))))
         set grex_res to validate_grex_node using parsed_json, 0
         if not grex_res.ok
           give back record {ok: no, value: "", error: grex_res.error}
@@ -1083,7 +1362,7 @@ make normalize_and_validate_body using raw_val
   if text.starts_with using trimmed, "{"
     try
       set parsed_body to json.parse using trimmed
-      if parsed_body has "element"
+      if (is_record_value using parsed_body) and ((parsed_body has "element") or ((parsed_body has "type") and (is_allowed_grex_element using (text.from using (parsed_body at "type")))))
         set grex_chk to validate_grex_node using parsed_body, 0
         if not grex_chk.ok
           give back record {ok: no, body_html: "", error: grex_chk.error}
@@ -1963,7 +2242,7 @@ make execute_filter_handler using handler_name, val, ctx
     if has_map_key using ctx, "theme_slug"
       set tslug to text.from using (ctx at "theme_slug")
     end
-    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v1.0.0 (" joined with (escape_html using tslug) joined with ")\">")
+    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v1.0.1 (" joined with (escape_html using tslug) joined with ")\">")
     give back tags
   end
 
@@ -2630,7 +2909,7 @@ make render_grex_node using stmts, theme, registry, node, ctx, depth
   if depth is greater than 24
     give back ""
   end
-  set el_name to text.from using (node at "element")
+  set el_name to resolve_grex_element_name using node
   set props to {}
   if node has "props"
     set props to node at "props"
@@ -3518,18 +3797,18 @@ end
 # Module 11: Strict Grex Validation, WCAG AA auditAccessibility & grab mcp Tools
 # ==============================================================================
 
-make text_contains_unsafe_markup using raw
-  set low to text.lower using raw
-  if (text.contains using low, "<script") or (text.contains using low, "<iframe") or (text.contains using low, "<object") or (text.contains using low, "<div") or (text.contains using low, "javascript:") or (text.contains using low, "onerror=") or (text.contains using low, "onload=") or (text.contains using low, "onclick=") or (text.contains using low, "eval(")
-    give back yes
-  end
-  give back no
-end
-
 make grex_node_has_accessible_name using node
-  if node has "props"
+  if not (is_record_value using node)
+    give back no
+  end
+  if node has "text" and (node at "text") is not nothing
+    if (text.trim using (text.from using (node at "text"))) is not ""
+      give back yes
+    end
+  end
+  if node has "props" and (is_record_value using (node at "props"))
     set props to node at "props"
-    for each k in ["text", "label", "aria-label"]
+    for each k in ["text", "label", "aria-label", "aria-labelledby"]
       if has_map_key using props, k
         set v to text.trim using (text.from using (props at k))
         if v is not ""
@@ -3538,9 +3817,20 @@ make grex_node_has_accessible_name using node
       end
     end
   end
-  if node has "children"
+  if node has "attrs" and (is_record_value using (node at "attrs"))
+    set amap to node at "attrs"
+    for each k in ["aria-label", "aria-labelledby"]
+      if has_map_key using amap, k
+        set v to text.trim using (text.from using (amap at k))
+        if v is not ""
+          give back yes
+        end
+      end
+    end
+  end
+  if node has "children" and (node at "children") is not nothing
     for each ch in (node at "children")
-      if ch has "props"
+      if (is_record_value using ch) and (ch has "props") and (is_record_value using (ch at "props"))
         set cp to ch at "props"
         if has_map_key using cp, "text"
           if (text.trim using (text.from using (cp at "text"))) is not ""
@@ -3589,57 +3879,98 @@ make audit_grex_tree_walk using stmts, node, depth, path_label, state
   set violations to state.violations
   set h1_count to state.h1_count
   set last_h to state.last_heading_level
+  set inherited_bg to ""
+  if has_map_key using state, "inherited_bg"
+    set inherited_bg to state.inherited_bg
+  end
 
   if depth is greater than 24
     set violations to collections.append using violations, record {rule: "schema-max-depth", path: path_label, message: "Grex layout nesting exceeds maximum depth (24)"}
-    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h, inherited_bg: inherited_bg}
   end
 
-  if not (node has "element")
+  if not (is_record_value using node)
+    set violations to collections.append using violations, record {rule: "schema-node-object", path: path_label, message: "Grex layout node must be a JSON object"}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h, inherited_bg: inherited_bg}
+  end
+
+  set el_name to resolve_grex_element_name using node
+  if el_name is ""
     set violations to collections.append using violations, record {rule: "schema-element-required", path: path_label, message: "Grex layout node requires an element field"}
-    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h, inherited_bg: inherited_bg}
   end
 
-  set el_name to text.from using (node at "element")
   if not (is_allowed_grex_element using el_name)
     set violations to collections.append using violations, record {rule: "schema-element-allowlist", path: path_label, message: "Unsupported or unsafe Grex element: " joined with el_name}
-    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
+    give back record {violations: violations, h1_count: h1_count, last_heading_level: last_h, inherited_bg: inherited_bg}
   end
 
   set tag_name to ""
-  if node has "tag"
+  if node has "tag" and (node at "tag") is not nothing
     set tag_name to text.lower using (text.from using (node at "tag"))
     if tag_name is "div"
       set violations to collections.append using violations, record {rule: "no-wrapper-div", path: path_label, message: "Wrapper <div> tags are strictly forbidden in Grex layouts"}
     otherwise
-      if tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "style" or (not (is_allowed_grex_tag using tag_name))
+      if tag_name is "script" or tag_name is "iframe" or tag_name is "object" or tag_name is "embed" or tag_name is "style" or tag_name is "link" or tag_name is "meta" or tag_name is "base" or (not (is_allowed_grex_tag using tag_name))
         set violations to collections.append using violations, record {rule: "security-disallowed-tag", path: path_label, message: "Disallowed HTML tag in Grex layout: " joined with tag_name}
       end
     end
   end
 
   set props to {}
-  if node has "props"
-    set props to node at "props"
-    set prop_keys to collections.keys using props
-    for each pk in prop_keys
-      set pkl to text.lower using pk
-      if text.starts_with using pkl, "on"
-        set violations to collections.append using violations, record {rule: "security-no-inline-events", path: path_label, message: "Inline event handler prop not allowed: " joined with pk}
+  if node has "props" and (node at "props") is not nothing
+    set pvs to collect_attr_map_violations using (node at "props"), "prop", yes, yes
+    for each pv in pvs
+      set violations to collections.append using violations, record {rule: pv.rule, path: path_label, message: pv.message}
+    end
+    if is_record_value using (node at "props")
+      set props to node at "props"
+    end
+  end
+
+  set attrs_map to {}
+  if node has "attrs" and (node at "attrs") is not nothing
+    set avs to collect_attr_map_violations using (node at "attrs"), "attrs", yes, yes
+    for each av in avs
+      set violations to collections.append using violations, record {rule: av.rule, path: path_label, message: av.message}
+    end
+    if is_record_value using (node at "attrs")
+      set attrs_map to node at "attrs"
+    end
+  end
+
+  set node_bg to inherited_bg
+  if node has "styles" and (node at "styles") is not nothing
+    set st_obj to node at "styles"
+    set svs to collect_style_violations using st_obj, yes
+    for each sv in svs
+      set violations to collections.append using violations, record {rule: sv.rule, path: path_label, message: sv.message}
+    end
+    set style_maps to extract_grex_style_maps using st_obj
+    if (collections.length using style_maps) is greater than 0
+      set cand_bg to extract_style_bg using (style_maps at 0)
+      if cand_bg is not ""
+        set node_bg to cand_bg
       end
-      if pkl is "dangerouslysetinnerhtml" or pkl is "innerhtml" or pkl is "outerhtml"
-        set violations to collections.append using violations, record {rule: "zero-innerHTML", path: path_label, message: "Unsafe HTML sink prop not allowed: " joined with pk}
-      end
-      if pkl is "href" or pkl is "src" or pkl is "action" or pkl is "formaction"
-        set u_val to text.from using (props at pk)
-        if (not (is_safe_url using u_val)) and (not (is_binding_token using u_val))
-          set violations to collections.append using violations, record {rule: "url-protocol-check", path: path_label, message: "Unsafe URL in prop " joined with pk}
-        end
-      end
-      if pkl is "text" or pkl is "html" or pkl is "content"
-        set txt_val to text.from using (props at pk)
-        if text_contains_unsafe_markup using txt_val
-          set violations to collections.append using violations, record {rule: "csp-safe", path: path_label, message: "Unsafe script/div/event markup inside " joined with pk}
+      for each sm in style_maps
+        if is_record_value using sm
+          set sm_bg to extract_style_bg using sm
+          if sm_bg is ""
+            set sm_bg to node_bg
+          end
+          if (has_map_key using sm, "color") and sm_bg is not ""
+            set fg_val to text.from using (sm at "color")
+            set ratio to compute_contrast_ratio using fg_val, sm_bg
+            if ratio is not nothing
+              set min_ratio to 4.5
+              if is_large_text_style using sm
+                set min_ratio to 3.0
+              end
+              if ratio is less than min_ratio
+                set violations to collections.append using violations, record {rule: "GREX-A11Y-001", path: path_label, message: ("Contrast ratio " joined with (text.from using ratio) joined with ":1 (" joined with fg_val joined with " on " joined with sm_bg joined with ") is below WCAG AA minimum " joined with (text.from using min_ratio) joined with ":1")}
+              end
+            end
+          end
         end
       end
     end
@@ -3650,11 +3981,22 @@ make audit_grex_tree_walk using stmts, node, depth, path_label, state
     if (has_map_key using props, "is_decorative") and (is_truthy_val using (props at "is_decorative"))
       set has_alt to yes
     end
+    if (has_map_key using props, "decorative") and (is_truthy_val using (props at "decorative"))
+      set has_alt to yes
+    end
     if (has_map_key using props, "aria-hidden") and (text.lower using (text.from using (props at "aria-hidden"))) is "true"
+      set has_alt to yes
+    end
+    if (has_map_key using attrs_map, "aria-hidden") and (text.lower using (text.from using (attrs_map at "aria-hidden"))) is "true"
       set has_alt to yes
     end
     if has_map_key using props, "alt"
       if (text.trim using (text.from using (props at "alt"))) is not ""
+        set has_alt to yes
+      end
+    end
+    if (not has_alt) and (has_map_key using attrs_map, "alt")
+      if (text.trim using (text.from using (attrs_map at "alt"))) is not ""
         set has_alt to yes
       end
     end
@@ -3673,7 +4015,7 @@ make audit_grex_tree_walk using stmts, node, depth, path_label, state
       end
     end
     if not has_alt
-      set violations to collections.append using violations, record {rule: "a11y-image-alt", path: path_label, message: "Image requires non-empty alt text or explicit is_decorative: true"}
+      set violations to collections.append using violations, record {rule: "a11y-image-alt", path: path_label, message: "Image requires non-empty alt text or explicit is_decorative/decorative: true"}
     end
   end
 
@@ -3695,36 +4037,42 @@ make audit_grex_tree_walk using stmts, node, depth, path_label, state
     end
   end
 
-  if el_name is "Link" or el_name is "Button" or el_name is "Input" or el_name is "Select" or tag_name is "a" or tag_name is "button" or tag_name is "input" or tag_name is "select"
+  set is_hidden_input to (el_name is "Input" or tag_name is "input") and (has_map_key using props, "type") and ((text.lower using (text.from using (props at "type"))) is "hidden")
+  if (not is_hidden_input) and (el_name is "Link" or el_name is "Button" or el_name is "Input" or el_name is "Select" or tag_name is "a" or tag_name is "button" or tag_name is "input" or tag_name is "select")
     if not (grex_node_has_accessible_name using node)
       set violations to collections.append using violations, record {rule: "a11y-interactive-label", path: path_label, message: "Interactive " joined with el_name joined with " requires accessible label (text, label, or aria-label)"}
     end
   end
 
-  set cur_state to record {violations: violations, h1_count: h1_count, last_heading_level: last_h}
-  if node has "children"
+  set cur_state to record {violations: violations, h1_count: h1_count, last_heading_level: last_h, inherited_bg: node_bg}
+  if node has "children" and (node at "children") is not nothing
     set kids to node at "children"
     set idx to 0
     for each ch in kids
       set next_path to path_label joined with ".children[" joined with (text.from using idx) joined with "]"
       set cur_state to audit_grex_tree_walk using stmts, ch, (depth plus 1), next_path, cur_state
+      set cur_state to record {violations: cur_state.violations, h1_count: cur_state.h1_count, last_heading_level: cur_state.last_heading_level, inherited_bg: node_bg}
       set idx to idx plus 1
     end
   end
-  give back cur_state
+  give back record {violations: cur_state.violations, h1_count: cur_state.h1_count, last_heading_level: cur_state.last_heading_level, inherited_bg: inherited_bg}
 end
 
 make render_validated_grex_html using stmts, node, depth
   if depth is greater than 24
     give back ""
   end
-  set el_name to text.from using (node at "element")
+  set el_name to resolve_grex_element_name using node
   set props to {}
-  if node has "props"
+  if (node has "props") and (is_record_value using (node at "props"))
     set props to node at "props"
   end
+  set attrs_map to {}
+  if (node has "attrs") and (is_record_value using (node at "attrs"))
+    set attrs_map to node at "attrs"
+  end
   set tag to default_tag_for_grex_element using el_name, props
-  if node has "tag"
+  if node has "tag" and (node at "tag") is not nothing
     set req_tag to text.lower using (text.from using (node at "tag"))
     if is_allowed_grex_tag using req_tag
       set tag to req_tag
@@ -3740,8 +4088,12 @@ make render_validated_grex_html using stmts, node, depth
   set inner to ""
   if has_map_key using props, "text"
     set inner to escape_html using (text.from using (props at "text"))
+  otherwise
+    if (is_record_value using node) and (node has "text") and (node at "text") is not nothing
+      set inner to escape_html using (text.from using (node at "text"))
+    end
   end
-  if node has "children"
+  if node has "children" and (node at "children") is not nothing
     for each ch in (node at "children")
       set inner to inner joined with (render_validated_grex_html using stmts, ch, (depth plus 1))
     end
@@ -3769,8 +4121,12 @@ make render_validated_grex_html using stmts, node, depth
     end
     if has_map_key using props, "alt"
       set alt_val to text.from using (props at "alt")
+    otherwise
+      if has_map_key using attrs_map, "alt"
+        set alt_val to text.from using (attrs_map at "alt")
+      end
     end
-    if (has_map_key using props, "is_decorative") and (is_truthy_val using (props at "is_decorative"))
+    if ((has_map_key using props, "is_decorative") and (is_truthy_val using (props at "is_decorative"))) or ((has_map_key using props, "decorative") and (is_truthy_val using (props at "decorative")))
       set is_dec to yes
     end
     if has_map_key using props, "media_id"
@@ -3802,6 +4158,10 @@ make render_validated_grex_html using stmts, node, depth
   end
   if has_map_key using props, "aria-label"
     set attrs to attrs joined with " aria-label=\"" joined with (escape_html using (text.from using (props at "aria-label"))) joined with "\""
+  otherwise
+    if has_map_key using attrs_map, "aria-label"
+      set attrs to attrs joined with " aria-label=\"" joined with (escape_html using (text.from using (attrs_map at "aria-label"))) joined with "\""
+    end
   end
   give back "<" joined with tag joined with attrs joined with ">" joined with inner joined with "</" joined with tag joined with ">"
 end
@@ -3826,10 +4186,17 @@ make resolve_mcp_principal using stmts, req
 end
 
 make mcp_tool_schemas
-  give back [record {name: "list_content_types", description: "List registered GrabLab content types and field definitions", inputSchema: (record {type: "object", properties: {}})}, record {name: "query_entries", description: "Query CMS entries with optional content_type, status, filter_by_term, search, limit, and offset", inputSchema: (record {type: "object", properties: {"content_type": {"type": "string"}, "status": {"type": "string"}, "filter_by_term": {"type": "object"}, "search": {"type": "string"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "create_entry_draft", description: "Create a new draft entry (status is always forced to draft)", inputSchema: (record {type: "object", required: ["content_type", "slug", "title"], properties: {"content_type": {"type": "string"}, "slug": {"type": "string"}, "title": {"type": "string"}}})}, record {name: "update_entry_layout", description: "Update an entry's Grex layout after grex.elements.json and WCAG AA auditAccessibility validation", inputSchema: (record {type: "object", required: ["entry_id", "layout"], properties: {"entry_id": {"type": "integer"}, "layout": {"type": "object"}}})}, record {name: "list_media", description: "List uploaded media assets", inputSchema: (record {type: "object", properties: {"mime_prefix": {"type": "string"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "list_menus", description: "List menus and resolved menu item hierarchies", inputSchema: (record {type: "object", properties: {}})}]
+  give back [record {name: "list_content_types", description: "List registered GrabLab content types and field definitions", inputSchema: (record {type: "object", properties: {}})}, record {name: "query_entries", description: "Query CMS entries with optional content_type, status, field filters, filter_by_term, search, sorting, and pagination", inputSchema: (record {type: "object", properties: {"content_type": {"type": "string"}, "content_type_slug": {"type": "string"}, "status": {"type": "string"}, "field_key": {"type": "string"}, "field_op": {"type": "string"}, "field_value": {"type": "string"}, "filter_by_term": {"type": "object"}, "search": {"type": "string"}, "sort_by": {"type": "string"}, "sort_dir": {"type": "string"}, "page": {"type": "integer"}, "per_page": {"type": "integer"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "create_entry_draft", description: "Create a new draft entry (status is always forced to draft); validates optional grex_layout via grex.elements.json and WCAG AA guardrails", inputSchema: (record {type: "object", required: ["slug", "title"], properties: {"content_type": {"type": "string"}, "content_type_slug": {"type": "string"}, "slug": {"type": "string"}, "title": {"type": "string"}, "excerpt": {"type": "string"}, "body": {"type": "string"}, "body_html": {"type": "string"}, "custom_fields": {"type": "object"}, "grex_layout": {"type": "object"}, "layout": {"type": "object"}, "meta_title": {"type": "string"}, "meta_description": {"type": "string"}, "term_ids": {"type": "array"}}})}, record {name: "update_entry_layout", description: "Update an entry's Grex layout after grex.elements.json and WCAG AA auditAccessibility validation", inputSchema: (record {type: "object", required: ["entry_id"], properties: {"entry_id": {"type": "integer"}, "layout": {"type": "object"}, "grex_layout": {"type": "object"}}})}, record {name: "list_media", description: "List uploaded media assets", inputSchema: (record {type: "object", properties: {"mime_prefix": {"type": "string"}, "limit": {"type": "integer"}, "offset": {"type": "integer"}}})}, record {name: "list_menus", description: "List menus and resolved menu item hierarchies (optionally filtered by location)", inputSchema: (record {type: "object", properties: {"location": {"type": "string"}}})}]
 end
 
 make execute_mcp_tool using stmts, sess, tool_name, args
+  if args is nothing
+    set args to {}
+  end
+  if not (is_record_value using args)
+    give back record {ok: no, status: 400, payload: record {error: "MCP arguments must be a JSON object", code: -32602}}
+  end
+
   if tool_name is "list_content_types"
     if not (role_has_capability using sess.role, "admin:access")
       give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for list_content_types"}}
@@ -3852,44 +4219,85 @@ make execute_mcp_tool using stmts, sess, tool_name, args
       give back record {ok: no, status: 403, payload: record {error: "Forbidden: viewer role cannot read non-published entries"}}
     end
     set limit_val to 20
+    if args has "per_page" and (args at "per_page") is not nothing
+      set limit_val to math.clamp using (text.to_integer using (text.from using (args at "per_page"))), 1, 100
+    end
     if args has "limit" and (args at "limit") is not nothing
       set limit_val to math.clamp using (text.to_integer using (text.from using (args at "limit"))), 1, 100
     end
     set offset_val to 0
+    set page_num to 1
+    if args has "page" and (args at "page") is not nothing
+      set page_num to math.max using 1, (text.to_integer using (text.from using (args at "page")))
+      set offset_val to (page_num minus 1) times limit_val
+    end
     if args has "offset" and (args at "offset") is not nothing
       set offset_val to math.max using 0, (text.to_integer using (text.from using (args at "offset")))
+      set page_num to (math.floor using (offset_val divided by limit_val)) plus 1
     end
-    set page_num to (math.floor using (offset_val divided by limit_val)) plus 1
     set q_map to {"status": req_status, "per_page": (text.from using limit_val), "page": (text.from using page_num)}
+    set ct_arg to ""
     if args has "content_type" and (args at "content_type") is not nothing
-      set q_map to collections.put using q_map, "content_type", (text.from using (args at "content_type"))
+      set ct_arg to text.from using (args at "content_type")
+    otherwise
+      if args has "content_type_slug" and (args at "content_type_slug") is not nothing
+        set ct_arg to text.from using (args at "content_type_slug")
+      end
     end
-    if args has "filter_by_term" and (args at "filter_by_term") is not nothing
-      set q_map to collections.put using q_map, "filter_by_term", (args at "filter_by_term")
+    if ct_arg is not ""
+      set q_map to collections.put using q_map, "content_type", ct_arg
     end
-    if args has "search" and (args at "search") is not nothing
-      set q_map to collections.put using q_map, "search", (text.from using (args at "search"))
+    for each qk in ["filter_by_term", "search", "field_key", "field_op", "field_value", "sort_by", "sort_dir"]
+      if args has qk and (args at qk) is not nothing
+        if qk is "filter_by_term"
+          set q_map to collections.put using q_map, qk, (args at qk)
+        otherwise
+          set q_map to collections.put using q_map, qk, (text.from using (args at qk))
+        end
+      end
     end
     set theme to get_active_theme_context using stmts
     set registry to build_active_hook_registry using theme
     if sess.role is "author"
+      set norm_a to normalize_query_args using q_map, no
+      if not norm_a.ok
+        give back record {ok: no, status: 400, payload: record {error: norm_a.error, code: -32602}}
+      end
+      set aargs to norm_a.args
       set raw_rows to data.query using stmts.list_entries, record {}
-      set safe_rows to []
+      set matched_rows to []
       for each r in raw_rows
         set can_see to (r.status is "published") or (r.author_id is not nothing and r.author_id is sess.user_id)
         if req_status is not "all" and r.status is not req_status
           set can_see to no
         end
+        if can_see and aargs.content_type is not "" and r.content_type_slug is not aargs.content_type
+          set can_see to no
+        end
+        if can_see and (not (matches_custom_field_filter using r.custom_fields_json, aargs.field_key, aargs.field_op, aargs.field_value))
+          set can_see to no
+        end
+        if can_see and (not (matches_search_text using r, aargs.search))
+          set can_see to no
+        end
         if can_see
-          set safe_rows to collections.append using safe_rows, (format_query_item using r)
+          set matched_rows to collections.append using matched_rows, (format_query_item using r)
         end
       end
-      give back record {ok: yes, status: 200, payload: record {items: safe_rows, pagination: record {page: 1, per_page: limit_val, total_items: (collections.length using safe_rows)}}}
+      set total_items to collections.length using matched_rows
+      set start_idx to (aargs.page minus 1) times aargs.per_page
+      set paged_items to []
+      if start_idx is less than total_items
+        set end_idx to math.min using total_items, (start_idx plus aargs.per_page)
+        set paged_items to collections.slice using matched_rows, start_idx, end_idx
+      end
+      set total_pages to compute_total_pages using total_items, aargs.per_page
+      give back record {ok: yes, status: 200, payload: record {items: paged_items, pagination: record {page: aargs.page, per_page: aargs.per_page, total_items: total_items, total_pages: total_pages, has_prev: (aargs.page is greater than 1 and total_pages is greater than 0), has_next: (aargs.page is less than total_pages)}}}
     end
     set is_pub_q to (sess.role is "viewer")
     set qres to query_entries using stmts, theme, registry, q_map, is_pub_q
     if not qres.ok
-      give back record {ok: no, status: 400, payload: record {error: qres.error}}
+      give back record {ok: no, status: 400, payload: record {error: qres.error, code: -32602}}
     end
     give back record {ok: yes, status: 200, payload: qres.data}
   end
@@ -3898,41 +4306,92 @@ make execute_mcp_tool using stmts, sess, tool_name, args
     if not (role_has_capability using sess.role, "entries:create")
       give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for create_entry_draft"}}
     end
-    if (not (args has "content_type")) or (not (args has "slug")) or (not (args has "title"))
-      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: content_type, slug, title"}}
+    set ct_raw to ""
+    if args has "content_type" and (args at "content_type") is not nothing
+      set ct_raw to text.from using (args at "content_type")
+    otherwise
+      if args has "content_type_slug" and (args at "content_type_slug") is not nothing
+        set ct_raw to text.from using (args at "content_type_slug")
+      end
     end
-    set ct_slug to normalize_slug using (text.from using (args at "content_type"))
+    if ct_raw is "" or (not (args has "slug")) or (args at "slug") is nothing or (not (args has "title")) or (args at "title") is nothing
+      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: content_type (or content_type_slug), slug, title", code: -32602}}
+    end
+    set ct_slug to normalize_slug using ct_raw
     set ct to data.one using stmts.get_type_by_slug, record {slug: ct_slug}
     if ct is nothing
       give back record {ok: no, status: 404, payload: record {error: "Content type not found"}}
     end
     set slug to normalize_slug using (text.from using (args at "slug"))
     if not (is_valid_entry_slug using slug)
-      give back record {ok: no, status: 400, payload: record {error: "Invalid entry slug"}}
+      give back record {ok: no, status: 400, payload: record {error: "Invalid entry slug", code: -32602}}
     end
     set full_path to compute_full_path using ct.permalink_pattern, slug
     if is_reserved_path using full_path
-      give back record {ok: no, status: 400, payload: record {error: "Computed permalink collides with reserved prefix"}}
+      give back record {ok: no, status: 400, payload: record {error: "Computed permalink collides with reserved prefix", code: -32602}}
     end
     set conflict to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}
     if conflict is not nothing
       give back record {ok: no, status: 409, payload: record {error: "Entry already exists at " joined with full_path}}
     end
     set body_html to ""
+    set body_src to nothing
     if args has "body_html" and (args at "body_html") is not nothing
-      set bres to normalize_and_validate_body using (args at "body_html")
+      set body_src to args at "body_html"
+    otherwise
+      if args has "body" and (args at "body") is not nothing
+        set body_src to args at "body"
+      end
+    end
+    if body_src is not nothing
+      set bres to normalize_and_validate_body using body_src
       if not bres.ok
-        give back record {ok: no, status: 400, payload: record {error: bres.error}}
+        give back record {ok: no, status: 400, payload: record {error: bres.error, code: -32602}}
       end
       set body_html to bres.body_html
     end
     set cf_in to {}
     if args has "custom_fields" and (args at "custom_fields") is not nothing
+      if not (is_record_value using (args at "custom_fields"))
+        give back record {ok: no, status: 400, payload: record {error: "custom_fields must be a JSON object", code: -32602}}
+      end
       set cf_in to args at "custom_fields"
     end
     set cf_res to validate_custom_fields using stmts, ct.id, cf_in
     if not cf_res.ok
-      give back record {ok: no, status: 400, payload: record {error: cf_res.error}}
+      give back record {ok: no, status: 400, payload: record {error: cf_res.error, code: -32602}}
+    end
+    set next_cf_json to cf_res.json_text
+    set draft_layout to nothing
+    if args has "grex_layout" and (args at "grex_layout") is not nothing
+      set draft_layout to args at "grex_layout"
+    otherwise
+      if args has "layout" and (args at "layout") is not nothing
+        set draft_layout to args at "layout"
+      end
+    end
+    if draft_layout is not nothing
+      set layout_audit to audit_grex_tree_walk using stmts, draft_layout, 0, "layout", record {violations: [], h1_count: 0, last_heading_level: 0, inherited_bg: ""}
+      if (collections.length using layout_audit.violations) is greater than 0
+        set lerr_payload to record {error: "grex_validation_failed", code: -32602, mcp_error: (record {code: -32602, message: "Grex layout or WCAG AA validation failed", violations: layout_audit.violations}), violations: layout_audit.violations}
+        give back record {ok: no, status: 422, payload: lerr_payload}
+      end
+      if body_html is ""
+        set body_html to render_validated_grex_html using stmts, draft_layout, 0
+      end
+      set cf_merged to {}
+      try
+        set parsed_cf to json.parse using cf_res.json_text
+        if is_record_value using parsed_cf
+          for each cfk in (collections.keys using parsed_cf)
+            set cf_merged to collections.put using cf_merged, cfk, (parsed_cf at cfk)
+          end
+        end
+      catch cferr
+        set cf_merged to {}
+      end
+      set cf_merged to collections.put using cf_merged, "_grex_layout", draft_layout
+      set next_cf_json to json.stringify using cf_merged
     end
     set meta_t to ""
     if args has "meta_title" and (args at "meta_title") is not nothing
@@ -3941,6 +4400,10 @@ make execute_mcp_tool using stmts, sess, tool_name, args
     set meta_d to ""
     if args has "meta_description" and (args at "meta_description") is not nothing
       set meta_d to text.from using (args at "meta_description")
+    otherwise
+      if args has "excerpt" and (args at "excerpt") is not nothing
+        set meta_d to text.from using (args at "excerpt")
+      end
     end
     set term_ids to []
     if args has "term_ids" and (args at "term_ids") is not nothing
@@ -3949,17 +4412,20 @@ make execute_mcp_tool using stmts, sess, tool_name, args
     set now_rec to call dates.now_utc
     set tx to data.begin using stmts.db
     try
-      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (text.from using (args at "title")), status: "draft", body_html: body_html, custom_fields_json: cf_res.json_text, meta_title: meta_t, meta_description: meta_d, author_id: sess.user_id, published_at: nothing, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
+      call data.execute using stmts.insert_entry, record {content_type_id: ct.id, slug: slug, full_path: full_path, title: (text.from using (args at "title")), status: "draft", body_html: body_html, custom_fields_json: next_cf_json, meta_title: meta_t, meta_description: meta_d, author_id: sess.user_id, published_at: nothing, created_at: now_rec.iso, updated_at: now_rec.iso}, tx
       set created to data.one using stmts.get_entry_by_full_path, record {full_path: full_path}, tx
       if (collections.length using term_ids) is greater than 0
         set tr to sync_entry_terms_tx using stmts, created.id, term_ids, now_rec.iso, tx
         if not tr.ok
           call data.rollback using tx
-          give back record {ok: no, status: 400, payload: record {error: tr.error}}
+          give back record {ok: no, status: 400, payload: record {error: tr.error, code: -32602}}
         end
       end
       call data.commit using tx
       call invalidate_route_caches using stmts, full_path, "", ct.slug
+      if draft_layout is not nothing
+        give back record {ok: yes, status: 201, payload: record {entry: created, status_enforced: "draft", grex_layout_json: draft_layout}}
+      end
       give back record {ok: yes, status: 201, payload: record {entry: created, status_enforced: "draft"}}
     catch tx_err
       call data.rollback using tx
@@ -3971,8 +4437,9 @@ make execute_mcp_tool using stmts, sess, tool_name, args
     if not (role_has_capability using sess.role, "entries:update:own")
       give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for update_entry_layout"}}
     end
-    if (not (args has "entry_id")) or (not (args has "layout"))
-      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: entry_id, layout"}}
+    set has_layout to ((args has "layout" and (args at "layout") is not nothing) or (args has "grex_layout" and (args at "grex_layout") is not nothing))
+    if (not (args has "entry_id")) or (args at "entry_id") is nothing or (not has_layout)
+      give back record {ok: no, status: 400, payload: record {error: "Missing required fields: entry_id, layout (or grex_layout)", code: -32602}}
     end
     set entry_id to text.to_integer using (text.from using (args at "entry_id"))
     set existing to data.one using stmts.get_entry_by_id, record {id: entry_id}
@@ -3984,10 +4451,16 @@ make execute_mcp_tool using stmts, sess, tool_name, args
         give back record {ok: no, status: 403, payload: record {error: "Forbidden: can only update layout of your own entries"}}
       end
     end
-    set layout_node to args at "layout"
-    set audit_res to audit_grex_tree_walk using stmts, layout_node, 0, "layout", record {violations: [], h1_count: 0, last_heading_level: 0}
+    set layout_node to nothing
+    if args has "layout" and (args at "layout") is not nothing
+      set layout_node to args at "layout"
+    otherwise
+      set layout_node to args at "grex_layout"
+    end
+    set audit_res to audit_grex_tree_walk using stmts, layout_node, 0, "layout", record {violations: [], h1_count: 0, last_heading_level: 0, inherited_bg: ""}
     if (collections.length using audit_res.violations) is greater than 0
-      give back record {ok: no, status: 422, payload: record {error: "grex_validation_failed", violations: audit_res.violations}}
+      set gerr_payload to record {error: "grex_validation_failed", code: -32602, mcp_error: (record {code: -32602, message: "Grex layout or WCAG AA validation failed", violations: audit_res.violations}), violations: audit_res.violations}
+      give back record {ok: no, status: 422, payload: gerr_payload}
     end
     set rendered_html to render_validated_grex_html using stmts, layout_node, 0
     set cf_map to {}
@@ -4042,12 +4515,22 @@ make execute_mcp_tool using stmts, sess, tool_name, args
     if not (role_has_capability using sess.role, "admin:access")
       give back record {ok: no, status: 403, payload: record {error: "Forbidden: insufficient capability for list_menus"}}
     end
+    set loc_filter to ""
+    if args has "location" and (args at "location") is not nothing
+      set loc_filter to text.lower using (text.trim using (text.from using (args at "location")))
+    end
     set menus_rows to data.query using stmts.list_menus, record {}
     set out to []
     for each m in menus_rows
-      set m_items to data.query using stmts.list_menu_items_by_menu, record {menu_id: m.id}
-      set tree to build_menu_children using m_items, nothing, 1, yes
-      set out to collections.append using out, record {id: m.id, slug: m.slug, name: m.name, location: m.location, items: tree}
+      set m_loc to ""
+      if m.location is not nothing
+        set m_loc to text.lower using (text.trim using m.location)
+      end
+      if loc_filter is "" or m_loc is loc_filter
+        set m_items to data.query using stmts.list_menu_items_by_menu, record {menu_id: m.id}
+        set tree to build_menu_children using m_items, nothing, 1, yes
+        set out to collections.append using out, record {id: m.id, slug: m.slug, name: m.name, location: m.location, items: tree}
+      end
     end
     give back record {ok: yes, status: 200, payload: record {menus: out}}
   end
@@ -4096,7 +4579,7 @@ make resolve_public_path using stmts, req_path
   end
 
   set redir to data.one using stmts.find_redirect_by_old_path, record {old_path: norm_path}
-  if redir is not nothing
+  if redir is not nothing and redir.target_path is not norm_path and (not (is_reserved_path using redir.target_path))
     give back server.redirect using redir.target_path, 301
   end
 
@@ -6526,7 +7009,7 @@ route "POST" "/api/mcp" using req
       set method to text.from using (rpc at "method")
     end
     if method is "initialize"
-      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "1.0.0"}), capabilities: (record {tools: {}})})}
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "1.0.1"}), capabilities: (record {tools: {}})})}
     end
     if method is "ping"
       give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: {}}
@@ -6549,6 +7032,9 @@ route "POST" "/api/mcp" using req
       end
       set res to execute_mcp_tool using stmts, principal.session, tname, targs
       if not res.ok
+        if res.status is 422 or res.status is 400
+          give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {isError: yes, status: res.status, errorCode: -32602, content: [record {type: "text", text: (json.stringify using res.payload)}], structuredContent: res.payload})}
+        end
         give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {isError: yes, status: res.status, content: [record {type: "text", text: (json.stringify using res.payload)}], structuredContent: res.payload})}
       end
       give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {isError: no, status: res.status, content: [record {type: "text", text: (json.stringify using res.payload)}], structuredContent: res.payload})}

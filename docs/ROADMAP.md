@@ -63,14 +63,15 @@ Scope:
 
 ---
 
-## `v1.0.0` — Production CMS Release
+## `v1.0.0` — Production CMS Release (`v1.0.1` Hardening Patch Current)
 
-**Status:** Complete (`v1.0.0`, `specifications/GRABLAB-SPEC-100.md`)
+**Status:** Complete (`v1.0.1`, `specifications/GRABLAB-SPEC-100.md`)
 
 Scope:
 - `v1.x` contract stability freeze across `001`–`003` database migrations (SQLite, PostgreSQL, and MariaDB parity), `theme.json` Exclusive Active Theme manifests (`coded` & `visual`), native Hooks & Filters API, `query_entries` + `use cache` invalidation, `grab mcp` CMS tool schemas, and `--read-only` container deployment.
 - Full `v1.0.0` end-to-end production hardening & release verification (`tests/release_v100_test.py`): fresh clean SQLite install (`001 -> 002 -> 003` & direct `003`), `seed.grab`, `/setup` lock, full content/decimal/media/taxonomy/301-history/menu/cache/MCP/exclusive-theme-switch lifecycle, repo-wide `grab check` + canonical `grab format`, and zero wrapper-`<div>` validation.
 - Hardened `--read-only` Docker Compose / Grisp production deployment template (`deploy/docker-compose.yml` + `deploy/README.md`) with scoped writable `storage/`, `uploads/`, and `/static/grex/` mounts (`--allow-scripts`, `--allow-env`, `--allow-write`, `--workers` scaling docs), zero-secrets Git hygiene, and `docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`.
+- **`v1.0.1` Pre-Step-4 Cross-Layer Audit Patch:** Added `/static/grex/grex.elements.json` parity bundle, `SPEC-100` MCP parameter aliases (`content_type_slug`, `body`, `excerpt`, `grex_layout`, `field_*`, `sort_*`, `page`/`per_page`, `location`) & JSON-RPC `-32602` codes, Grex Builder WCAG AA contrast/outline/CSS/tag parity, `301` redirect loop/reserved guards, and `docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf`.
 
 ---
 
