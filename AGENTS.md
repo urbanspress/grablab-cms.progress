@@ -1,13 +1,13 @@
 # GrabLab CMS Engineering Instructions (`AGENTS.md`)
 
 **Repositories:** `urbanspress/grablab-cms.progress` (active development) / `urbanspress/grablab-cms.stable` (verified releases) (`C:\Development\grablab-cms`)  
-**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS built on **GRAB `v1.0.1`** and **Grex JS `v1.0.0`**.
+**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS (`v1.0.1` current) built on **GRAB `v1.1.0`** and **Grex JS `v1.0.0`**.
 
 ---
 
 ## Core Architecture Rules
 1. **Read `GRABLAB-EXPERT.md` first** before any specification or implementation edit.
-2. **Keep scope strictly inside the CMS layer:** Treat `GRAB v1.0.1` (`grab` CLI, `Grisp`, `use data`, `use cache`, `server.asset`, `grab mcp`) and `Grex JS v1.0.0` (`grex.elements.json`, `createTheme`, `createClassManager`, `ForEach`, `useQuery`) as already-unlocked external runtimes. Never duplicate `grex-js` source files or core GRAB Go compiler code here.
+2. **Keep scope strictly inside the CMS layer:** Treat `GRAB v1.1.0` (`grab` CLI, `Grisp`, `use data`, `use cache`, `server.asset`, `grab mcp`) and `Grex JS v1.0.0` (`grex.elements.json`, `createTheme`, `createClassManager`, `ForEach`, `useQuery`) as already-unlocked external runtimes. Never duplicate `grex-js` source files or core GRAB Go compiler code here.
 3. **Zero-Plugin Core + Exclusive Active Theme:** Never introduce a third-party plugin loader. Only one theme may be active at a time, owning 100% of template rendering (`home`, `single`, `archive`, `header`, `footer`, `404`, `search`).
 4. **Spec-First Approval Gate:** Do NOT write `GrabLab` application code until the active milestone specification (starting with `specifications/GRABLAB-SPEC-001.md`) is explicitly approved by the project owner.
 
@@ -42,8 +42,33 @@ NEVER mark a milestone or implementation task complete until:
   - `origin` (`https://github.com/urbanspress/grablab-cms.progress.git`): Active development repository for ongoing work, specifications, and in-progress milestone commits.
   - `stable` (`https://github.com/urbanspress/grablab-cms.stable.git`): Production release repository for 100% verified milestone releases only.
 - **Strict `stable` Protection:** All AI agents and models MUST push work-in-progress commits, drafts, and specs ONLY to `origin` (`urbanspress/grablab-cms.progress`). Pushing to `stable` (`urbanspress/grablab-cms.stable`) is strictly forbidden unless the milestone is 100% `Complete` in `docs/ROADMAP.md`, all verification gates pass 100%, and `HANDOFF.md` records no pending milestone tasks.
-- **Synchronized Releases & Assets:** Whenever a completed milestone (`v0.1.0`, `v0.2.0`, …, `v1.0.0`) is promoted to `stable`, push `main` and annotated version tags in ascending chronological order to both `origin` and `stable`, generate the plain-English walkthrough PDF (`docs/releases/pdf/GrabLab-<tag>-Guide.pdf`), and publish/attach matching GitHub Releases and assets to **both** repositories (`urbanspress/grablab-cms.progress` and `urbanspress/grablab-cms.stable`).
+- **Synchronized Releases & Assets:** Whenever a completed milestone (`v0.1.0`, `v0.2.0`, …, `v1.0.0`, `v1.0.1`, …) is promoted to `stable`, push `main` and annotated version tags in ascending chronological order to both `origin` and `stable`, generate the plain-English walkthrough PDF (`docs/releases/pdf/GrabLab-<tag>-Guide.pdf`), and publish/attach matching GitHub Releases and assets to **both** repositories (`urbanspress/grablab-cms.progress` and `urbanspress/grablab-cms.stable`).
 - Do not commit, push, or tag a release without explicit owner approval.
+
+### SemVer (MAJOR.MINOR.PATCH) & Release Compatibility Matrix Standard
+1. **Strict `MAJOR.MINOR.PATCH` Semantic Versioning (`ADR-027c`):**
+   - **`1.0.x` (`PATCH`):** Strictly for non-breaking bug fixes, security hardening, documentation polish, and cross-layer audit patches (`100%` drop-in compatible).
+   - **`1.x.0` (`MINOR`):** For backwards-compatible new features, additive standard library/runtime capabilities, or new MCP/CMS/Builder endpoints.
+   - **`2.0.0` (`MAJOR`):** Reserved for breaking architectural or contract changes—**never used without explicit project-owner approval (`ADR-027c`)**.
+2. **Mandatory Release Compatibility Badge & Matrix Block:**
+   - Every GitHub Release (`v1.0.1`, `v1.1.0`, etc.) across both `.progress` and `.stable` repositories MUST display at the top of its release notes:
+     1. A **Release Type & Affected Layers** summary callout (`PATCH (v1.0.x)` vs. `MINOR (v1.x.0)`, which layer(s) changed, and whether any neighboring layer requires an upgrade).
+     2. An **Ecosystem Compatibility Matrix** Markdown table covering all five layers:
+
+````markdown
+### Release Type & Affected Layers
+- **Release Version & SemVer Tier:** `v<X.Y.Z>` (`PATCH 1.0.x — Non-Breaking Bug/Security/Audit Patch` | `MINOR 1.x.0 — Backwards-Compatible Feature Release`)
+- **Affected Layer(s):** `<Layer Name>` (`urbanspress/<repo>`)
+- **Neighboring Layer Upgrade Required?** `No — 100% drop-in compatible` (or explicit version requirement if `Yes`)
+
+| Ecosystem Layer | Repository | Required Version Range | Touched in This Release? | Neighbor Upgrade Required? |
+|---|---|---|---|---|
+| **Core Language, Bytecode VM & Grisp Server** | `urbanspress/grab` | `>= v1.1.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Reactive Frontend Runtime & 20-Element Library** | `urbanspress/grex-js` | `>= v1.0.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Flagship Zero-Plugin CMS** | `urbanspress/grablab-cms` | `>= v1.0.1 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Exclusive `mode: "visual"` Theme & Studio** | `urbanspress/grex-builder` | `>= v1.0.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Autonomous Design, Content & SEO Agent** | `urbanspress/groxy-ai` | `>= v0.1.0` | `Yes` / `No` | `No` |
+````
 
 ---
 
