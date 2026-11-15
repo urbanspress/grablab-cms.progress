@@ -16,6 +16,8 @@
   - **Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue:** Constant-time HMAC-SHA256 webhook verification (`use crypto`), strict `event_id` idempotency, `ADR-025c` `GrabDecimal` order/refund ledger, CAN-SPAM/GDPR unsubscribe & consent enforcement, and persistent transactional `email_outbox` triggers (`commerce:purchase_completed`, `commerce:abandoned_checkout`, `commerce:subscription_renewed`, `commerce:refund_issued`).
 - **Planned `v1.3.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
   - **Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`):** Exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`), gating any schema/data adjustments behind single-use `approval_token` + `X-CSRF-Token` + automatic pre-migration snapshots.
+- **Planned `v1.4.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
+  - **Dedicated "Author Mode" Publishing Module (`mode: "author"`):** Native `Book`, `Chapter`, `CharacterBible`, and `WorldLore` content schemas, drag-and-drop chapter sequencing, `ADR-025c` `GrabDecimal` royalty & list-price precision, and 1-click **EPUB 3**, **Print-Ready PDF**, and zero-wrapper-`<div>` **`Grex JS v1.0.0`** Web Reader compilation (`specifications/GRABLAB-SPEC-008.md` to be drafted and approved before implementation).
 
 ---
 

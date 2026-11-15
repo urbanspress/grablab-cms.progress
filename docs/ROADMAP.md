@@ -111,3 +111,15 @@ Scope:
 Scope:
 - **Opt-In Consultant Tab (`groxy_db_consultant_enabled`):** Disabled by default; when enabled by a site administrator, exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, table/column metadata, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`).
 - **Human-in-the-Loop Impact & Snapshot Gate:** Any schema migration or data adjustment proposed by the consultant requires an explicit plain-English **Impact & Risk Assessment** preview, single-use `approval_token` + `X-CSRF-Token` confirmation, and an automatic pre-migration snapshot before execution.
+
+---
+
+## `v1.4.0` — Dedicated "Author Mode" Publishing Module (`mode: "author"`)
+
+**Status:** Planned — Backwards-Compatible Minor Feature
+**Specification:** `specifications/GRABLAB-SPEC-008.md` *(To be drafted prior to implementation)*
+
+Scope:
+- **Native Book & Lore Content Schemas:** First-class `Book`, `Chapter`, `CharacterBible`, and `WorldLore` content schemas with `status_enforced: "draft"` safety and automatic `SITE-CONTEXT.md` generation.
+- **Drag-and-Drop Chapter Sequencing & `ADR-025c` Precision:** Visual chapter ordering and manuscript structure management with exact base-10 `ADR-025c` `GrabDecimal` royalty and list-price wire string precision (`price_usd`, `royalty_rate`, `isbn_13`, `word_count`).
+- **1-Click Multi-Format Compilation:** Deterministic 1-click export to **EPUB 3**, **Print-Ready PDF**, and zero-wrapper-`<div>` **`Grex JS v1.0.0` Web Reader** compilation (`divCount === 0`, `innerHTMLWriteCount === 0`, Light & Dark WCAG AA `>= 4.5:1`).
