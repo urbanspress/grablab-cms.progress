@@ -77,14 +77,15 @@ Scope:
 
 ## `v1.1.0` — Zero-Plugin E-Commerce Core
 
-**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-110.md`)
+**Status:** Approved; implementation in progress (`specifications/GRABLAB-SPEC-110.md`, Revision 2 — Owner approved 2026-11-17)
 
 Scope:
-- **Native Commerce Content Types & Additive Migration `004`:** `Product`, `Cart`, `Order`, `Coupon`, `Customer` with exact base-10 `ADR-025c` `GrabDecimal` / `GrabInteger` wire types; physical (`Lulu Direct` / `USPS`) and digital-download products.
-- **Commerce API:** `POST /api/commerce/cart`, `/coupon/apply`, `/checkout`, `/webhooks/payment` with CSRF, idempotency keys, HMAC-SHA256 webhook verification, and allowlisted HTTPS payment redirects (`GRAB-E402`).
-- **Abandoned-Checkout Hook:** `commerce:abandoned_checkout` event for `Groxy AI v1.4.0` (`POST /api/groxy/commerce/recovery`) and `Plotific Press`; product `slug_history` `301` redirects preserved.
+- **Native Commerce Content Types & Additive Migration `004`:** `Product`, `Cart`, `Order`, `Coupon`, `Customer` with USD only (`"USD"`) using exact base-10 `ADR-025c` `GrabDecimal` (`"0.00"`) / `GrabInteger` wire types; physical (preserving USPS-only carrier rules for facility book shipments, plus out-of-band `lulu_direct`) and digital-download products; guest checkout enabled by default (with optional account creation).
+- **Flat-Rate Shipping & Configurable Tax:** Store-configurable flat-rate shipping and basis-point tax tables (no live carrier/tax APIs; shipping untaxed in `v1.1.0`).
+- **Commerce API & Native GRAB `v1.1.0` Security:** `POST /api/commerce/cart`, `/coupon/apply`, `/checkout`, and `/api/commerce/webhooks/payment` with CSRF, cart-scoped idempotency keys, GRAB `v1.1.0`'s native signed webhook verification (`deploy/grab.platform.commerce.json`), and `GRAB-E402` allowlisted HTTPS payment redirects without modifying frozen GRAB `v1.1.0`.
+- **Abandoned-Checkout Hook:** `commerce:abandoned_checkout` event emitted only with explicit marketing opt-in (`marketing_opt_in: true` / `marketing_consent = 1`) for `Groxy AI v1.4.0` (`POST /api/groxy/commerce/recovery`) and `Plotific Press`; existing `v1.0.1` SEO/redirect core and product `slug_history` `301` redirects preserved intact.
 - **Pure `Grex JS v1.0.0` Commerce Admin Views** (`divCount === 0`, `innerHTMLWriteCount === 0`, Light & Dark WCAG AA).
-- *Note:* v1.2.0 below extends this core with multi-provider webhooks and the email outbox; no code is written until SPEC-110 is approved.
+- *Note:* Stage 3 implementation is cleared under Revision 2; `v1.2.0` below extends this core with provider-specific webhook adapters and the email outbox.
 
 ### Re-Slotted Prior Scope (Version Slot To Be Decided By Project Owner)
 **Status:** Planned (Specification Pending Approval) — formerly labeled `v1.1.0`.

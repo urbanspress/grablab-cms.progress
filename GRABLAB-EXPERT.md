@@ -2,7 +2,7 @@
 
 **Scope:** `grablab-cms` (`urbanspress/grablab-cms`) — Step 2 of the GRAB Post-1.0 Ecosystem.  
 **Platform Runtimes (Already Unlocked):**
-- **GRAB `v1.0.1`** (`grab` CLI, `Grisp` persistent multi-worker server, `use data`, `use cache`, `server.asset`, `grab mcp`)
+- **GRAB `v1.1.0`** (`grab` CLI, `Grisp` persistent multi-worker server, `use data`, `use cache`, `server.asset`, `grab mcp`)
 - **Grex JS `v1.0.0`** (`grex.elements.json`, `createTheme`, `createClassManager`, `ForEach`, `useQuery`)
 
 Never touch or duplicate core Go compiler internals or `grex-js` source code inside this repository. All CMS features live in native `.grab`, `.grab.html`, SQL migrations, and static/runtime assets.
