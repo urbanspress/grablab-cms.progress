@@ -75,9 +75,19 @@ Scope:
 
 ---
 
-## `v1.1.0` — SEO Redirect Manager & Groxy AI Content/SEO Assist
+## `v1.1.0` — Zero-Plugin E-Commerce Core
 
-**Status:** Planned (Specification Pending Approval)
+**Status:** Approved target; specification in review (`specifications/GRABLAB-SPEC-110.md`)
+
+Scope:
+- **Native Commerce Content Types & Additive Migration `004`:** `Product`, `Cart`, `Order`, `Coupon`, `Customer` with exact base-10 `ADR-025c` `GrabDecimal` / `GrabInteger` wire types; physical (`Lulu Direct` / `USPS`) and digital-download products.
+- **Commerce API:** `POST /api/commerce/cart`, `/coupon/apply`, `/checkout`, `/webhooks/payment` with CSRF, idempotency keys, HMAC-SHA256 webhook verification, and allowlisted HTTPS payment redirects (`GRAB-E402`).
+- **Abandoned-Checkout Hook:** `commerce:abandoned_checkout` event for `Groxy AI v1.4.0` (`POST /api/groxy/commerce/recovery`) and `Plotific Press`; product `slug_history` `301` redirects preserved.
+- **Pure `Grex JS v1.0.0` Commerce Admin Views** (`divCount === 0`, `innerHTMLWriteCount === 0`, Light & Dark WCAG AA).
+- *Note:* v1.2.0 below extends this core with multi-provider webhooks and the email outbox; no code is written until SPEC-110 is approved.
+
+### Re-Slotted Prior Scope (Version Slot To Be Decided By Project Owner)
+**Status:** Planned (Specification Pending Approval) — formerly labeled `v1.1.0`.
 
 Scope:
 - **SEO Redirect Manager (`/admin/redirects`):**
