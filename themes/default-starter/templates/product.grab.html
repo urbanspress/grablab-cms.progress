@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{meta_title} — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{theme_css_url}">
+  <link rel="stylesheet" href="{shop_css_url}">
+  <!-- @hook:theme_head_meta -->
+</head>
+<body>
+  <!-- @part:header -->
+
+  <main class="cms-main" data-grex-id="product-main">
+    <article class="cms-article cms-product-detail" data-grex-id="product-article">
+      <span class="cms-badge">{content_type_label} &middot; {product_kind}</span>
+      <h1>{title}</h1>
+      <p class="cms-product-price" data-product-price="{product_price}"><strong>${product_price} {product_currency}</strong> &middot; {product_availability}</p>
+      <p class="cms-meta">SKU: {product_sku} &middot; Fulfillment: {product_carrier} &middot; ISBN-13: {product_isbn_13}</p>
+      <section class="cms-body" data-grex-id="product-body">
+        <p>{body_text}</p>
+      </section>
+      <section id="shop-product-mount" data-product-id="{product_id}" data-product-title="{title}" data-product-price="{product_price}" data-product-kind="{product_kind}" aria-label="Add to cart controls"></section>
+      <p><a href="/shop/cart">Go to Cart &amp; Checkout</a> &middot; <a href="/shop">Back to Shop</a></p>
+    </article>
+
+    <!-- @part:sidebar -->
+  </main>
+
+  <!-- @part:footer -->
+  <script type="module" src="{shop_js_url}"></script>
+</body>
+</html>

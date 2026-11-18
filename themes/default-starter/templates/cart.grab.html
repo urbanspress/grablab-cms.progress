@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{page_title} — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{theme_css_url}">
+  <link rel="stylesheet" href="{shop_css_url}">
+  <!-- @hook:theme_head_meta -->
+</head>
+<body>
+  <!-- @part:header -->
+
+  <main class="cms-main" data-grex-id="cart-main" data-currency="{currency}" data-guest-checkout="{guest_checkout}">
+    <section class="cms-hero" data-grex-id="cart-hero">
+      <span class="cms-badge">Checkout ({currency})</span>
+      <h1>{page_title}</h1>
+      <p class="cms-meta"><a href="/shop">Continue shopping</a></p>
+    </section>
+
+    <section id="shop-cart-mount" aria-label="Shopping cart and guest checkout"></section>
+  </main>
+
+  <!-- @part:footer -->
+  <script type="module" src="{shop_js_url}"></script>
+</body>
+</html>

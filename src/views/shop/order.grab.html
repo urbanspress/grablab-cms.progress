@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Order {order_number} — GrabLab Store</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{shop_css_url}">
+</head>
+<body class="shop-body">
+  <main class="cms-order-shell" data-grex-id="order-status-main">
+    <header class="cms-order-section">
+      <span class="cms-badge">Order Status: {order_status}</span>
+      <h1>Order {order_number}</h1>
+      <p>Placed at {created_at} &middot; Currency: {currency}</p>
+    </header>
+    <section class="cms-order-section" aria-labelledby="items-heading">
+      <h2 id="items-heading">Items</h2>
+      <!-- @slot:order_items_html -->
+    </section>
+    <section class="cms-order-section" aria-labelledby="totals-heading">
+      <h2 id="totals-heading">Order Totals</h2>
+      <dl class="cms-order-totals">
+        <dt>Subtotal</dt><dd>${subtotal} {currency}</dd>
+        <dt>Discount</dt><dd>-${discount_total} {currency}</dd>
+        <dt>Tax</dt><dd>${tax_total} {currency}</dd>
+        <dt>Shipping</dt><dd>${shipping_total} {currency}</dd>
+        <dt>Total</dt><dd><strong>${total} {currency}</strong></dd>
+      </dl>
+    </section>
+    <section class="cms-order-section" aria-label="Order downloads">
+      <!-- @slot:order_downloads_html -->
+    </section>
+    <p><a href="/shop">Return to Storefront</a></p>
+  </main>
+</body>
+</html>

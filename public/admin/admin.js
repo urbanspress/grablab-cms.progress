@@ -193,6 +193,7 @@ function mountSidebarNav(activePath, role) {
   if (role === "admin" || role === "editor") {
     items.push({ href: "/admin/menus", text: "Navigation Menus" });
     items.push({ href: "/admin/taxonomies", text: "Taxonomies" });
+    items.push({ href: "/admin/store", text: "Store / Commerce" });
   }
   if (role === "admin") {
     items.push({ href: "/admin/types", text: "Content Types" });
@@ -1829,6 +1830,8 @@ function boot() {
     mountThemes(root, api);
   } else if (page === "settings") {
     mountSettings(root, api);
+  } else if (page === "store" || page.startsWith("store_")) {
+    import("./commerce.js").then((mod) => mod.mountCommerce(root, api, page, role));
   }
 }
 

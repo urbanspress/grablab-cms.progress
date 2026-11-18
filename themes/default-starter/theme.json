@@ -13,7 +13,10 @@
     "single": "templates/single.grab.html",
     "archive": "templates/archive.grab.html",
     "404": "templates/404.grab.html",
-    "search": "templates/search.grab.html"
+    "search": "templates/search.grab.html",
+    "shop": "templates/shop.grab.html",
+    "product": "templates/product.grab.html",
+    "cart": "templates/cart.grab.html"
   },
   "parts": {
     "header": "templates/parts/header.grab.html",

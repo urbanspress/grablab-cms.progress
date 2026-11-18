@@ -77,7 +77,7 @@ Scope:
 
 ## `v1.1.0` — Zero-Plugin E-Commerce Core
 
-**Status:** Approved; implementation in progress (`specifications/GRABLAB-SPEC-110.md`, Revision 2 — Owner approved 2026-11-17)
+**Status:** Complete (`specifications/GRABLAB-SPEC-110.md`, Revision 2; verified on `origin/main` pending Stage 4 sign-off before promotion to `stable`)
 
 Scope:
 - **Native Commerce Content Types & Additive Migration `004`:** `Product`, `Cart`, `Order`, `Coupon`, `Customer` with USD only (`"USD"`) using exact base-10 `ADR-025c` `GrabDecimal` (`"0.00"`) / `GrabInteger` wire types; physical (preserving USPS-only carrier rules for facility book shipments, plus out-of-band `lulu_direct`) and digital-download products; guest checkout enabled by default (with optional account creation).

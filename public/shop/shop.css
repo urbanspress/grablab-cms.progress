@@ -1,0 +1,146 @@
+/* GrabLab CMS v1.1.0 Storefront Styles — Light & Dark WCAG AA (>= 4.5:1) */
+
+:root,
+[data-grex-theme="light"] {
+  --shop-bg: #ffffff;
+  --shop-surface: #f8fafc;
+  --shop-border: #cbd5e1;
+  --shop-fg: #0f172a;
+  --shop-muted: #475569;
+  --shop-link: #1d4ed8;
+  --shop-accent: #1d4ed8;
+  --shop-accent-fg: #ffffff;
+  --shop-badge-bg: #0f172a;
+  --shop-badge-fg: #ffffff;
+  --shop-danger-bg: #fef2f2;
+  --shop-danger-fg: #991b1b;
+  --shop-ok-bg: #ecfdf5;
+  --shop-ok-fg: #065f46;
+}
+
+[data-grex-theme="dark"] {
+  --shop-bg: #0b1120;
+  --shop-surface: #111827;
+  --shop-border: #334155;
+  --shop-fg: #f8fafc;
+  --shop-muted: #cbd5e1;
+  --shop-link: #93c5fd;
+  --shop-accent: #2563eb;
+  --shop-accent-fg: #ffffff;
+  --shop-badge-bg: #e2e8f0;
+  --shop-badge-fg: #0f172a;
+  --shop-danger-bg: #450a0a;
+  --shop-danger-fg: #fecaca;
+  --shop-ok-bg: #064e3b;
+  --shop-ok-fg: #a7f3d0;
+}
+
+body.shop-body {
+  font-family: var(--grex-font-sans, system-ui, -apple-system, sans-serif);
+  background: var(--shop-bg);
+  color: var(--shop-fg);
+  margin: 0;
+  padding: 2rem 1rem;
+  line-height: 1.55;
+}
+
+.cms-order-shell {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.cms-card,
+.cms-order-section,
+.cms-shop-panel {
+  border: 1px solid var(--shop-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--shop-surface);
+  color: var(--shop-fg);
+}
+
+.cms-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.cms-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  background: var(--shop-badge-bg);
+  color: var(--shop-badge-fg);
+  font-size: 0.85rem;
+}
+
+.cms-product-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--shop-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.cms-order-totals {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1.25rem;
+}
+
+.cms-order-totals dt {
+  font-weight: 700;
+  color: var(--shop-muted);
+}
+
+.cms-order-totals dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--shop-accent);
+  background: var(--shop-accent);
+  color: var(--shop-accent-fg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shop-btn-secondary {
+  background: var(--shop-bg);
+  color: var(--shop-link);
+  border-color: var(--shop-border);
+}
+
+.shop-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--shop-border);
+  border-radius: 0.4rem;
+  background: var(--shop-bg);
+  color: var(--shop-fg);
+  font-size: 0.95rem;
+}
+
+.shop-status-ok {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--shop-ok-bg);
+  color: var(--shop-ok-fg);
+  border: 1px solid var(--shop-border);
+}
+
+.shop-status-err {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--shop-danger-bg);
+  color: var(--shop-danger-fg);
+  border: 1px solid var(--shop-border);
+}

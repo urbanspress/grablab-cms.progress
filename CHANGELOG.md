@@ -2,6 +2,19 @@
 
 All notable releases of **GrabLab CMS** (`urbanspress/grablab-cms`) are documented in this file.
 
+## `[v1.1.0]` — 2026-11-17 (Zero-Plugin E-Commerce Core)
+
+### Added
+- **Additive Migration `004` & Commerce Schema (`migrations/004_commerce_schema*.grab`, `migrations/seed_commerce.grab`):** Added `products`, `product_digital_files`, `product_fulfillment`, `customers`, `carts`, `cart_items`, `coupons`, `coupon_redemptions`, `orders`, `order_items`, `order_audit`, `download_grants`, `idempotency_keys`, `payment_events`, and `commerce_events` with SQLite, PostgreSQL, and MariaDB parity while keeping `001`–`003` tables and `slug_history` `301` redirects intact.
+- **Exact `ADR-025c` USD Money & Deterministic Totals Engine (`src/app.grab`, `tests/commerce_vectors.json`):** Implemented integer-cent storage and exact `"0.00"` `GrabDecimal` / `GrabInteger` wire serialization/validation rejecting floats and scientific notation with HTTP `422` (`float_not_allowed`), deterministic pro-rata coupon allocation, flat-rate shipping per carrier group, configurable tax tables, and `$99,999,999.99` total caps.
+- **Cart, Coupons, Guest-First Checkout & USPS-Only Carrier Enforcement:** Added `GET /api/commerce/session`, `POST /api/commerce/cart`, `/coupon/apply`, `/checkout`, `GET /api/commerce/products`, `/shop`, `/shop/{slug}`, `/shop/cart`, `/shop/order/{number}?t=...`, and `GET /api/commerce/download/{token}` with opaque SHA-256-hashed cart/order/download tokens, CSRF rotation on login/logout, cart-scoped `Idempotency-Key` protection (`409` / `403` / `422`), conditional stock & coupon decrements, `409 price_changed` checks, USPS-only + `lulu_direct` fulfillment validation (`LULU-USPS-001`), ISBN-13 validation, and `GRAB-E402` allowlisted HTTPS payment redirects.
+- **Opt-In GRAB Native Signed Webhook Profile (`deploy/grab.platform.commerce.json`, `deploy/connectors/grablab-payment/`):** Added opt-in signed payment webhook acceptance (`POST /api/commerce/webhooks/payment` -> `make receive_payment_event using event`) using GRAB `v1.1.0` HMAC-SHA256 verification without breaking zero-secret startup on default `grab.platform.json`.
+- **Lazy Commerce Sweep & Opt-In Abandoned-Checkout Hook (`scripts/commerce_sweep.grab`):** Expires overdue `pending_payment` stock/coupon holds (`payment_due_by`), marks stale carts `abandoned`, and emits `commerce:abandoned_checkout` strictly when `marketing_consent = 1` with per-site salted `email_hash` alongside additive MCP tools `list_commerce_events` and `create_coupon_draft` (`active = 0` forced).
+- **Pure `Grex JS v1.0.0` Storefront & Admin Commerce Views (`public/shop/shop.js`, `public/shop/shop.css`, `public/admin/commerce.js`):** Delivered `/admin/store` (Overview, Products, Orders + Audit Trail, Coupons, Customers + GDPR Export/Anonymize, Admin-Only Settings) and storefront templates with `divCount === 0`, `innerHTMLWriteCount === 0`, and Light & Dark WCAG AA contrast (`>= 4.5:1`).
+- **Verification & Release Artifacts:** Added `tests/commerce_test.py`, `tests/release_v110_test.py`, `tests/commerce_dom_audit.mjs`, `docs/releases/pdf/GrabLab-CMS-v1.1.0-Guide.pdf`, `docs/releases/pdf/GrabLab-CMS-v1.1.0-RELEASE-NOTES.md`, and `dist/grablab-cms-v1.1.0-bundle.zip`.
+
+---
+
 ## `[v1.0.1]` — 2026-11-14 (Cross-Layer Audit & Hardening Patch)
 
 ### Added

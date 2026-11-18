@@ -178,6 +178,10 @@ def verify_all_grab_and_templates():
         "src/views/admin/login.grab.html": 'record {site_title: "T", tokens_css_url: "/s", admin_css_url: "/c", grex_js_url: "/g", admin_js_url: "/a"}',
         "src/views/admin/setup.grab.html": 'record {site_title: "T", tokens_css_url: "/s", admin_css_url: "/c", grex_js_url: "/g", admin_js_url: "/a"}',
         "src/views/admin/dashboard.grab.html": 'record {csrf_token: "x", admin_page: "overview", user_role: "admin", user_email: "a@b.c", user_name: "A", user_id: "1", site_title: "T", active_theme_slug: "default-starter", page_title: "D", page_subtitle: "S", tokens_css_url: "/s", admin_css_url: "/c", grex_js_url: "/g", admin_js_url: "/a"}',
+        "src/views/shop/order.grab.html": 'record {tokens_css_url: "/s", shop_css_url: "/sc", order_number: "ORD-1", order_status: "paid", currency: "USD", subtotal: "19.99", discount_total: "0.00", tax_total: "1.65", shipping_total: "0.00", total: "21.64", created_at: "2026-11-17T00:00:00Z"}',
+        "themes/default-starter/templates/shop.grab.html": 'record {site_title: "T", page_title: "Shop", archive_label: "Shop", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", product_count: "1"}',
+        "themes/default-starter/templates/product.grab.html": 'record {site_title: "T", meta_title: "Book", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", content_type_label: "Product", product_kind: "physical", title: "Book", product_price: "19.99", product_currency: "USD", product_availability: "In Stock", product_sku: "BK-1", product_carrier: "usps", product_isbn_13: "9780306406157", body_text: "B", product_id: "1"}',
+        "themes/default-starter/templates/cart.grab.html": 'record {site_title: "T", page_title: "Cart", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", currency: "USD", guest_checkout: "true"}',
     }
     assert set(tmpl_files) == set(template_contexts.keys()), (
         f"Uncovered .grab.html templates: {set(tmpl_files) ^ set(template_contexts.keys())}"
@@ -256,9 +260,9 @@ def verify_fresh_migrations_and_parity(tmp_dir):
 
     # Idempotent seed on sequential fresh DB
     s1 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.0.1 seed completed" in s1.stdout, s1.stdout
+    assert "v1.1.0 seed completed" in s1.stdout, s1.stdout
     s2 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.0.1 seed completed" in s2.stdout, s2.stdout
+    assert "v1.1.0 seed completed" in s2.stdout, s2.stdout
 
     con = sqlite3.connect(seq_db)
     try:
@@ -503,7 +507,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         st, _, _, _, pm = http_req(port, "GET", "/api/menus/primary")
         assert st == 200 and pm["menu"]["items"][1]["url"] == "/catalog/v1-production-showcase", pm
         st, _, _, home_html, _ = http_req(port, "GET", "/")
-        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.0.1 (default-starter)"' in home_html and "<div" not in home_html.lower()
+        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.1.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
 
         # 6) Query Loop + `use cache` hit & invalidation on entry update
         q_url = "/api/query?content_type=catalog_item&taxonomy=category&term_slug=guides&include_children=true"
@@ -525,7 +529,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
-        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.0.1", rpc_init
+        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.1.0", rpc_init
 
         st, _, _, _, rpc_tools = http_req(
             port,

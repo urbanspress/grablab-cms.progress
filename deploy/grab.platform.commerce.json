@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "caches": {
+    "cms": {
+      "driver": "memory",
+      "namespace": "grablab-dev",
+      "max_keys": 10000,
+      "max_bytes": 16777216
+    }
+  },
+  "connectors": {
+    "grablab_payment": {
+      "package": "connectors/grablab-payment",
+      "version": "1.1.0",
+      "secrets": {}
+    }
+  },
+  "events": {
+    "commerce": {
+      "database": "main",
+      "namespace": "grablab_commerce",
+      "max_pending": 100000,
+      "concurrency": 1
+    }
+  },
+  "webhooks": {
+    "payment": {
+      "path": "/api/commerce/webhooks/payment",
+      "connector": "grablab_payment",
+      "store": "commerce",
+      "tenant": "default",
+      "handler": "receive_payment_event",
+      "keys": [
+        "GRABLAB_PAYMENT_WEBHOOK_SECRET"
+      ],
+      "type": "payment_event"
+    }
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "description": "Deterministic ADR-025c & SPEC-110 Section 5 Commerce Totals Vectors",
+  "vectors": [
+    {
+      "name": "spec110_primary_vector",
+      "items": [{"product_id": 1, "unit_price": "19.99", "qty": 3, "tax_class": "standard", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"}],
+      "coupon": {"type": "percent_bp", "value": 1500},
+      "tax_rates": {"standard_bp": 825, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "59.97", "discount_total": "9.00", "tax_total": "4.21", "shipping_total": "0.00", "total": "55.18"}
+    },
+    {
+      "name": "minimum_penny_digital",
+      "items": [{"product_id": 1, "unit_price": "0.01", "qty": 1, "tax_class": "digital", "kind": "digital"}],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 825, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "5.99", "usps_priority": "9.99", "usps_media_mail": "3.99", "lulu_direct": "6.99"},
+      "expected": {"subtotal": "0.01", "discount_total": "0.00", "tax_total": "0.00", "shipping_total": "0.00", "total": "0.01"}
+    },
+    {
+      "name": "large_cap_near_limit",
+      "items": [{"product_id": 1, "unit_price": "9999999.99", "qty": 10, "tax_class": "exempt", "kind": "digital"}],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 825, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "99999999.90", "discount_total": "0.00", "tax_total": "0.00", "shipping_total": "0.00", "total": "99999999.90"}
+    },
+    {
+      "name": "fixed_coupon_exceeds_subtotal",
+      "items": [{"product_id": 1, "unit_price": "12.50", "qty": 1, "tax_class": "standard", "kind": "digital"}],
+      "coupon": {"type": "fixed_cents", "value": 5000},
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "5.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "12.50", "discount_total": "12.50", "tax_total": "0.00", "shipping_total": "0.00", "total": "0.00"}
+    },
+    {
+      "name": "mixed_tax_classes_pro_rata_tie_lowest_product_id",
+      "items": [
+        {"product_id": 2, "unit_price": "10.00", "qty": 1, "tax_class": "standard", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"},
+        {"product_id": 5, "unit_price": "10.00", "qty": 1, "tax_class": "exempt", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"}
+      ],
+      "coupon": {"type": "fixed_cents", "value": 1},
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "4.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "20.00", "discount_total": "0.01", "tax_total": "1.00", "shipping_total": "4.00", "total": "24.99"}
+    },
+    {
+      "name": "mixed_tax_three_way_remainder_allocation",
+      "items": [
+        {"product_id": 1, "unit_price": "10.00", "qty": 1, "tax_class": "standard", "kind": "digital"},
+        {"product_id": 2, "unit_price": "10.00", "qty": 1, "tax_class": "reduced", "kind": "digital"},
+        {"product_id": 3, "unit_price": "10.00", "qty": 1, "tax_class": "digital", "kind": "digital"}
+      ],
+      "coupon": {"type": "fixed_cents", "value": 2},
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 500, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "30.00", "discount_total": "0.02", "tax_total": "1.50", "shipping_total": "0.00", "total": "31.48"}
+    },
+    {
+      "name": "half_cent_round_up_boundary_up",
+      "items": [{"product_id": 1, "unit_price": "0.05", "qty": 1, "tax_class": "standard", "kind": "digital"}],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "0.05", "discount_total": "0.00", "tax_total": "0.01", "shipping_total": "0.00", "total": "0.06"}
+    },
+    {
+      "name": "half_cent_round_down_just_below",
+      "items": [{"product_id": 1, "unit_price": "0.04", "qty": 1, "tax_class": "standard", "kind": "digital"}],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "0.04", "discount_total": "0.00", "tax_total": "0.00", "shipping_total": "0.00", "total": "0.04"}
+    },
+    {
+      "name": "discount_half_cent_boundary_up",
+      "items": [{"product_id": 1, "unit_price": "0.05", "qty": 1, "tax_class": "exempt", "kind": "digital"}],
+      "coupon": {"type": "percent_bp", "value": 1000},
+      "tax_rates": {"standard_bp": 825, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "0.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "0.05", "discount_total": "0.01", "tax_total": "0.00", "shipping_total": "0.00", "total": "0.04"}
+    },
+    {
+      "name": "mixed_physical_usps_and_lulu_direct_shipping_groups",
+      "items": [
+        {"product_id": 1, "unit_price": "24.00", "qty": 1, "tax_class": "standard", "kind": "physical", "carrier": "usps", "usps_service": "priority"},
+        {"product_id": 2, "unit_price": "30.00", "qty": 2, "tax_class": "standard", "kind": "physical", "carrier": "lulu_direct", "lulu_sku": "LULU-BOOK-978"}
+      ],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 800, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "5.00", "usps_priority": "9.50", "usps_media_mail": "3.50", "lulu_direct": "6.25"},
+      "expected": {"subtotal": "84.00", "discount_total": "0.00", "tax_total": "6.72", "shipping_total": "15.75", "total": "106.47"}
+    },
+    {
+      "name": "shipping_not_taxed",
+      "items": [{"product_id": 1, "unit_price": "100.00", "qty": 1, "tax_class": "exempt", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"}],
+      "coupon": null,
+      "tax_rates": {"standard_bp": 1000, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "12.34", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "100.00", "discount_total": "0.00", "tax_total": "0.00", "shipping_total": "12.34", "total": "112.34"}
+    },
+    {
+      "name": "two_usps_items_single_shipping_charge",
+      "items": [
+        {"product_id": 1, "unit_price": "15.00", "qty": 2, "tax_class": "standard", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"},
+        {"product_id": 2, "unit_price": "25.00", "qty": 1, "tax_class": "standard", "kind": "physical", "carrier": "usps", "usps_service": "ground_advantage"}
+      ],
+      "coupon": {"type": "percent_bp", "value": 2000},
+      "tax_rates": {"standard_bp": 650, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "5.99", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "0.00"},
+      "expected": {"subtotal": "55.00", "discount_total": "11.00", "tax_total": "2.86", "shipping_total": "5.99", "total": "52.85"}
+    },
+    {
+      "name": "mixed_physical_and_digital_with_percent_coupon",
+      "items": [
+        {"product_id": 1, "unit_price": "29.95", "qty": 1, "tax_class": "standard", "kind": "physical", "carrier": "lulu_direct", "lulu_sku": "LULU-PB-01"},
+        {"product_id": 2, "unit_price": "9.95", "qty": 1, "tax_class": "digital", "kind": "digital"}
+      ],
+      "coupon": {"type": "percent_bp", "value": 1000},
+      "tax_rates": {"standard_bp": 700, "reduced_bp": 0, "digital_bp": 0},
+      "shipping_rates": {"usps_ground_advantage": "5.00", "usps_priority": "0.00", "usps_media_mail": "0.00", "lulu_direct": "4.50"},
+      "expected": {"subtotal": "39.90", "discount_total": "3.99", "tax_total": "1.89", "shipping_total": "4.50", "total": "42.30"}
+    }
+  ]
+}

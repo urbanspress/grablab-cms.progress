@@ -1,0 +1,123 @@
+use collections
+use crypto
+use data
+use dates
+use json
+use math
+use text
+
+set db to data.open using "main"
+
+set stmt_get_setting to data.prepare using db, "SELECT value FROM site_settings WHERE key = :key", record {params: record {key: "text"}, columns: record {value: "text"}}
+set stmt_list_due_orders to data.prepare using db, "SELECT id, number, status, coupon_id, payment_due_by FROM orders WHERE status = 'pending_payment' AND payment_due_by <= :now_iso ORDER BY id ASC LIMIT 500", record {params: record {now_iso: "text"}, columns: record {id: "integer", number: "text", status: "text", coupon_id: record {type: "integer", nullable: yes}, payment_due_by: "text"}}
+set stmt_expire_order to data.prepare using db, "UPDATE orders SET status = 'expired' WHERE id = :id AND status = 'pending_payment'", record {params: record {id: "integer"}, columns: record {}}
+set stmt_list_order_items to data.prepare using db, "SELECT product_id, qty FROM order_items WHERE order_id = :order_id", record {params: record {order_id: "integer"}, columns: record {product_id: "integer", qty: "integer"}}
+set stmt_restore_stock to data.prepare using db, "UPDATE products SET stock_qty = stock_qty + :qty, updated_at = :updated_at WHERE id = :id AND stock_qty IS NOT NULL", record {params: record {qty: "integer", updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_del_redemption to data.prepare using db, "DELETE FROM coupon_redemptions WHERE order_id = :order_id AND coupon_id = :coupon_id", record {params: record {order_id: "integer", coupon_id: "integer"}, columns: record {}}
+set stmt_dec_coupon to data.prepare using db, "UPDATE coupons SET redeemed_count = CASE WHEN redeemed_count > 0 THEN redeemed_count - 1 ELSE 0 END, updated_at = :updated_at WHERE id = :id", record {params: record {updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_ins_audit to data.prepare using db, "INSERT INTO order_audit (order_id, actor, from_status, to_status, reason, created_at) VALUES (:order_id, :actor, :from_status, :to_status, :reason, :created_at)", record {params: record {order_id: "integer", actor: "text", from_status: "text", to_status: "text", reason: "text", created_at: "text"}, columns: record {}}
+set stmt_list_stale_carts to data.prepare using db, "SELECT c.id, c.currency, c.last_activity_at, cu.email, cu.marketing_consent FROM carts c JOIN customers cu ON cu.id = c.customer_id WHERE c.status = 'open' AND c.last_activity_at <= :cutoff_iso ORDER BY c.id ASC LIMIT 500", record {params: record {cutoff_iso: "text"}, columns: record {id: "text", currency: "text", last_activity_at: "text", email: "text", marketing_consent: "integer"}}
+set stmt_list_cart_items to data.prepare using db, "SELECT ci.qty, ci.unit_price_cents, p.sku, p.price_cents, e.title, e.full_path FROM cart_items ci JOIN products p ON p.id = ci.product_id JOIN entries e ON e.id = p.entry_id WHERE ci.cart_id = :cart_id ORDER BY p.id ASC", record {params: record {cart_id: "text"}, columns: record {qty: "integer", unit_price_cents: "integer", sku: "text", price_cents: "integer", title: "text", full_path: "text"}}
+set stmt_abandon_cart to data.prepare using db, "UPDATE carts SET status = 'abandoned' WHERE id = :id AND status = 'open'", record {params: record {id: "text"}, columns: record {}}
+set stmt_find_event to data.prepare using db, "SELECT id FROM commerce_events WHERE name = :name AND subject_id = :subject_id", record {params: record {name: "text", subject_id: "text"}, columns: record {id: "integer"}}
+set stmt_ins_event to data.prepare using db, "INSERT INTO commerce_events (name, subject_id, payload_json, created_at) VALUES (:name, :subject_id, :payload_json, :created_at)", record {params: record {name: "text", subject_id: "text", payload_json: "text", created_at: "text"}, columns: record {}}
+
+make fmt_cents using cents
+  set whole to math.floor using (cents divided by 100)
+  set rem to cents modulo 100
+  set rem_s to text.from using rem
+  if rem is less than 10
+    set rem_s to "0" joined with rem_s
+  end
+  give back (text.from using whole) joined with "." joined with rem_s
+end
+
+set enabled_row to data.one using stmt_get_setting, record {key: "commerce_enabled"}
+if enabled_row is nothing or enabled_row.value is not "1"
+  show "Commerce disabled; sweep skipped."
+otherwise
+  set now_rec to call dates.now_utc
+  set now_iso to now_rec.iso
+  set ab_min to 60
+  set ab_row to data.one using stmt_get_setting, record {key: "commerce_abandoned_after_minutes"}
+  if ab_row is not nothing and ab_row.value is not ""
+    try
+      set parsed_min to text.to_integer using ab_row.value
+      if parsed_min is at least 1
+        set ab_min to parsed_min
+      end
+    catch err
+    end
+  end
+  set salt_val to ""
+  set salt_row to data.one using stmt_get_setting, record {key: "commerce_email_salt"}
+  if salt_row is not nothing
+    set salt_val to salt_row.value
+  end
+  set cutoff_unix to now_rec.unix minus (ab_min times 60)
+  set cutoff_rec to dates.from_unix using cutoff_unix
+  set cutoff_iso to cutoff_rec.iso
+
+  set expired_count to 0
+  set abandoned_count to 0
+  set events_count to 0
+
+  set due_orders to data.query using stmt_list_due_orders, record {now_iso: now_iso}
+  for each ord in due_orders
+    set tx to data.begin using db
+    try
+      set upd to data.execute using stmt_expire_order, record {id: ord.id}, tx
+      if upd.rows_affected is 1
+        set oitems to data.query using stmt_list_order_items, record {order_id: ord.id}, tx
+        for each oi in oitems
+          call data.execute using stmt_restore_stock, record {qty: oi.qty, updated_at: now_iso, id: oi.product_id}, tx
+        end
+        if ord.coupon_id is not nothing
+          set del_r to data.execute using stmt_del_redemption, record {order_id: ord.id, coupon_id: ord.coupon_id}, tx
+          if del_r.rows_affected is greater than 0
+            call data.execute using stmt_dec_coupon, record {updated_at: now_iso, id: ord.coupon_id}, tx
+          end
+        end
+        call data.execute using stmt_ins_audit, record {order_id: ord.id, actor: "system", from_status: "pending_payment", to_status: "expired", reason: "payment_due_by_expired", created_at: now_iso}, tx
+        set expired_count to expired_count plus 1
+      end
+      call data.commit using tx
+    catch tx_err
+      call data.rollback using tx
+    end
+  end
+
+  set stale_carts to data.query using stmt_list_stale_carts, record {cutoff_iso: cutoff_iso}
+  for each sc in stale_carts
+    set citems to data.query using stmt_list_cart_items, record {cart_id: sc.id}
+    if (collections.length using citems) is greater than 0
+      set tx to data.begin using db
+      try
+        set aband to data.execute using stmt_abandon_cart, record {id: sc.id}, tx
+        if aband.rows_affected is 1
+          set abandoned_count to abandoned_count plus 1
+          if sc.marketing_consent is 1
+            set existing_ev to data.one using stmt_find_event, record {name: "commerce:abandoned_checkout", subject_id: sc.id}, tx
+            if existing_ev is nothing
+              set sub_cents to 0
+              set ev_items to []
+              for each ci in citems
+                set sub_cents to sub_cents plus (ci.qty times ci.price_cents)
+                set ev_items to collections.append using ev_items, (record {sku: ci.sku, title: ci.title, qty: ci.qty, unit_price: (fmt_cents using ci.price_cents), url: ci.full_path})
+              end
+              set email_hash to "sha256:" joined with (crypto.sha256_hex using (salt_val joined with sc.email))
+              set ev_payload to record {name: "commerce:abandoned_checkout", version: 1, cart_id: sc.id, email_hash: email_hash, marketing_consent: 1, currency: sc.currency, subtotal: (fmt_cents using sub_cents), items: ev_items, last_activity_at: sc.last_activity_at}
+              call data.execute using stmt_ins_event, record {name: "commerce:abandoned_checkout", subject_id: sc.id, payload_json: (json.stringify using ev_payload), created_at: now_iso}, tx
+              set events_count to events_count plus 1
+            end
+          end
+        end
+        call data.commit using tx
+      catch tx_err
+        call data.rollback using tx
+      end
+    end
+  end
+
+  show ("Commerce sweep complete: expired=" joined with (text.from using expired_count) joined with ", abandoned=" joined with (text.from using abandoned_count) joined with ", events=" joined with (text.from using events_count))
+end

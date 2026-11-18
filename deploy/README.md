@@ -104,6 +104,19 @@ docker run --rm -d \
 - Pass `--workers <N> --worker-base-port 18080` to fan out concurrent Grisp HTTP workers on consecutive loopback ports (`18080..18080+N-1`) behind an external upstream balancer (Caddy or Nginx).
 - For multi-worker deployments (`N > 1`), switch `grab.data.json` to PostgreSQL or MariaDB and set `--trusted-proxy` to your upstream balancer's loopback/private CIDR.
 
+### Opt-In Zero-Plugin E-Commerce Webhook Profile (`v1.1.0`)
+- Standard CMS deployments use `grab.platform.json` with zero required webhook secrets.
+- When enabling storefront checkout and signed payment webhooks:
+  1. Run schema migration `004` (`migrations/004_commerce_schema.grab`) and `migrations/seed_commerce.grab`.
+  2. Prepare GRAB's native `commerce` event inbox tables:
+     ```sh
+     grab migrate --platform-config deploy/grab.platform.commerce.json --db-config grab.data.json --events-store commerce --allow-db main:migrate --allow-events commerce:work
+     ```
+  3. Set `GRABLAB_PAYMENT_WEBHOOK_SECRET` (>= 16 chars) in environment variables (and optionally add `"GRABLAB_PAYMENT_WEBHOOK_SECRET_NEXT"` to `deploy/grab.platform.commerce.json` `webhooks.payment.keys` during key rotation).
+  4. Boot with `--platform-config deploy/grab.platform.commerce.json --allow-env ...,GRABLAB_PAYMENT_WEBHOOK_SECRET --allow-events commerce:accept --allow-events commerce:work`.
+  5. **Important Multi-Worker Note:** GRAB's SQLite event store is single-process. Production stores running `--workers > 1` while accepting webhooks MUST configure PostgreSQL or MariaDB in `grab.data.json`.
+  6. **Optional External Sweep Cron:** Traffic-driven commerce sweeps run automatically (`<= 1` run per 5 min across all workers); high-volume sites may also trigger `grab run --db-config grab.data.json --allow-db main:read-write scripts/commerce_sweep.grab`.
+
 ### Health & Readiness Checks
 - **Liveness:** `GET /_health` → `200 OK` (`{"status":"ok"}`)
 - **Readiness:** `GET /_ready` → `200 OK` (`{"status":"ready","in_flight":0,"max_concurrency":64}`)

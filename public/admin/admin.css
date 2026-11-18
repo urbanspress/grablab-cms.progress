@@ -9,6 +9,21 @@
   --cms-info-bg: #f0f9ff;
 }
 
+[data-grex-theme="dark"] {
+  --grex-bg: #0b1120;
+  --grex-surface: #111827;
+  --grex-ink: #f8fafc;
+  --grex-muted: #cbd5e1;
+  --cms-border: #334155;
+  --cms-surface-alt: #1e293b;
+  --cms-danger: #fecaca;
+  --cms-danger-bg: #450a0a;
+  --cms-ok: #a7f3d0;
+  --cms-ok-bg: #064e3b;
+  --cms-info: #93c5fd;
+  --cms-info-bg: #1e3a8a;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -391,4 +406,31 @@ button[disabled] {
   display: block;
   font-weight: 600;
   margin-bottom: 6px;
+}
+
+.cms-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cms-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cms-btn-danger {
+  background: var(--cms-danger);
+  color: #ffffff;
+  border: 1px solid var(--cms-danger);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-grex-theme="dark"] .cms-btn-danger {
+  color: #0b1120;
 }

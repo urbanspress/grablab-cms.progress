@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "packages": {
+    "connectors/grablab-payment": {
+      "version": "1.1.0",
+      "files": {
+        "README.md": "d1e8e89ed5509df6c2dc7c5a89b53a5812e7d292c3781b784a2dad48b381e895",
+        "connector.json": "f53fe4e7ba65ced31d17a6674c9df3ada0d2aa5a2c203fa2fc48d1134b3e6a89"
+      }
+    }
+  }
+}
