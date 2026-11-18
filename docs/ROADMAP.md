@@ -125,13 +125,12 @@ Scope:
 
 ---
 
-## `v1.4.0` — Dedicated "Author Mode" Publishing Module (`mode: "author"`)
+## `v1.4.0` — Author Mode Book & Series Publishing Module + Embedded Bestseller Radar
 
-**Status:** Planned — Backwards-Compatible Minor Feature
-**Specification:** `specifications/GRABLAB-SPEC-008.md` *(To be drafted prior to implementation)*
+**Status:** Approved target; specification in review ([`specifications/GRABLAB-SPEC-140.md`](../specifications/GRABLAB-SPEC-140.md)) — *Backwards-Compatible Minor Feature*
 
 Scope:
-- **Native Book & Lore Content Schemas:** First-class `Book`, `Chapter`, `CharacterBible`, and `WorldLore` content schemas with `status_enforced: "draft"` safety and automatic `SITE-CONTEXT.md` generation.
-- **Drag-and-Drop Chapter Sequencing & `ADR-025c` Precision:** Visual chapter ordering and manuscript structure management with exact base-10 `ADR-025c` `GrabDecimal` royalty and list-price wire string precision (`price_usd`, `royalty_rate`, `isbn_13`, `word_count`).
-- **1-Click Multi-Format Compilation:** Deterministic 1-click export to **EPUB 3**, **Print-Ready PDF**, and zero-wrapper-`<div>` **`Grex JS v1.0.0` Web Reader** compilation (`divCount === 0`, `innerHTMLWriteCount === 0`, Light & Dark WCAG AA `>= 4.5:1`).
-- **Embedded Bestseller Radar & Genre Profit Panel:** Powered by **`Groxy AI v1.8.0`** (`POST /api/groxy/research/bestseller-radar`, OAuth2 `gsc.readonly`, and `playbook/market/bestseller-radar.v1.json`) so both browser CMS authors and **`Groxy Desk v1.1.0`** desktop users receive unified genre-profit intelligence, read-through unit economics, and query-demand trends inside the Author Mode dashboard.
+- **Additive Migration `005` & Native Author Content Types:** First-class `Author`, `Series`, `Book`, and `Chapter` schemas (`SQLite`, `PostgreSQL`, `MariaDB` parity) with exact `ADR-025c` `GrabDecimal` (`"0.00"`) / `GrabInteger` wire types, validated `ISBN-13` / `ASIN` identifiers, series reading-order indexing, sample chapter previews, and direct linkage to `v1.1.0` `products` + `product_digital_files` (DRM-free EPUB/PDF hashed `download_grants`) and `product_fulfillment` (`LULU-USPS-001` matte paperback + USPS-only carrier rules).
+- **XSS-Safe `schema.org/Book` & `BookSeries` JSON-LD + `slug_history` 301 Redirects:** Automatic `</script>`-escaped `schema.org/Book` and `BookSeries` JSON-LD rendering on public `/books/:slug` and `/series/:slug` pages, preserving `slug_history` `301` redirects and `use cache` invalidation on title/slug edits.
+- **Embedded Bestseller Radar & Genre Profit Panel (`Groxy AI v1.7.0` + `v1.8.0` Bridge):** Native `/admin/author/radar` view embedding `Groxy AI v1.8.0`'s Bestseller Radar (`POST /api/groxy/research/bestseller-radar`) and `Groxy AI v1.7.0`'s Multi-Genre Storytelling Brain + Hemingway Readability Auditor (`POST /api/groxy/author/generate` & `/readability-audit`) over `GRAB-E402` allowlisted origins so browser CMS authors can research high-margin genres, evaluate unit economics, and import draft `Series`/`Book`/`Chapter` outlines (`status: "draft"`) in one click.
+- **Pure `Grex JS v1.0.0` Author & Reader Views:** Zero wrapper-`<div>` (`divCount === 0`, `innerHTMLWriteCount === 0`), Light & Dark WCAG AA (`>= 4.5:1`) admin dashboard + distraction-free Web Reader.

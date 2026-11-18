@@ -3,7 +3,7 @@
 **Current Owner:** Google Antigravity  
 **Last Completed Milestone:** `v1.1.0` — Zero-Plugin E-Commerce Core (`Approved & Frozen — Complete`; `SPEC-110` Revision 2 Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off `PASS`, promoted and tagged `v1.1.0` on both `origin` and `stable`)  
 **Next Milestone:** `v1.2.0` — Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue (`Status: Planned — Backwards-Compatible Minor Feature`). `v1.0.0`, `v1.0.1`, and `v1.1.0` remain frozen on `stable`.  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), and `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2) **Complete**.
+**Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), and `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2) **Complete**; `specifications/GRABLAB-SPEC-140.md` (`v1.4.0` Author Mode Book & Series Publishing Module + Embedded Bestseller Radar) **Approved target; specification in review**.
 
 ---
 
@@ -15,8 +15,8 @@
   - **Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue:** Constant-time HMAC-SHA256 webhook verification (`use crypto`), strict `event_id` idempotency, `ADR-025c` `GrabDecimal` order/refund ledger, CAN-SPAM/GDPR unsubscribe & consent enforcement, and persistent transactional `email_outbox` triggers (`commerce:purchase_completed`, `commerce:abandoned_checkout`, `commerce:subscription_renewed`, `commerce:refund_issued`).
 - **Planned `v1.3.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
   - **Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`):** Exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`), gating any schema/data adjustments behind single-use `approval_token` + `X-CSRF-Token` + automatic pre-migration snapshots.
-- **Planned `v1.4.0` Milestone (`docs/ROADMAP.md` — `Status: Planned — Backwards-Compatible Minor Feature`):**
-  - **Dedicated "Author Mode" Publishing Module (`mode: "author"`):** Native `Book`, `Chapter`, `CharacterBible`, and `WorldLore` content schemas, drag-and-drop chapter sequencing, `ADR-025c` `GrabDecimal` royalty & list-price precision, and 1-click **EPUB 3**, **Print-Ready PDF**, and zero-wrapper-`<div>` **`Grex JS v1.0.0`** Web Reader compilation (`specifications/GRABLAB-SPEC-008.md` to be drafted and approved before implementation).
+- **`v1.4.0` Milestone (`docs/ROADMAP.md` — `Status: Approved target; specification in review`):**
+  - **Author Mode Book & Series Publishing Module + Embedded Bestseller Radar ([`specifications/GRABLAB-SPEC-140.md`](specifications/GRABLAB-SPEC-140.md)):** Additive Migration `005` (`SQLite`/`PostgreSQL`/`MariaDB`), native `Author`, `Series`, `Book`, and `Chapter` content types with `ADR-025c` `GrabDecimal` / `GrabInteger` wire types, validated `ISBN-13`/`ASIN`, `v1.1.0` `products` + `download_grants` + `LULU-USPS-001` linkage, XSS-safe `schema.org/Book` & `BookSeries` JSON-LD + `slug_history` `301`s, `/admin/author/radar` bridge to `Groxy AI v1.7.0` + `v1.8.0` (`status_enforced: "draft"`), and pure `Grex JS v1.0.0` views (`divCount === 0`, `innerHTMLWriteCount === 0`). Awaiting owner approval + Stage 2 audit before any `v1.4.0` application code is written.
 
 ---
 
