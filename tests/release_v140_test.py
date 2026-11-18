@@ -68,7 +68,15 @@ def main():
             fmt = ct.run_grab(["format", gf])
             with open(os.path.join(ROOT, gf), "r", encoding="utf-8") as fh:
                 assert fmt.stdout == fh.read(), f"{gf} format drift"
-        print("  OK: Platform configs, connector lock, grab check, and canonical formatting verified.")
+        with open(os.path.join(ROOT, "src/app.grab"), "r", encoding="utf-8") as fh:
+            app_src = fh.read()
+        assert "set stmt_query_entries_by_term to data.prepare" in app_src
+        m_term_sql = re.search(r'set stmt_query_entries_by_term to data\.prepare using db, "([^"]+)"', app_src)
+        assert m_term_sql is not None, "stmt_query_entries_by_term statement not found"
+        term_sql = m_term_sql.group(1)
+        assert "WHERE EXISTS (SELECT 1 FROM entry_terms et WHERE et.entry_id = e.id AND et.term_id IN (" in term_sql, term_sql
+        assert "SELECT DISTINCT" not in term_sql, term_sql
+        print("  OK: Platform configs, connector lock, grab check, canonical formatting & PostgreSQL 18 EXISTS parity verified.")
 
         print("[2/5] Testing sequential (001..005) & direct (005) SQLite installs, Postgres/MariaDB dialect parity & seed idempotency...")
         seq_db, seq_cfg = ct.init_db_config(tmp_dir, "seq.db")
@@ -234,7 +242,22 @@ def main():
         dl_tok = ohtml.split("/api/commerce/download/", 1)[1].split('"', 1)[0]
         st, dhdrs, _, d_raw, _ = ct.http_req(port, "GET", f"/api/commerce/download/{dl_tok}")
         assert st == 200 and base64.b64decode(d_raw) == pdf_bytes
-        print("  OK: Full E2E v1.4.0 lifecycle verified.")
+
+        # PostgreSQL 18 multi-term EXISTS deduplication regression check
+        st, _, _, raw, tp = admin.req("POST", "/api/admin/taxonomies/category/terms", {"slug": "pg18-parent", "name": "PG18 Parent"})
+        assert st == 201, raw
+        st, _, _, raw, tc = admin.req("POST", "/api/admin/taxonomies/category/terms", {"slug": "pg18-child", "name": "PG18 Child", "parent_id": tp["term"]["id"]})
+        assert st == 201, raw
+        st, _, _, raw, pe = admin.req("POST", "/api/entries", {
+            "content_type": "post", "slug": "pg18-dedup-post", "title": "PG18 Dedup Post", "status": "published", "body_html": "<p>Deduplication check.</p>"
+        })
+        assert st == 201, raw
+        st, _, _, raw, _ = admin.req("PUT", f"/api/admin/entries/{pe['entry']['id']}/terms", {"term_ids": [tp["term"]["id"], tc["term"]["id"]]})
+        assert st == 200, raw
+        st, _, _, raw, qres = ct.http_req(port, "GET", "/api/query?taxonomy=category&term_slug=pg18-parent&include_children=true")
+        assert st == 200 and qres["pagination"]["total_items"] == 1 and len(qres["items"]) == 1, raw
+        assert qres["items"][0]["id"] == pe["entry"]["id"], qres
+        print("  OK: Full E2E v1.4.0 lifecycle & PostgreSQL 18 multi-term query deduplication verified.")
 
         print("[4/5] Running Node Grex JS DOM + Light/Dark WCAG AA audits...")
         for audit_script in ("tests/commerce_dom_audit.mjs", "tests/author_dom_audit.mjs"):

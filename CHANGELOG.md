@@ -2,6 +2,17 @@
 
 All notable releases of **GrabLab CMS** (`urbanspress/grablab-cms`) are documented in this file.
 
+## `[v1.4.1]` — 2026-11-18 (PostgreSQL 18 Taxonomy Query Compatibility Patch)
+
+### Fixed
+- **PostgreSQL 18 `DISTINCT` + `ORDER BY COALESCE(...)` Compatibility (`src/app.grab`, `tests/release_v140_test.py`):**
+  - Replaced `SELECT DISTINCT ... INNER JOIN entry_terms ... ORDER BY COALESCE(e.published_at, e.created_at) DESC, e.id DESC` in `stmt_query_entries_by_term` with `WHERE EXISTS (SELECT 1 FROM entry_terms et WHERE et.entry_id = e.id AND et.term_id IN (:t0, ..., :t15))` so PostgreSQL 18 executes taxonomy archive and term-filtered queries without error while preserving SQLite/MariaDB/PostgreSQL multi-term deduplication.
+  - Added regression assertions verifying `EXISTS (...)` prepared SQL structure and multi-term (`pg18-parent` + `pg18-child`) deduplication in `tests/release_v140_test.py`.
+- **Documentation & Release Artifacts:**
+  - Generated [`docs/releases/pdf/GrabLab-CMS-v1.4.1-Guide.pdf`](docs/releases/pdf/GrabLab-CMS-v1.4.1-Guide.pdf), [`docs/releases/pdf/GrabLab-CMS-v1.4.1-RELEASE-NOTES.md`](docs/releases/pdf/GrabLab-CMS-v1.4.1-RELEASE-NOTES.md), and `dist/grablab-cms-v1.4.1-bundle.zip` (`SHA256SUMS.txt`).
+
+---
+
 ## `[v1.4.0]` — 2026-11-18 (Author Mode Book & Series Publishing Module + Embedded Bestseller Radar)
 
 ### Added

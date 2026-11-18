@@ -1,9 +1,9 @@
 ﻿# GrabLab CMS — Tandem Ownership & Handoff Log
 
 **Current Owner:** Google Antigravity  
-**Last Completed Milestone:** `v1.4.0` — Author Mode Book & Series Publishing Module + Embedded Bestseller Radar (`Approved & Frozen — Complete`; `SPEC-140` Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off `PASS`, promoted and tagged `v1.4.0` on both `origin` and `stable`)  
-**Next Milestone:** Planned backlog (`v1.2.0` Universal Commerce Webhooks & Event-Triggered Email Queue, `v1.3.0` Opt-In "Talk to Groxy" Database & Store Consultant Tab, plus re-slotted SEO Redirect Manager + Groxy SEO Assist) — awaiting owner selection; `v1.0.0`, `v1.0.1`, `v1.1.0`, and `v1.4.0` remain frozen on `stable`.  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2), and `specifications/GRABLAB-SPEC-140.md` (`v1.4.0` Author Mode Book & Series Publishing Module + Embedded Bestseller Radar) **Approved & Frozen — Complete** (Stage 2 & Stage 4 Sign-Off `PASS`).
+**Last Completed Milestone:** `v1.4.1` — PostgreSQL 18 Taxonomy Query Compatibility Patch (`PATCH 1.4.x`, building on `v1.4.0` Author Mode + `v1.1.0` Zero-Plugin E-Commerce Core — Complete on `origin` and `stable`)  
+**Next Milestone:** Planned backlog (`v1.2.0` Universal Commerce Webhooks & Event-Triggered Email Queue, `v1.3.0` Opt-In "Talk to Groxy" Database & Store Consultant Tab, plus re-slotted SEO Redirect Manager + Groxy SEO Assist) — awaiting owner selection; `v1.0.0`, `v1.0.1`, `v1.1.0`, `v1.4.0`, and `v1.4.1` remain frozen on `stable`.  
+**Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2), and `specifications/GRABLAB-SPEC-140.md` (`v1.4.0` / `v1.4.1` patch) **Approved & Frozen — Complete** (Stage 2 & Stage 4 Sign-Off `PASS`).
 
 ---
 
