@@ -1,6 +1,6 @@
 # GRABLAB-SPEC-110: `v1.1.0` — Zero-Plugin E-Commerce Core
 
-**Status:** Approved; implementation in progress — **Revision 2 (Owner approved 2026-11-17; Stage 2 security & contract audit applied)**.
+**Status:** Approved & Frozen — Complete — **Revision 2 (Owner approved 2026-11-17; Stage 2 security & contract audit + Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off `PASS`)**.
 **Baseline:** GrabLab CMS `v1.0.1` (frozen `GRABLAB-SPEC-100`), GRAB `v1.1.0`, Grex JS `v1.0.0`, Grex Theme Builder `v1.0.0`
 **SemVer Tier:** `MINOR 1.x.0 — Backwards-Compatible Feature Release` (additive migration + new endpoints + two additive MCP tools)
 **Interoperates With:** `Groxy AI v1.4.0` (cart-recovery), `Plotific Press` (book storefront)

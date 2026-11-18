@@ -1,7 +1,7 @@
 # GrabLab CMS Engineering Instructions (`AGENTS.md`)
 
 **Repositories:** `urbanspress/grablab-cms.progress` (active development) / `urbanspress/grablab-cms.stable` (verified releases) (`C:\Development\grablab-cms`)  
-**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS (`v1.0.1` current) built on **GRAB `v1.1.0`** and **Grex JS `v1.0.0`**.
+**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS (`v1.1.0` current) built on **GRAB `v1.1.0`** and **Grex JS `v1.0.0`**.
 
 ---
 

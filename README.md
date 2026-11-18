@@ -11,7 +11,7 @@
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js.progress` / `urbanspress/grex-js.stable`)
-2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.1.0` Zero-Plugin E-Commerce Core** (with `v1.0.1` production CMS frozen on `stable` pending Stage 4 sign-off)
+2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.1.0` Zero-Plugin E-Commerce Core** (`Approved & Frozen — Complete` on `origin` and `stable`)
 3. **Step 3 — Grex Theme Builder:** Complete (`urbanspress/grex-builder.progress` / `urbanspress/grex-builder.stable`) — **`v1.0.0` Installable Visual Theme & Page/Theme Studio**
 4. **Step 4 — `groxy-ai`:** Ready to launch (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous MCP design & SEO agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel & 1-click installer
@@ -51,5 +51,7 @@ node tests/commerce_dom_audit.mjs
 - [`specifications/GRABLAB-SPEC-003.md`](specifications/GRABLAB-SPEC-003.md) — `v0.3.0` users, roles/capabilities, auth, OAuth2/PKCE & Grex admin (`Complete`)
 - [`specifications/GRABLAB-SPEC-004.md`](specifications/GRABLAB-SPEC-004.md) — `v0.4.0` media library, navigation menus, taxonomies & `grab mcp` CMS tools (`Complete`)
 - [`specifications/GRABLAB-SPEC-100.md`](specifications/GRABLAB-SPEC-100.md) — `v1.0.0` Production `v1.x` Stability & Hardening Freeze (`Approved & Frozen`)
+- [`specifications/GRABLAB-SPEC-110.md`](specifications/GRABLAB-SPEC-110.md) — `v1.1.0` Zero-Plugin E-Commerce Core (`Approved & Frozen — Complete`)
 - [`docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf) — Plain-English `v1.0.0` Production Walkthrough Guide for site owners, designers, and operators
 - [`docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf) — Plain-English `v1.0.1` Pre-Step-4 Cross-Layer Audit & Patch Guide
+- [`docs/releases/pdf/GrabLab-CMS-v1.1.0-Guide.pdf`](docs/releases/pdf/GrabLab-CMS-v1.1.0-Guide.pdf) — Plain-English `v1.1.0` Zero-Plugin E-Commerce Core Walkthrough Guide

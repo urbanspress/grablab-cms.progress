@@ -1,3 +1,3 @@
-995996e827961919e4229585945938557d37a974fd21cd3a5ab6b3e4d4661ca7  grablab-cms-v1.1.0-bundle.zip
+2e5455a7328c5bb796e24bc4ca3ebdba1118c15351ba15bb530b39093c090fef  grablab-cms-v1.1.0-bundle.zip
 cd6342d87f8be48cdb0a8cafa6db04c557ffb18dfc5cda5df25231b14f94981d  GrabLab-CMS-v1.1.0-Guide.pdf
 159ad9541503cb69df6228bd690b8607dd0b26e4696dee9e8a7d4e112f465e49  GrabLab-CMS-v1.1.0-RELEASE-NOTES.md
