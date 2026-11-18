@@ -11,7 +11,7 @@
 ## Ecosystem Position
 
 1. **Step 1 — `grex-js v1.0.0`:** Complete (`urbanspress/grex-js.progress` / `urbanspress/grex-js.stable`)
-2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.1.0` Zero-Plugin E-Commerce Core** (`Approved & Frozen — Complete` on `origin` and `stable`)
+2. **Step 2 — `grablab-cms`:** Complete (`urbanspress/grablab-cms.progress` / `urbanspress/grablab-cms.stable`) — **`v1.4.0` Author Mode Book & Series Publishing Module + Embedded Bestseller Radar** (`Approved & Frozen — Complete` on `origin` and `stable`, building on `v1.1.0` Zero-Plugin E-Commerce Core)
 3. **Step 3 — Grex Theme Builder:** Complete (`urbanspress/grex-builder.progress` / `urbanspress/grex-builder.stable`) — **`v1.0.0` Installable Visual Theme & Page/Theme Studio**
 4. **Step 4 — `groxy-ai`:** Ready to launch (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous MCP design & SEO agent
 5. **Step 5 — `gashboard` + `grabtaculous`:** Planned (`urbanspress/gashboard.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel & 1-click installer
@@ -36,6 +36,9 @@ python tests/release_v100_test.py
 python tests/commerce_test.py
 python tests/release_v110_test.py
 node tests/commerce_dom_audit.mjs
+python tests/author_test.py
+python tests/release_v140_test.py
+node tests/author_dom_audit.mjs
 ```
 
 ## Governance, Specifications & Release Guides
@@ -43,8 +46,8 @@ node tests/commerce_dom_audit.mjs
 - [`GRABLAB-EXPERT.md`](GRABLAB-EXPERT.md) — Non-negotiable engineering & security invariants
 - [`AGENTS.md`](AGENTS.md) — Engineering workflow, model routing, and verification gates
 - [`HANDOFF.md`](HANDOFF.md) — Current ownership and milestone log
-- [`CHANGELOG.md`](CHANGELOG.md) — Complete version history (`v0.1.0` → `v1.1.0`)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.1.0` Complete, `v1.2.0` Planned)
+- [`CHANGELOG.md`](CHANGELOG.md) — Complete version history (`v0.1.0` → `v1.4.0`)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Milestone roadmap (`v0.1` → `v1.1.0` & `v1.4.0` Complete, `v1.2.0`–`v1.3.0` Planned)
 - [`deploy/README.md`](deploy/README.md) — Hardened `--read-only` Docker Compose & Grisp deployment guide
 - [`specifications/GRABLAB-SPEC-001.md`](specifications/GRABLAB-SPEC-001.md) — `v0.1.0` core architecture & schema (`Complete`)
 - [`specifications/GRABLAB-SPEC-002.md`](specifications/GRABLAB-SPEC-002.md) — `v0.2.0` exclusive theme engine, template parts, hooks & query loop (`Complete`)
@@ -52,6 +55,8 @@ node tests/commerce_dom_audit.mjs
 - [`specifications/GRABLAB-SPEC-004.md`](specifications/GRABLAB-SPEC-004.md) — `v0.4.0` media library, navigation menus, taxonomies & `grab mcp` CMS tools (`Complete`)
 - [`specifications/GRABLAB-SPEC-100.md`](specifications/GRABLAB-SPEC-100.md) — `v1.0.0` Production `v1.x` Stability & Hardening Freeze (`Approved & Frozen`)
 - [`specifications/GRABLAB-SPEC-110.md`](specifications/GRABLAB-SPEC-110.md) — `v1.1.0` Zero-Plugin E-Commerce Core (`Approved & Frozen — Complete`)
+- [`specifications/GRABLAB-SPEC-140.md`](specifications/GRABLAB-SPEC-140.md) — `v1.4.0` Author Mode Book & Series Publishing Module + Embedded Bestseller Radar (`Approved & Frozen — Complete`)
 - [`docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.0-Guide.pdf) — Plain-English `v1.0.0` Production Walkthrough Guide for site owners, designers, and operators
 - [`docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf`](docs/releases/pdf/GrabLab-v1.0.1-Guide.pdf) — Plain-English `v1.0.1` Pre-Step-4 Cross-Layer Audit & Patch Guide
 - [`docs/releases/pdf/GrabLab-CMS-v1.1.0-Guide.pdf`](docs/releases/pdf/GrabLab-CMS-v1.1.0-Guide.pdf) — Plain-English `v1.1.0` Zero-Plugin E-Commerce Core Walkthrough Guide
+- [`docs/releases/pdf/GrabLab-CMS-v1.4.0-Guide.pdf`](docs/releases/pdf/GrabLab-CMS-v1.4.0-Guide.pdf) — Plain-English `v1.4.0` Author Mode & Embedded Bestseller Radar Walkthrough Guide

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{meta_title} — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{theme_css_url}">
+  <link rel="stylesheet" href="{reader_css_url}">
+  <!-- @hook:theme_head_meta -->
+</head>
+<body>
+  <!-- @part:header -->
+
+  <main class="cms-main" data-grex-id="series-main">
+    <article class="cms-article cms-series-detail" data-grex-id="series-article">
+      <span class="cms-badge">Book Series &middot; {genre_slug}</span>
+      <h1>{title}</h1>
+      <p class="cms-meta">By <a href="{author_url}">{author_name}</a> &middot; Reading Order: {reading_order_mode} &middot; Planned Books: {total_planned_books}</p>
+      <section class="cms-body" data-grex-id="series-body">
+        <p>{body_text}</p>
+      </section>
+      <section class="cms-series-books" aria-label="Books in reading order">
+        <h2>Reading Order</h2>
+        <!-- @slot:series_books_html -->
+      </section>
+      <p><a href="/books">Browse All Books</a></p>
+    </article>
+
+    <!-- @part:sidebar -->
+  </main>
+
+  <!-- @part:footer -->
+</body>
+</html>

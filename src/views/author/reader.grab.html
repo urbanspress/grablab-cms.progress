@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-grex-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{chapter_title} — {book_title} Sample Reader</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{reader_css_url}">
+</head>
+<body class="reader-body">
+  <header class="reader-topbar" aria-label="Sample reader navigation">
+    <nav class="reader-nav" aria-label="Book breadcrumbs">
+      <a class="reader-link" href="{book_url}">&larr; {book_title}</a>
+      <span class="reader-badge">Sample Chapter {chapter_number} &middot; {reading_minutes} min read</span>
+    </nav>
+    <section id="reader-controls-mount" class="reader-controls" aria-label="Reading display preferences"></section>
+  </header>
+
+  <main class="reader-shell" id="reader-main" data-grex-id="sample-reader-main">
+    <article class="reader-article" aria-labelledby="chapter-heading">
+      <header class="reader-header">
+        <p class="reader-muted">{author_name} &middot; {word_count} words</p>
+        <h1 id="chapter-heading">{chapter_title}</h1>
+      </header>
+      <section class="reader-prose" id="reader-prose" data-font-scale="md">
+        <!-- @slot:chapter_body_html -->
+      </section>
+      <aside class="reader-hook" aria-label="Continue reading">
+        <p class="reader-muted">{cliffhanger_hook}</p>
+        <p><a class="reader-btn" href="{book_url}">Get the Full Book (${list_price} {currency})</a></p>
+      </aside>
+    </article>
+  </main>
+
+  <script type="module" src="{reader_js_url}"></script>
+</body>
+</html>

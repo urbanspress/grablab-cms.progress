@@ -1,6 +1,6 @@
 # GRABLAB-SPEC-140: `v1.4.0` — Author Mode Book & Series Publishing Module + Embedded Bestseller Radar
 
-**Status:** Approved; implementation in progress *(Owner approved 2026-11-17; Stage 2 Pre-Implementation Cross-Layer Security & Contract Audit `PASS` — see §10).*  
+**Status:** Approved & Frozen — Complete *(Owner approved 2026-11-17; Stage 2 Pre-Implementation Cross-Layer Security & Contract Audit `PASS` — see §10; Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off `PASS` — see §11).*  
 **Baseline:** GrabLab CMS `v1.1.0` (frozen `GRABLAB-SPEC-110` + `GRABLAB-SPEC-100`), GRAB `v1.1.0`, Grex JS `v1.0.0`, Grex Theme Builder `v1.0.0`  
 **SemVer Tier:** `MINOR 1.x.0 — Backwards-Compatible Feature Release` (`ADR-027c`)  
 **Interoperates With:** `Groxy AI v1.7.0` (Multi-Genre Storytelling Brain, Hemingway Readability Auditor, `schema.org/Book` & `BookSeries` JSON-LD), `Groxy AI v1.8.0` (Bestseller Radar & `gsc.readonly`), `Plotific Press` (book storefront), `Grex Theme Builder v1.0.0`  
@@ -207,3 +207,25 @@ All frozen sibling repositories (`grablab-cms` `v1.1.0` baseline, `groxy-ai` `v1
 ### 10.3 Verdict
 
 **`PASS`.** `specifications/GRABLAB-SPEC-140.md` aligns 100% with frozen **GrabLab CMS `v1.1.0`**, **Groxy AI `v1.7.0` + `v1.8.0`**, **Plotific Press**, **GRAB `v1.1.0`**, and **Grex JS `v1.0.0`** contracts with **zero upstream code changes required**, and is cleared for Stage 3 implementation on **`Google Hydrogen (High)`**.
+
+---
+
+## 11. Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off — `PASS` (2026-11-18)
+
+**Auditor:** Google Antigravity — Orchestrator (Argon), Stage 4 Pre-Release Sign-Off.  
+**Verification Evidence:**
+1. **Static & Canonical Formatting Gates:**
+   - `C:\Development\GRAB\dist\grab-windows-amd64.exe check --platform-config grab.platform.json src/app.grab` -> `0 errors`.
+   - `C:\Development\GRAB\dist\grab-windows-amd64.exe check --platform-config deploy/grab.platform.commerce.json src/app.grab` -> `0 errors`.
+   - `grab check` across every migration/script `.grab` file and byte-for-byte `grab format` comparison across all 20 `.grab` files -> `100% byte-identical`.
+   - `grab connect lock` & `inspect --platform-config deploy/grab.platform.commerce.json` -> `PASS`.
+2. **Grex JS `v1.0.0` DOM & Light/Dark WCAG AA Audits:**
+   - `node tests/author_dom_audit.mjs` -> `{"ok":true,"divCount":0,"innerHTMLWriteCount":0,"contrastPairsVerified":12,"auditAccessibilityPassed":true,"templatesChecked":4,"keyboardFocusRestored":true}`.
+   - `node tests/commerce_dom_audit.mjs` -> `{"ok":true,"divCount":0,"innerHTMLWriteCount":0,"contrastPairsVerified":21,"auditAccessibilityPassed":true,"templatesChecked":4}`.
+3. **Functional, Security, Concurrency & Cross-Layer E2E Suites:**
+   - `python tests/author_test.py` -> `10/10 PASS` (default-off `404`, `GRAB-E402` SSRF blocks, CSRF `403`, RBAC `403`, MCP Bearer `401` on `/api/admin/author/*`, `ADR-025c` `422` float/exponent/`ISBN-13`/`ASIN`, reserved prefix `409`, XSS-safe `schema.org/Book` & `BookSeries` JSON-LD, sample Web Reader `is_sample` isolation, `slug_history` `301` + `use cache` invalidation, `LULU-USPS-001` & hashed `download_grants` + `409 price_changed`, 10-way atomic `201`/`409` radar import race + `status_enforced: "draft"`, readability audit, and `list_author_catalog` / `create_book_draft` MCP tools).
+   - `python tests/release_v140_test.py` -> `5/5 PASS` (sequential `001`–`005` & direct `005` 35-table parity across SQLite/PostgreSQL/MariaDB, idempotent `seed_author.grab`, full E2E Radar -> Book -> Sample Reader -> Commerce Digital Webhook lifecycle, DOM audits, and clean `git status --short` across 10 sibling repositories).
+   - Full regression across `tests/commerce_test.py` (`9/9`), `tests/release_v110_test.py` (`5/5`), `tests/integration_test.py` (`13/13`), and `tests/release_v100_test.py` (`5/5`).
+4. **Cross-Layer Hygiene:** `git status --short` clean across all 10 sibling repositories (`GRAB`, `grex-js`, `grex-builder`, `groxy-ai`, `groxy-desk`, `plotific-press`, `gashboard`, `grabman`, `grabtaculous`, `grab-ide-icons`).
+
+**Sign-Off Verdict:** **`PASS`** — `GrabLab CMS v1.4.0` is frozen, packaged (`GrabLab-CMS-v1.4.0-Guide.pdf`, `GrabLab-CMS-v1.4.0-RELEASE-NOTES.md`, `dist/grablab-cms-v1.4.0-bundle.zip`, `dist/SHA256SUMS.txt`), and cleared for synchronized `v1.4.0` release on `origin` and `stable`.

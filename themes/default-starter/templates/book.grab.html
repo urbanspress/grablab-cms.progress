@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{meta_title} — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{theme_css_url}">
+  <link rel="stylesheet" href="{shop_css_url}">
+  <link rel="stylesheet" href="{reader_css_url}">
+  <!-- @hook:theme_head_meta -->
+</head>
+<body>
+  <!-- @part:header -->
+
+  <main class="cms-main" data-grex-id="book-main">
+    <article class="cms-article cms-book-detail" data-grex-id="book-article">
+      <span class="cms-badge">{edition_format} &middot; {genre_slug}</span>
+      <h1>{title}</h1>
+      <p class="cms-book-subtitle">{subtitle}</p>
+      <p class="cms-meta">By <a href="{author_url}">{author_name}</a> &middot; Language: {in_language} &middot; Pages: {page_count} &middot; Words: {word_count}</p>
+      <p class="cms-book-price"><strong>${list_price} {currency}</strong></p>
+      <p class="cms-meta">ISBN-13: {isbn_13} &middot; ASIN: {asin}</p>
+      <!-- @slot:book_series_html -->
+      <section class="cms-body" data-grex-id="book-body">
+        <p>{blurb}</p>
+      </section>
+      <!-- @slot:book_commerce_html -->
+      <section class="cms-book-samples" aria-label="Sample chapters">
+        <h2>Sample Chapters</h2>
+        <!-- @slot:book_samples_html -->
+      </section>
+      <p><a href="/books">Back to Books Catalog</a></p>
+    </article>
+
+    <!-- @part:sidebar -->
+  </main>
+
+  <!-- @part:footer -->
+  <script type="module" src="{shop_js_url}"></script>
+</body>
+</html>

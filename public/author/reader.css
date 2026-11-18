@@ -1,0 +1,157 @@
+/* GrabLab CMS v1.4.0 Author Catalog & Distraction-Free Web Reader (Light & Dark WCAG AA >= 4.5:1) */
+
+:root,
+[data-grex-theme="light"] {
+  --reader-bg: #ffffff;
+  --reader-surface: #f8fafc;
+  --reader-border: #cbd5e1;
+  --reader-fg: #0f172a;
+  --reader-muted: #475569;
+  --reader-link: #1d4ed8;
+  --reader-accent: #0f766e;
+  --reader-accent-fg: #ffffff;
+  --reader-badge-bg: #0f172a;
+  --reader-badge-fg: #ffffff;
+}
+
+[data-grex-theme="dark"] {
+  --reader-bg: #0b1120;
+  --reader-surface: #111827;
+  --reader-border: #334155;
+  --reader-fg: #f8fafc;
+  --reader-muted: #cbd5e1;
+  --reader-link: #93c5fd;
+  --reader-accent: #0f766e;
+  --reader-accent-fg: #ffffff;
+  --reader-badge-bg: #e2e8f0;
+  --reader-badge-fg: #0f172a;
+}
+
+body.reader-body {
+  margin: 0;
+  background: var(--reader-bg);
+  color: var(--reader-fg);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.7;
+}
+
+.reader-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--reader-surface);
+  border-bottom: 1px solid var(--reader-border);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.reader-nav,
+.reader-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.reader-link {
+  color: var(--reader-link);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.reader-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--reader-badge-bg);
+  color: var(--reader-badge-fg);
+}
+
+.reader-shell {
+  max-width: 65ch;
+  margin: 32px auto;
+  padding: 0 20px 48px;
+}
+
+.reader-header {
+  border-bottom: 1px solid var(--reader-border);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.reader-muted {
+  color: var(--reader-muted);
+  font-size: 0.95rem;
+}
+
+.reader-prose[data-font-scale="sm"] {
+  font-size: 1rem;
+}
+
+.reader-prose[data-font-scale="md"] {
+  font-size: 1.125rem;
+}
+
+.reader-prose[data-font-scale="lg"] {
+  font-size: 1.3rem;
+}
+
+.reader-hook {
+  margin-top: 32px;
+  padding: 20px;
+  border: 1px solid var(--reader-border);
+  border-radius: 12px;
+  background: var(--reader-surface);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.reader-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--reader-accent);
+  background: var(--reader-accent);
+  color: var(--reader-accent-fg);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.reader-btn-secondary {
+  background: var(--reader-surface);
+  color: var(--reader-fg);
+  border-color: var(--reader-border);
+}
+
+.cms-book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.cms-book-card {
+  border: 1px solid var(--reader-border);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--reader-surface);
+  color: var(--reader-fg);
+}
+
+.cms-book-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cms-series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 20px;
+}

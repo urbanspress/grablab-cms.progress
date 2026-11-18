@@ -16,7 +16,10 @@
     "search": "templates/search.grab.html",
     "shop": "templates/shop.grab.html",
     "product": "templates/product.grab.html",
-    "cart": "templates/cart.grab.html"
+    "cart": "templates/cart.grab.html",
+    "books": "templates/books.grab.html",
+    "book": "templates/book.grab.html",
+    "series": "templates/series.grab.html"
   },
   "parts": {
     "header": "templates/parts/header.grab.html",

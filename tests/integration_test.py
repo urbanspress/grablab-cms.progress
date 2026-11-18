@@ -413,7 +413,7 @@ def run_http_tests(port, oauth_port, oauth_state):
 
     # Public routes & Grex CSS tokens still render cleanly with zero-<div>
     st, _, _, html, _ = http_req(port, "GET", "/")
-    assert st == 200 and '<meta name="generator" content="GrabLab CMS v1.1.0 (default-starter)">' in html and "<div" not in html.lower()
+    assert st == 200 and '<meta name="generator" content="GrabLab CMS v1.4.0 (default-starter)">' in html and "<div" not in html.lower()
 
     # Complete initial setup
     admin = SessionClient(port)

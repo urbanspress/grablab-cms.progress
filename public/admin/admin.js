@@ -182,33 +182,51 @@ function mountSetup() {
   mount.appendChild(form.element);
 }
 
-function mountSidebarNav(activePath, role) {
+function mountSidebarNav(activePath, role, api) {
   const mount = document.getElementById("admin-nav-mount");
   if (!mount) return;
-  const items = [
-    { href: "/admin", text: "Overview" },
-    { href: "/admin/entries", text: "Entries & Redirects" },
-    { href: "/admin/media", text: "Media Library" },
-  ];
-  if (role === "admin" || role === "editor") {
-    items.push({ href: "/admin/menus", text: "Navigation Menus" });
-    items.push({ href: "/admin/taxonomies", text: "Taxonomies" });
-    items.push({ href: "/admin/store", text: "Store / Commerce" });
+  const renderNav = (authorEnabled) => {
+    while (mount.firstChild) {
+      mount.removeChild(mount.firstChild);
+    }
+    const items = [
+      { href: "/admin", text: "Overview" },
+      { href: "/admin/entries", text: "Entries & Redirects" },
+      { href: "/admin/media", text: "Media Library" },
+    ];
+    if (authorEnabled && (role === "admin" || role === "editor" || role === "author")) {
+      items.push({ href: "/admin/author", text: "Author Studio" });
+      items.push({ href: "/admin/author/radar", text: "Bestseller Radar" });
+    }
+    if (role === "admin" || role === "editor") {
+      items.push({ href: "/admin/menus", text: "Navigation Menus" });
+      items.push({ href: "/admin/taxonomies", text: "Taxonomies" });
+      items.push({ href: "/admin/store", text: "Store / Commerce" });
+    }
+    if (role === "admin") {
+      items.push({ href: "/admin/types", text: "Content Types" });
+      items.push({ href: "/admin/themes", text: "Themes & Grex" });
+      items.push({ href: "/admin/settings", text: "Settings & Users" });
+    }
+    const nav = Nav({
+      id: "grablab-admin-nav",
+      props: {
+        label: "GrabLab Admin Sections",
+        activePath,
+        items,
+      },
+    });
+    mount.appendChild(nav.element);
+  };
+
+  renderNav(activePath.startsWith("/admin/author"));
+  if (api && (role === "admin" || role === "editor" || role === "author")) {
+    api.get("/api/admin/author/status")
+      .then((res) => {
+        renderNav(Boolean(res && res.enabled));
+      })
+      .catch(() => {});
   }
-  if (role === "admin") {
-    items.push({ href: "/admin/types", text: "Content Types" });
-    items.push({ href: "/admin/themes", text: "Themes & Grex" });
-    items.push({ href: "/admin/settings", text: "Settings & Users" });
-  }
-  const nav = Nav({
-    id: "grablab-admin-nav",
-    props: {
-      label: "GrabLab Admin Sections",
-      activePath,
-      items,
-    },
-  });
-  mount.appendChild(nav.element);
 }
 
 function mountOverview(root, api) {
@@ -1044,6 +1062,54 @@ function mountSettings(root, api) {
   usersTabContent.appendChild(usersUl);
   usersTabContent.appendChild(userModal.element);
 
+  // Tab 4: Author Mode & Groxy AI Bridge
+  const authorEnSel = Select({
+    id: "set-author-enabled",
+    props: {
+      name: "author_mode_enabled",
+      label: "Author Mode & Embedded Bestseller Radar",
+      value: signal("0"),
+      options: [
+        { value: "0", label: "Disabled (404 on /books, /series, /admin/author*)" },
+        { value: "1", label: "Enabled" },
+      ],
+    },
+  });
+  const groxyOriginIn = Input({
+    id: "set-groxy-origin",
+    props: {
+      name: "groxy_ai_origin",
+      label: "Groxy AI Origin (GRAB-E402: https://... or http://127.0.0.1:<port>)",
+      placeholder: "http://127.0.0.1:8090",
+    },
+  });
+  const authorForm = Form({
+    props: {
+      csrfToken: () => getMeta("grablab-csrf"),
+      onSubmit: async () => {
+        errSig.set("");
+        okSig.set("");
+        try {
+          await api.post("/api/admin/author/settings", {
+            author_mode_enabled: authorEnSel.value.peek() === "1",
+            groxy_ai_origin: groxyOriginIn.value.peek().trim(),
+          });
+          okSig.set("Author Mode settings saved.");
+          invalidateQueries(["settings"]);
+        } catch (err) {
+          errSig.set(err.message || "Failed to save Author Mode settings.");
+        }
+      },
+    },
+    children: [authorEnSel.element, groxyOriginIn.element, el("button", { type: "submit" }, "Save Author Mode Settings")],
+  });
+  api.get("/api/admin/author/settings")
+    .then((as) => {
+      authorEnSel.value.set(as && as.author_mode_enabled ? "1" : "0");
+      groxyOriginIn.value.set((as && as.groxy_ai_origin) || "");
+    })
+    .catch(() => {});
+
   const tabs = Tabs({
     id: "settings-tabs",
     props: {
@@ -1052,6 +1118,7 @@ function mountSettings(root, api) {
         { id: "general", label: "General", content: generalForm.element },
         { id: "oauth", label: "Social Login (OAuth2/PKCE)", content: oauthForm.element },
         { id: "users", label: "Users & Roles", content: usersTabContent },
+        { id: "author", label: "Author Mode", content: authorForm.element },
       ],
     },
   });
@@ -1808,7 +1875,7 @@ function boot() {
 
   const role = getMeta("grablab-role");
   const activePath = window.location.pathname;
-  mountSidebarNav(activePath, role);
+  mountSidebarNav(activePath, role, api);
   wireLogout(api);
 
   const root = document.getElementById("admin-app");
@@ -1832,6 +1899,8 @@ function boot() {
     mountSettings(root, api);
   } else if (page === "store" || page.startsWith("store_")) {
     import("./commerce.js").then((mod) => mod.mountCommerce(root, api, page, role));
+  } else if (page === "author" || page.startsWith("author_")) {
+    import("./author.js").then((mod) => mod.mountAuthor(root, api, page, role));
   }
 }
 

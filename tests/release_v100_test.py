@@ -182,6 +182,10 @@ def verify_all_grab_and_templates():
         "themes/default-starter/templates/shop.grab.html": 'record {site_title: "T", page_title: "Shop", archive_label: "Shop", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", product_count: "1"}',
         "themes/default-starter/templates/product.grab.html": 'record {site_title: "T", meta_title: "Book", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", content_type_label: "Product", product_kind: "physical", title: "Book", product_price: "19.99", product_currency: "USD", product_availability: "In Stock", product_sku: "BK-1", product_carrier: "usps", product_isbn_13: "9780306406157", body_text: "B", product_id: "1"}',
         "themes/default-starter/templates/cart.grab.html": 'record {site_title: "T", page_title: "Cart", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", currency: "USD", guest_checkout: "true"}',
+        "themes/default-starter/templates/books.grab.html": 'record {site_title: "T", page_title: "Books", archive_label: "Books Catalog", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", reader_css_url: "/rc", book_count: "1"}',
+        "themes/default-starter/templates/book.grab.html": 'record {site_title: "T", meta_title: "Book", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", shop_css_url: "/sc", shop_js_url: "/sj", reader_css_url: "/rc", edition_format: "paperback", genre_slug: "urban-fiction", title: "Book", subtitle: "Sub", author_url: "/authors/a", author_name: "Author", in_language: "en", page_count: "280", word_count: "70000", list_price: "14.99", currency: "USD", isbn_13: "9780306406157", asin: "B0DRTEST01", blurb: "B"}',
+        "themes/default-starter/templates/series.grab.html": 'record {site_title: "T", meta_title: "Series", meta_description: "D", tokens_css_url: "/s", theme_css_url: "/t", reader_css_url: "/rc", genre_slug: "urban-fiction", title: "Series", author_url: "/authors/a", author_name: "Author", reading_order_mode: "chronological", total_planned_books: "3", body_text: "S"}',
+        "src/views/author/reader.grab.html": 'record {meta_description: "D", chapter_title: "Ch 1", book_title: "Book", book_url: "/books/b", author_name: "Author", chapter_number: "1", reading_minutes: "5", word_count: "1200", cliffhanger_hook: "Hook", list_price: "14.99", currency: "USD", tokens_css_url: "/s", reader_css_url: "/rc", reader_js_url: "/rj"}',
     }
     assert set(tmpl_files) == set(template_contexts.keys()), (
         f"Uncovered .grab.html templates: {set(tmpl_files) ^ set(template_contexts.keys())}"
@@ -260,9 +264,9 @@ def verify_fresh_migrations_and_parity(tmp_dir):
 
     # Idempotent seed on sequential fresh DB
     s1 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.1.0 seed completed" in s1.stdout, s1.stdout
+    assert "v1.4.0 seed completed" in s1.stdout, s1.stdout
     s2 = run_grab(["run", "--db-config", seq_cfg, "--allow-db", "main:read-write", "--allow-read", ".", "migrations/seed.grab"])
-    assert "v1.1.0 seed completed" in s2.stdout, s2.stdout
+    assert "v1.4.0 seed completed" in s2.stdout, s2.stdout
 
     con = sqlite3.connect(seq_db)
     try:
@@ -507,7 +511,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         st, _, _, _, pm = http_req(port, "GET", "/api/menus/primary")
         assert st == 200 and pm["menu"]["items"][1]["url"] == "/catalog/v1-production-showcase", pm
         st, _, _, home_html, _ = http_req(port, "GET", "/")
-        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.1.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
+        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.4.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
 
         # 6) Query Loop + `use cache` hit & invalidation on entry update
         q_url = "/api/query?content_type=catalog_item&taxonomy=category&term_slug=guides&include_children=true"
@@ -529,7 +533,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
-        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.1.0", rpc_init
+        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.4.0", rpc_init
 
         st, _, _, _, rpc_tools = http_req(
             port,

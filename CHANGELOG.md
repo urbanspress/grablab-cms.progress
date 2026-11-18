@@ -2,6 +2,19 @@
 
 All notable releases of **GrabLab CMS** (`urbanspress/grablab-cms`) are documented in this file.
 
+## `[v1.4.0]` — 2026-11-18 (Author Mode Book & Series Publishing Module + Embedded Bestseller Radar)
+
+### Added
+- **Additive Migration `005` & Native Author Content Types (`migrations/005_author_schema*.grab`, `migrations/seed_author.grab`):** Added `authors`, `series`, `books`, `chapters`, and `author_radar_imports` across SQLite, PostgreSQL, and MariaDB parity while keeping `001`–`004` schemas and `seed.grab` / `seed_commerce.grab` untouched. Author Mode stays off by default (`author_mode_enabled = "0"` -> `404` across `/api/admin/author/*`, `/admin/author*`, `/books*`, and `/series*`) until enabled by an administrator.
+- **Exact `ADR-025c` Pricing/Royalty & Identifier Validation (`src/app.grab`):** Enforced exact base-10 `GrabDecimal` (`"0.00"`) and `GrabInteger` wire types with integer cent/basis-point calculations (`422` on raw JS floats or exponent notation), GS1 `ISBN-13` check-digit validation, `^[A-Z0-9]{10}$` `ASIN` validation, and reserved-prefix `409` slug guards.
+- **Direct `v1.1.0` Commerce & Fulfillment Linkage (`POST /api/admin/author/books/:id/sync-product`):** Links digital books (`ebook`) to `products` + `product_digital_files` (DRM-free EPUB/PDF via hashed `download_grants` with `Cache-Control: no-store`) and physical editions (`paperback` / `hardcover`) to `product_fulfillment` (`LULU-USPS-001` matte paperback or USPS-only `ground_advantage` / `priority` / `media_mail` <= `31751 g`), preserving `products` as checkout source of truth and `409 price_changed` open-cart protection.
+- **XSS-Safe `schema.org/Book` & `BookSeries` JSON-LD + `slug_history` `301`s (`src/app.grab`):** Escapes `</script>`, `<`, `>`, `&`, `U+2028`, and `U+2029` inside `<script type="application/ld+json">` on `/books/:slug` and `/series/:slug`, records slug renames in `slug_history` for `301` redirects, and deterministically invalidates `use cache` keys.
+- **Embedded Bestseller Radar, Readability Bridge & Additive MCP Tools (`/admin/author/radar`, `src/app.grab`):** Bridges `/api/admin/author/radar/query`, `/radar/import`, and `/readability-audit` to `Groxy AI v1.7.0` + `v1.8.0` over `GRAB-E402`-allowlisted origins (`admin`-only `author:settings`, CSRF `403`, MCP Bearer `401` on `/api/admin/author/*`), enforces single-winner atomic `201`/`409` claiming on `author_radar_imports.radar_plan_id` (`status_enforced: "draft"`), and adds `list_author_catalog` + `create_book_draft` (`status_enforced: "draft"`) MCP tools.
+- **Pure `Grex JS v1.0.0` Author Dashboard & Sample Web Reader (`public/admin/author.js`, `public/author/reader.js`, `public/author/reader.css`, `src/views/author/reader.grab.html`, `themes/default-starter/templates/{books,book,series}.grab.html`):** Delivered `/admin/author*` tabs (Overview, Books, Series Sequencer, Chapters & Readability, Bestseller Radar) and distraction-free sample chapter Web Reader with `divCount === 0`, `innerHTMLWriteCount === 0`, keyboard `Escape`/focus restoration, and Light & Dark WCAG AA contrast (`>= 4.5:1`).
+- **Verification & Release Artifacts:** Added `tests/author_test.py`, `tests/release_v140_test.py`, `tests/author_dom_audit.mjs`, `docs/releases/pdf/GrabLab-CMS-v1.4.0-Guide.pdf`, `docs/releases/pdf/GrabLab-CMS-v1.4.0-RELEASE-NOTES.md`, and `dist/grablab-cms-v1.4.0-bundle.zip`.
+
+---
+
 ## `[v1.1.0]` — 2026-11-17 (Zero-Plugin E-Commerce Core)
 
 ### Added

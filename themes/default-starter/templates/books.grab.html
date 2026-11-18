@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{meta_description}">
+  <title>{page_title} — {site_title}</title>
+  <link rel="stylesheet" href="{tokens_css_url}">
+  <link rel="stylesheet" href="{theme_css_url}">
+  <link rel="stylesheet" href="{reader_css_url}">
+  <!-- @hook:theme_head_meta -->
+</head>
+<body>
+  <!-- @part:header -->
+
+  <main class="cms-main" data-grex-id="books-main">
+    <section class="cms-hero" data-grex-id="books-hero">
+      <span class="cms-badge">Author Catalog</span>
+      <h1>{archive_label}</h1>
+      <p class="cms-meta">{book_count} published books</p>
+    </section>
+
+    <section class="cms-books-catalog" data-grex-id="books-catalog" aria-label="Published books">
+      <!-- @slot:books_catalog_html -->
+    </section>
+
+    <!-- @part:sidebar -->
+  </main>
+
+  <!-- @part:footer -->
+</body>
+</html>

@@ -127,7 +127,7 @@ Scope:
 
 ## `v1.4.0` — Author Mode Book & Series Publishing Module + Embedded Bestseller Radar
 
-**Status:** Approved; implementation in progress ([`specifications/GRABLAB-SPEC-140.md`](../specifications/GRABLAB-SPEC-140.md); Owner approved 2026-11-17; Stage 2 Pre-Implementation Cross-Layer Security & Contract Audit `PASS`) — *Backwards-Compatible Minor Feature*
+**Status:** Approved & Frozen — Complete (`v1.4.0`, [`specifications/GRABLAB-SPEC-140.md`](../specifications/GRABLAB-SPEC-140.md); Owner approved 2026-11-17; Stage 2 & Stage 4 Cross-Layer Security & Contract Sign-Off `PASS`) — *Backwards-Compatible Minor Feature*
 
 Scope:
 - **Additive Migration `005` & Native Author Content Types:** First-class `Author`, `Series`, `Book`, and `Chapter` schemas (`SQLite`, `PostgreSQL`, `MariaDB` parity) with exact `ADR-025c` `GrabDecimal` (`"0.00"`) / `GrabInteger` wire types, validated `ISBN-13` / `ASIN` identifiers, series reading-order indexing, sample chapter previews, and direct linkage to `v1.1.0` `products` + `product_digital_files` (DRM-free EPUB/PDF hashed `download_grants`) and `product_fulfillment` (`LULU-USPS-001` matte paperback + USPS-only carrier rules).

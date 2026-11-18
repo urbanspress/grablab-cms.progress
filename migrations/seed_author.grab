@@ -1,0 +1,47 @@
+use data
+use dates
+
+set db to data.open using "main"
+set now_rec to call dates.now_utc
+set now_iso to now_rec.iso
+
+set check_setting to data.prepare using db, "SELECT value FROM site_settings WHERE key = :key", record {params: record {key: "text"}, columns: record {value: "text"}}
+set insert_setting to data.prepare using db, "INSERT INTO site_settings (key, value, updated_at) VALUES (:key, :value, :updated_at)", record {params: record {key: "text", value: "text", updated_at: "text"}, columns: record {}}
+
+set find_type to data.prepare using db, "SELECT id FROM content_types WHERE slug = :slug", record {params: record {slug: "text"}, columns: record {id: "integer"}}
+set insert_type to data.prepare using db, "INSERT INTO content_types (slug, label_singular, label_plural, permalink_pattern, has_archive, archive_slug, is_system, created_at) VALUES (:slug, :label_singular, :label_plural, :permalink_pattern, :has_archive, :archive_slug, :is_system, :created_at)", record {params: record {slug: "text", label_singular: "text", label_plural: "text", permalink_pattern: "text", has_archive: "integer", archive_slug: record {type: "text", nullable: yes}, is_system: "integer", created_at: "text"}, columns: record {}}
+
+set find_field to data.prepare using db, "SELECT id FROM field_definitions WHERE content_type_id = :content_type_id AND field_key = :field_key", record {params: record {content_type_id: "integer", field_key: "text"}, columns: record {id: "integer"}}
+set insert_field to data.prepare using db, "INSERT INTO field_definitions (content_type_id, field_key, label, field_type, is_required, default_value, sort_order) VALUES (:content_type_id, :field_key, :label, :field_type, :is_required, :default_value, :sort_order)", record {params: record {content_type_id: "integer", field_key: "text", label: "text", field_type: "text", is_required: "integer", default_value: record {type: "text", nullable: yes}, sort_order: "integer"}, columns: record {}}
+
+set tx to data.begin using db
+
+set defaults to [record {key: "author_mode_enabled", value: "0"}, record {key: "groxy_ai_origin", value: ""}]
+for each item in defaults
+  set existing_setting to data.one using check_setting, record {key: item.key}, tx
+  if existing_setting is nothing
+    call data.execute using insert_setting, record {key: item.key, value: item.value, updated_at: now_iso}, tx
+  end
+end
+
+set author_types to [record {slug: "author", singular: "Author", plural: "Authors", pattern: "/authors/:slug", has_archive: 1, archive_slug: "authors"}, record {slug: "series", singular: "Series", plural: "Series", pattern: "/series/:slug", has_archive: 1, archive_slug: "series"}, record {slug: "book", singular: "Book", plural: "Books", pattern: "/books/:slug", has_archive: 1, archive_slug: "books"}, record {slug: "chapter", singular: "Chapter", plural: "Chapters", pattern: "/books/chapter/:slug", has_archive: 0, archive_slug: nothing}]
+for each ct in author_types
+  set row to data.one using find_type, record {slug: ct.slug}, tx
+  if row is nothing
+    call data.execute using insert_type, record {slug: ct.slug, label_singular: ct.singular, label_plural: ct.plural, permalink_pattern: ct.pattern, has_archive: ct.has_archive, archive_slug: ct.archive_slug, is_system: 1, created_at: now_iso}, tx
+  end
+end
+
+set book_row to data.one using find_type, record {slug: "book"}, tx
+if book_row is not nothing
+  set book_fields to [record {key: "isbn_13", label: "ISBN-13", ftype: "text", sort: 1}, record {key: "asin", label: "ASIN", ftype: "text", sort: 2}, record {key: "subtitle", label: "Subtitle", ftype: "text", sort: 3}, record {key: "list_price", label: "List Price (USD)", ftype: "decimal", sort: 4}]
+  for each bf in book_fields
+    set existing_f to data.one using find_field, record {content_type_id: book_row.id, field_key: bf.key}, tx
+    if existing_f is nothing
+      call data.execute using insert_field, record {content_type_id: book_row.id, field_key: bf.key, label: bf.label, field_type: bf.ftype, is_required: 0, default_value: "", sort_order: bf.sort}, tx
+    end
+  end
+end
+
+call data.commit using tx
+show "GrabLab CMS v1.4.0 author seed completed."
