@@ -58,6 +58,12 @@ set stmt_insert_session to data.prepare using db, "INSERT INTO sessions (id, use
 set stmt_touch_session to data.prepare using db, "UPDATE sessions SET expires_at = :expires_at, last_seen_at = :last_seen_at WHERE id = :id", record {params: record {expires_at: "text", last_seen_at: "text", id: "text"}, columns: record {}}
 set stmt_delete_sessions to data.prepare using db, "DELETE FROM sessions WHERE (:lookup = 'id' AND id = :sv) OR (:lookup = 'token' AND token_hash = :sv) OR (:lookup = 'user' AND user_id = :iv) OR (:lookup = 'expired' AND expires_at < :sv)", record {params: record {lookup: "text", sv: "text", iv: "integer"}, columns: record {}}
 
+set stmt_update_user_password to data.prepare using db, "UPDATE users SET password_hash = :password_hash, updated_at = :updated_at WHERE id = :id AND password_hash = :previous_hash", record {params: record {previous_hash: "text", password_hash: "text", updated_at: "text", id: "integer"}, columns: record {}}
+set stmt_list_user_sessions to data.prepare using db, "SELECT id, COALESCE(user_agent, '') AS user_agent, created_at, last_seen_at, expires_at FROM sessions WHERE user_id = :user_id AND expires_at > :now_iso ORDER BY last_seen_at DESC, id ASC", record {params: record {user_id: "integer", now_iso: "text"}, columns: record {id: "text", user_agent: "text", created_at: "text", last_seen_at: "text", expires_at: "text"}}
+set stmt_delete_other_sessions to data.prepare using db, "DELETE FROM sessions WHERE user_id = :user_id AND id <> :keep_id", record {params: record {user_id: "integer", keep_id: "text"}, columns: record {}}
+set stmt_list_user_oauth to data.prepare using db, "SELECT provider, provider_email, created_at FROM oauth_accounts WHERE user_id = :user_id ORDER BY provider ASC", record {params: record {user_id: "integer"}, columns: record {provider: "text", provider_email: "text", created_at: "text"}}
+set stmt_count_user_entries to data.prepare using db, "SELECT count(*) AS total FROM entries WHERE author_id = :user_id AND (:status = 'all' OR status = :status)", record {params: record {user_id: "integer", status: "text"}, columns: record {total: "integer"}}
+
 set stmt_get_oauth_account to data.prepare using db, "SELECT id, user_id, provider, provider_user_id, provider_email, created_at, updated_at FROM oauth_accounts WHERE provider = :provider AND provider_user_id = :provider_user_id", record {params: record {provider: "text", provider_user_id: "text"}, columns: record {id: "integer", user_id: "integer", provider: "text", provider_user_id: "text", provider_email: "text", created_at: "text", updated_at: "text"}}
 set stmt_insert_oauth_account to data.prepare using db, "INSERT INTO oauth_accounts (user_id, provider, provider_user_id, provider_email, created_at, updated_at) VALUES (:user_id, :provider, :provider_user_id, :provider_email, :created_at, :updated_at)", record {params: record {user_id: "integer", provider: "text", provider_user_id: "text", provider_email: "text", created_at: "text", updated_at: "text"}, columns: record {}}
 set stmt_update_oauth_account to data.prepare using db, "UPDATE oauth_accounts SET provider_email = :provider_email, updated_at = :updated_at WHERE id = :id", record {params: record {provider_email: "text", updated_at: "text", id: "integer"}, columns: record {}}
@@ -174,7 +180,7 @@ end
 
 set author_stmts to try_prepare_author_stmts using db
 
-set stmts to record {db: db, cms_cache: cms_cache, commerce_ready: commerce_stmts.ready, commerce: commerce_stmts, author_ready: author_stmts.ready, author: author_stmts, get_setting: stmt_get_setting, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, get_type: stmt_get_type, insert_type: stmt_insert_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, delete_entry_by_id: stmt_delete_entry_by_id, count_entries_filtered: stmt_count_entries_filtered, query_entries_desc: stmt_query_entries_desc, query_entries_asc: stmt_query_entries_asc, find_redirect_by_old_path: stmt_find_redirect_by_old_path, delete_redirect: stmt_delete_redirect, insert_redirect: stmt_insert_redirect, get_theme: stmt_get_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, set_active_theme: stmt_set_active_theme, count_users: stmt_count_users, get_user: stmt_get_user, insert_user: stmt_insert_user, update_user: stmt_update_user, get_session_with_user: stmt_get_session_with_user, insert_session: stmt_insert_session, touch_session: stmt_touch_session, delete_sessions: stmt_delete_sessions, get_oauth_account: stmt_get_oauth_account, insert_oauth_account: stmt_insert_oauth_account, update_oauth_account: stmt_update_oauth_account, count_media: stmt_count_media, list_media: stmt_list_media, get_media: stmt_get_media, insert_media: stmt_insert_media, update_media: stmt_update_media, delete_media: stmt_delete_media, get_menu: stmt_get_menu, insert_menu: stmt_insert_menu, clear_menu_location: stmt_clear_menu_location, update_menu: stmt_update_menu, delete_menu: stmt_delete_menu, list_menu_items_by_menu: stmt_list_menu_items_by_menu, insert_menu_item: stmt_insert_menu_item, delete_menu_items: stmt_delete_menu_items, get_taxonomy: stmt_get_taxonomy, insert_taxonomy: stmt_insert_taxonomy, delete_taxonomy: stmt_delete_taxonomy, get_term: stmt_get_term, insert_term: stmt_insert_term, delete_term: stmt_delete_term, list_entry_terms: stmt_list_entry_terms, delete_entry_terms_by_entry: stmt_delete_entry_terms_by_entry, insert_entry_term: stmt_insert_entry_term, count_entries_by_term: stmt_count_entries_by_term, query_entries_by_term: stmt_query_entries_by_term}
+set stmts to record {db: db, cms_cache: cms_cache, commerce_ready: commerce_stmts.ready, commerce: commerce_stmts, author_ready: author_stmts.ready, author: author_stmts, get_setting: stmt_get_setting, upsert_setting_update: stmt_upsert_setting_update, upsert_setting_insert: stmt_upsert_setting_insert, get_type: stmt_get_type, insert_type: stmt_insert_type, get_field_by_key: stmt_get_field_by_key, insert_field: stmt_insert_field, get_entry_by_id: stmt_get_entry_by_id, get_entry_by_full_path: stmt_get_entry_by_full_path, insert_entry: stmt_insert_entry, update_entry: stmt_update_entry, delete_entry_by_id: stmt_delete_entry_by_id, count_entries_filtered: stmt_count_entries_filtered, query_entries_desc: stmt_query_entries_desc, query_entries_asc: stmt_query_entries_asc, find_redirect_by_old_path: stmt_find_redirect_by_old_path, delete_redirect: stmt_delete_redirect, insert_redirect: stmt_insert_redirect, get_theme: stmt_get_theme, insert_theme: stmt_insert_theme, update_theme_manifest: stmt_update_theme_manifest, set_active_theme: stmt_set_active_theme, count_users: stmt_count_users, get_user: stmt_get_user, insert_user: stmt_insert_user, update_user: stmt_update_user, get_session_with_user: stmt_get_session_with_user, insert_session: stmt_insert_session, touch_session: stmt_touch_session, delete_sessions: stmt_delete_sessions, get_oauth_account: stmt_get_oauth_account, insert_oauth_account: stmt_insert_oauth_account, update_oauth_account: stmt_update_oauth_account, count_media: stmt_count_media, list_media: stmt_list_media, get_media: stmt_get_media, insert_media: stmt_insert_media, update_media: stmt_update_media, delete_media: stmt_delete_media, get_menu: stmt_get_menu, insert_menu: stmt_insert_menu, clear_menu_location: stmt_clear_menu_location, update_menu: stmt_update_menu, delete_menu: stmt_delete_menu, list_menu_items_by_menu: stmt_list_menu_items_by_menu, insert_menu_item: stmt_insert_menu_item, delete_menu_items: stmt_delete_menu_items, get_taxonomy: stmt_get_taxonomy, insert_taxonomy: stmt_insert_taxonomy, delete_taxonomy: stmt_delete_taxonomy, get_term: stmt_get_term, insert_term: stmt_insert_term, delete_term: stmt_delete_term, list_entry_terms: stmt_list_entry_terms, delete_entry_terms_by_entry: stmt_delete_entry_terms_by_entry, insert_entry_term: stmt_insert_entry_term, count_entries_by_term: stmt_count_entries_by_term, query_entries_by_term: stmt_query_entries_by_term, update_user_password: stmt_update_user_password, list_user_sessions: stmt_list_user_sessions, delete_other_sessions: stmt_delete_other_sessions, list_user_oauth: stmt_list_user_oauth, count_user_entries: stmt_count_user_entries}
 
 # ==============================================================================
 # Shared Helpers: Normalization, Identifier & URL Safety, Escaping
@@ -666,7 +672,7 @@ make extract_bearer_token using req
   give back ""
 end
 
-make create_rotated_session using stmts, req, user_id, old_token_hash
+make create_rotated_session using stmts, req, user_id, old_token_hash, verified_hash
   set sess_id to crypto.random_hex using 16
   set raw_token to crypto.random_urlsafe using 32
   set tok_hash to crypto.sha256_hex using raw_token
@@ -678,12 +684,19 @@ make create_rotated_session using stmts, req, user_id, old_token_hash
 
   set tx to data.begin using stmts.db
   try
+    call data.execute using stmts.update_user, record {display_name: nothing, role: nothing, is_active: nothing, email_verified: nothing, last_login_at: now_rec.iso, updated_at: now_rec.iso, id: user_id}, tx
+    if verified_hash is not nothing
+      set current_user to data.one using stmts.get_user, record {lookup: "id", iv: user_id, sv: ""}, tx
+      if current_user is nothing or current_user.is_active is not 1 or current_user.password_hash is not verified_hash
+        call data.rollback using tx
+        give back record {ok: no, error: "Credentials changed"}
+      end
+    end
     if old_token_hash is not ""
       call data.execute using stmts.delete_sessions, record {lookup: "token", sv: old_token_hash, iv: 0}, tx
     end
     call data.execute using stmts.delete_sessions, record {lookup: "expired", sv: now_rec.iso, iv: 0}, tx
     call data.execute using stmts.insert_session, record {id: sess_id, user_id: user_id, token_hash: tok_hash, csrf_secret: csrf_secret, ip_hash: ip_hash, user_agent: ua, expires_at: exp_rec.iso, created_at: now_rec.iso, last_seen_at: now_rec.iso}, tx
-    call data.execute using stmts.update_user, record {display_name: nothing, role: nothing, is_active: nothing, email_verified: nothing, last_login_at: now_rec.iso, updated_at: now_rec.iso, id: user_id}, tx
     call data.commit using tx
     give back record {ok: yes, session_id: sess_id, raw_token: raw_token, token_hash: tok_hash, csrf_secret: csrf_secret, expires_at: exp_rec.iso, error: ""}
   catch tx_err
@@ -2291,7 +2304,7 @@ make execute_filter_handler using handler_name, val, ctx
     if has_map_key using ctx, "theme_slug"
       set tslug to text.from using (ctx at "theme_slug")
     end
-    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v1.4.0 (" joined with (escape_html using tslug) joined with ")\">")
+    set tags to collections.append using tags, ("<meta name=\"generator\" content=\"GrabLab CMS v1.5.0 (" joined with (escape_html using tslug) joined with ")\">")
     give back tags
   end
 
@@ -6531,8 +6544,11 @@ route "GET" "/login" using req
     give back server.redirect using "/setup", 302
   end
   set sess to resolve_session using stmts, req
-  if sess is not nothing and (role_has_capability using sess.role, "admin:access")
-    give back server.redirect using "/admin", 302
+  if sess is not nothing
+    if role_has_capability using sess.role, "admin:access"
+      give back server.redirect using "/admin", 302
+    end
+    give back server.redirect using "/admin/profile", 302
   end
   set settings to get_site_settings_map using stmts
   set assets to call admin_asset_urls
@@ -6549,6 +6565,22 @@ route "GET" "/admin" using req
     give back gate.response
   end
   give back render_admin_dashboard using stmts, gate.session, "overview", "Dashboard", "Site overview and active theme status"
+end
+
+route "GET" "/admin/posts" using req
+  set gate to require_admin_html using stmts, req, "entries:read"
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "posts", "Posts", "Create, edit, publish, and manage blog posts"
+end
+
+route "GET" "/admin/pages" using req
+  set gate to require_admin_html using stmts, req, "entries:read"
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "pages", "Pages", "Create, edit, publish, and manage site pages"
 end
 
 route "GET" "/admin/entries" using req
@@ -6635,7 +6667,7 @@ route "GET" "/admin/store/{section}" using req
   if not gate.ok
     give back gate.response
   end
-  if sec is not "products" and sec is not "orders" and sec is not "coupons" and sec is not "customers" and sec is not "settings"
+  if sec is not "products" and sec is not "orders" and sec is not "coupons" and sec is not "customers" and sec is not "shoppers" and sec is not "settings"
     give back server.json using 404, record {error: "Unknown store admin section", section: sec}
   end
   call run_commerce_sweep using stmts, no
@@ -6652,7 +6684,7 @@ route "GET" "/admin/commerce/{section}" using req
   if not gate.ok
     give back gate.response
   end
-  if sec is not "products" and sec is not "orders" and sec is not "coupons" and sec is not "customers" and sec is not "settings"
+  if sec is not "products" and sec is not "orders" and sec is not "coupons" and sec is not "customers" and sec is not "shoppers" and sec is not "settings"
     give back server.json using 404, record {error: "Unknown commerce admin section", section: sec}
   end
   call run_commerce_sweep using stmts, no
@@ -6691,6 +6723,14 @@ route "GET" "/admin/author/{section}" using req
     give back server.json using 404, record {error: "Unknown author admin section", section: sec}
   end
   give back render_admin_dashboard using stmts, gate.session, ("author_" joined with sec), "Author Studio", "Manage books, series reading order, chapters, and Bestseller Radar drafts"
+end
+
+route "GET" "/admin/profile" using req
+  set gate to require_admin_html using stmts, req, ""
+  if not gate.ok
+    give back gate.response
+  end
+  give back render_admin_dashboard using stmts, gate.session, "profile", "My Profile", "Account identity, security, and personal preferences"
 end
 
 route "GET" "/admin/{rest}" using req
@@ -6752,7 +6792,7 @@ route "POST" "/api/auth/setup" using req
       give back server.json using 500, record {error: tx_err.message}
     end
 
-    set sres to create_rotated_session using stmts, req, created.id, ""
+    set sres to create_rotated_session using stmts, req, created.id, "", nothing
     if not sres.ok
       give back server.json using 500, record {error: sres.error}
     end
@@ -6806,7 +6846,10 @@ route "POST" "/api/auth/login" using req
     if old_raw is not ""
       set old_hash to crypto.sha256_hex using old_raw
     end
-    set sres to create_rotated_session using stmts, req, user.id, old_hash
+    set sres to create_rotated_session using stmts, req, user.id, old_hash, user.password_hash
+    if not sres.ok and sres.error is "Credentials changed"
+      give back server.json using 401, record {error: "Invalid email or password"}
+    end
     if not sres.ok
       give back server.json using 500, record {error: sres.error}
     end
@@ -6839,12 +6882,151 @@ route "GET" "/api/auth/session" using req
   give back server.response using record {status: 200, headers: {"Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store"}, body: body_json}
 end
 
+make profile_capability_catalog
+  give back [record {key: "admin:access", label: "Open the admin area"}, record {key: "entries:read", label: "Read entries"}, record {key: "entries:create", label: "Create entries"}, record {key: "entries:publish", label: "Publish entries"}, record {key: "media:upload", label: "Upload media"}, record {key: "menus:manage", label: "Manage menus"}, record {key: "taxonomies:manage", label: "Manage taxonomies"}, record {key: "commerce:manage", label: "Manage store"}, record {key: "author:manage", label: "Use Author Studio"}, record {key: "themes:manage", label: "Switch themes"}, record {key: "users:manage", label: "Manage users"}]
+end
+
+make build_profile_payload using stmts, sess
+  set user_row to data.one using stmts.get_user, record {lookup: "id", iv: sess.user_id, sv: ""}
+  set now_rec to call dates.now_utc
+  set session_rows to data.query using stmts.list_user_sessions, record {user_id: sess.user_id, now_iso: now_rec.iso}
+  set sessions to []
+  for each s_row in session_rows
+    set is_current to no
+    if s_row.id is sess.session_id
+      set is_current to yes
+    end
+    set sessions to collections.append using sessions, record {id: s_row.id, user_agent: s_row.user_agent, created_at: s_row.created_at, last_seen_at: s_row.last_seen_at, expires_at: s_row.expires_at, current: is_current}
+  end
+  set linked to []
+  set oauth_rows to data.query using stmts.list_user_oauth, record {user_id: sess.user_id}
+  for each o_row in oauth_rows
+    set linked to collections.append using linked, record {provider: o_row.provider, provider_email: o_row.provider_email, linked_at: o_row.created_at}
+  end
+  set caps to []
+  set catalog to call profile_capability_catalog
+  for each c_item in catalog
+    set caps to collections.append using caps, record {key: c_item.key, label: c_item.label, granted: (role_has_capability using sess.role, c_item.key)}
+  end
+  set n_all to data.one using stmts.count_user_entries, record {user_id: sess.user_id, status: "all"}
+  set n_pub to data.one using stmts.count_user_entries, record {user_id: sess.user_id, status: "published"}
+  set n_draft to data.one using stmts.count_user_entries, record {user_id: sess.user_id, status: "draft"}
+  set has_password to no
+  if user_row is not nothing and user_row.password_hash is not nothing
+    set has_password to yes
+  end
+  give back record {user: record {id: sess.user_id, email: sess.email, display_name: sess.display_name, role: sess.role, email_verified: sess.email_verified, created_at: user_row.created_at, updated_at: user_row.updated_at, last_login_at: user_row.last_login_at}, has_password: has_password, sessions: sessions, oauth_accounts: linked, capabilities: caps, stats: record {entries_total: n_all.total, entries_published: n_pub.total, entries_draft: n_draft.total, session_count: (collections.length using sessions)}}
+end
+
+route "GET" "/api/auth/profile" using req
+  set auth to require_api_auth using stmts, req, "", no
+  if not auth.ok
+    give back auth.response
+  end
+  give back server.response using record {status: 200, headers: {"Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store"}, body: (json.stringify using (build_profile_payload using stmts, auth.session))}
+end
+
+route "PATCH" "/api/auth/profile" using req
+  set auth to require_api_auth using stmts, req, "", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set payload to server.parse_json using req
+    if not (payload has "display_name")
+      give back server.json using 400, record {error: "Missing required field: display_name"}
+    end
+    set next_name to text.trim using (text.from using (payload at "display_name"))
+    if next_name is ""
+      give back server.json using 400, record {error: "Display name is required"}
+    end
+    if (text.length using next_name) is greater than 80
+      give back server.json using 400, record {error: "Display name must be 80 characters or fewer"}
+    end
+    if (text.contains using next_name, "\n") or (text.contains using next_name, "\r")
+      give back server.json using 400, record {error: "Display name must be a single line"}
+    end
+    set now_rec to call dates.now_utc
+    call data.execute using stmts.update_user, record {display_name: next_name, role: nothing, is_active: nothing, email_verified: nothing, last_login_at: nothing, updated_at: now_rec.iso, id: auth.session.user_id}
+    give back server.json using 200, record {user: record {id: auth.session.user_id, email: auth.session.email, display_name: next_name, role: auth.session.role}}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/auth/password" using req
+  set auth to require_api_auth using stmts, req, "", yes
+  if not auth.ok
+    give back auth.response
+  end
+  try
+    set payload to server.parse_json using req
+    if (not (payload has "current_password")) or (not (payload has "new_password"))
+      give back server.json using 400, record {error: "Missing required fields: current_password, new_password"}
+    end
+    set cur_pw to text.from using (payload at "current_password")
+    set new_pw to text.from using (payload at "new_password")
+    set email_norm to normalize_email using auth.session.email
+    set pw_rl to check_login_rate_limit using stmts, req, email_norm
+    if not pw_rl.ok
+      give back pw_rl.response
+    end
+    set user to data.one using stmts.get_user, record {lookup: "id", iv: auth.session.user_id, sv: ""}
+    if user is nothing or user.password_hash is nothing
+      give back server.json using 409, record {error: "Password sign-in is not enabled for this account"}
+    end
+    set valid_pw to no
+    try
+      set valid_pw to crypto.verify_password using cur_pw, user.password_hash
+    catch v_err
+      set valid_pw to no
+    end
+    if not valid_pw
+      give back server.json using 403, record {error: "Current password is incorrect"}
+    end
+    if not (is_valid_password using new_pw)
+      give back server.json using 400, record {error: "Password must be 10 to 1024 characters"}
+    end
+    if new_pw is cur_pw
+      give back server.json using 400, record {error: "New password must differ from the current password"}
+    end
+    set pw_hash to crypto.hash_password using new_pw
+    set now_rec to call dates.now_utc
+    set tx to data.begin using stmts.db
+    try
+      set changed to data.execute using stmts.update_user_password, record {previous_hash: user.password_hash, password_hash: pw_hash, updated_at: now_rec.iso, id: user.id}, tx
+      if changed.rows_affected is not 1
+        call data.rollback using tx
+        give back server.json using 409, record {error: "Password changed during this request"}
+      end
+      call data.execute using stmts.delete_other_sessions, record {user_id: user.id, keep_id: auth.session.session_id}, tx
+      call data.commit using tx
+    catch tx_err
+      call data.rollback using tx
+      give back server.json using 500, record {error: tx_err.message}
+    end
+    call clear_login_rate_limit using stmts, req, email_norm
+    give back server.json using 200, record {ok: yes, other_sessions_revoked: yes}
+  catch err
+    give back server.json using 400, record {error: err.message}
+  end
+end
+
+route "POST" "/api/auth/sessions/revoke-others" using req
+  set auth to require_api_auth using stmts, req, "", yes
+  if not auth.ok
+    give back auth.response
+  end
+  call data.execute using stmts.delete_other_sessions, record {user_id: auth.session.user_id, keep_id: auth.session.session_id}
+  give back server.json using 200, record {ok: yes}
+end
+
 route "POST" "/api/auth/mcp-token" using req
   set auth to require_api_auth using stmts, req, "", yes
   if not auth.ok
     give back auth.response
   end
-  set tok_res to create_rotated_session using stmts, req, auth.session.user_id, ""
+  set tok_res to create_rotated_session using stmts, req, auth.session.user_id, "", nothing
   if not tok_res.ok
     give back server.json using 500, record {error: tok_res.error}
   end
@@ -6971,7 +7153,7 @@ route "GET" "/api/auth/oauth/{provider}/callback" using req
     set email_verified to no
 
     if endpoints.userinfo_url is not ""
-      set ures to http.get using endpoints.userinfo_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.0.0"}, timeout_ms: 5000}
+      set ures to http.get using endpoints.userinfo_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.5.0"}, timeout_ms: 5000}
       if not ures.ok
         give back server.json using 502, record {error: "OAuth profile fetch failed"}
       end
@@ -7003,7 +7185,7 @@ route "GET" "/api/auth/oauth/{provider}/callback" using req
     end
 
     if (not email_verified or email_raw is "") and provider is "github" and endpoints.emails_url is not ""
-      set eres to http.get using endpoints.emails_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.0.0"}, timeout_ms: 5000}
+      set eres to http.get using endpoints.emails_url, record {headers: {"Authorization": ("Bearer " joined with access_token), "Accept": "application/json", "User-Agent": "GrabLab-CMS/1.5.0"}, timeout_ms: 5000}
       if eres.ok
         set elist to json.parse using eres.body
         for each eitem in elist
@@ -7044,7 +7226,7 @@ route "GET" "/api/auth/oauth/{provider}/callback" using req
     if old_raw is not ""
       set old_hash to crypto.sha256_hex using old_raw
     end
-    set sres to create_rotated_session using stmts, req, resolved.user.id, old_hash
+    set sres to create_rotated_session using stmts, req, resolved.user.id, old_hash, nothing
     if not sres.ok
       give back server.json using 500, record {error: sres.error}
     end
@@ -8980,7 +9162,7 @@ route "POST" "/api/mcp" using req
       set method to text.from using (rpc at "method")
     end
     if method is "initialize"
-      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "1.4.0"}), capabilities: (record {tools: {}})})}
+      give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: (record {protocolVersion: "2024-11-05", serverInfo: (record {name: "grablab-cms-mcp", version: "1.5.0"}), capabilities: (record {tools: {}})})}
     end
     if method is "ping"
       give back server.json using 200, record {jsonrpc: "2.0", id: rpc_id, result: {}}

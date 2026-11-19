@@ -1,4 +1,47 @@
+@font-face {
+  font-family: "Urbanist";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/admin/fonts/urbanist-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Urbanist";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/static/admin/fonts/urbanist-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Urbanist";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/admin/fonts/urbanist-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Urbanist";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/admin/fonts/urbanist-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Urbanist Fallback";
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 98.4%;
+  ascent-override: 96.5%;
+  descent-override: 25.4%;
+  line-gap-override: 0%;
+}
+
 :root {
+  --grex-font-sans: "Urbanist", "Urbanist Fallback", "Helvetica Neue", Arial, sans-serif;
+  --grex-font-display: "Urbanist", "Urbanist Fallback", "Helvetica Neue", Arial, sans-serif;
   --grex-bg: #f8fafc;
   --grex-surface: #ffffff;
   --grex-ink: #0f172a;

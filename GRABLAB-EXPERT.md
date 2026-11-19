@@ -32,3 +32,12 @@ Never touch or duplicate core Go compiler internals or `grex-js` source code ins
   - All HTML output in `.grab.html` relies on GRAB's context-aware escaping; Grex JS elements enforce `securityRules` (`no-wrapper-div`, `csp-safe`, no `eval`/`innerHTML`).
 - **`--read-only` Container Compatibility:** Static assets and uploaded media/theme mounts stay strictly under configured writable volume paths; core code and `PreparedApp` never write temp files to the root filesystem (`server.asset` hashes in memory).
 - **Pretty Permalinks & 301 History:** Reserved system prefixes (`/admin`, `/api`, `/static`, `/_health`, `/_ready`) MUST be protected from slug collisions. Changing a published item's slug records the old slug in `slug_history` and serves an automatic `301 Moved Permanently` to the new canonical URL.
+
+---
+
+## 4. Admin UI, Header Navigation & Universal User Profile Design Contract
+- **Universal profile.** All four authenticated roles share six vertical tabs on `/admin/profile`: My Profile, Security, Notifications, Billing & Subscriptions, Data Export, and Delete Account. Each selected panel uses the responsive card grid. The two-tier admin header stays sticky. The cards expand in place without an internal scrollbar.
+- **Header navigation.** Keep visible text on every menu link. Posts and Pages are the two owner-approved exceptions with decorative WordPress-style SVGs. The viewer menu contains only the text link to Profile.
+- **Pure `Grex JS v1.0.0` DOM Hygiene:** Every admin, commerce, author, and profile view MUST be built exclusively with semantic `Grex JS v1.0.0` components (`divCount === 0`, `innerHTMLWriteCount === 0`, zero `eval()` / `new Function()`, zero wrapper `<div>`, zero React/Tailwind bloat).
+- **Accessibility & Light/Dark WCAG AA (`>= 4.5:1`) Lock:** Every admin and profile element MUST support full keyboard navigation (`Tab`, `Enter`, `Space`, `Arrow` keys, `Escape` close with focus restoration), valid ARIA roles (`tablist`/`tab`/`tabpanel`, `switch`, `dialog`, `alert`/`status`), and verified **Light & Dark mode WCAG AA contrast (`>= 4.5:1`)** enforced by `tests/profile_dom_audit.mjs`.
+- **Owner Visual Approval Gate & `MINOR` (`1.x.0`) Tier:** All frontend/UI design releases follow the **`MINOR` (`1.x.0`)** SemVer tier (`ADR-027c`) and MUST pass a **Human Visual Approval Gate** (live preview / screenshots inspected and explicitly approved by the project owner) before any `git commit`, `git tag`, or `git push` to `origin` or `stable`.

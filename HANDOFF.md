@@ -1,13 +1,15 @@
 ﻿# GrabLab CMS — Tandem Ownership & Handoff Log
 
-**Current Owner:** Google Antigravity  
-**Last Completed Milestone:** `v1.4.1` — PostgreSQL 18 Taxonomy Query Compatibility Patch (`PATCH 1.4.x`, building on `v1.4.0` Author Mode + `v1.1.0` Zero-Plugin E-Commerce Core — Complete on `origin` and `stable`)  
+**Current Owner:** OpenAI Codex
+**Last Completed Milestone:** v1.5.0 Admin UI & Universal Profile Studio — Approved & Frozen — Complete.
 **Next Milestone:** Planned backlog (`v1.2.0` Universal Commerce Webhooks & Event-Triggered Email Queue, `v1.3.0` Opt-In "Talk to Groxy" Database & Store Consultant Tab, plus re-slotted SEO Redirect Manager + Groxy SEO Assist) — awaiting owner selection; `v1.0.0`, `v1.0.1`, `v1.1.0`, `v1.4.0`, and `v1.4.1` remain frozen on `stable`.  
-**Specification Status:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2), and `specifications/GRABLAB-SPEC-140.md` (`v1.4.0` / `v1.4.1` patch) **Approved & Frozen — Complete** (Stage 2 & Stage 4 Sign-Off `PASS`).
+**Current Specification:** GRABLAB-SPEC-150 — Approved & Frozen — Complete.
+
+**Earlier Specifications:** `specifications/GRABLAB-SPEC-001.md` (`v0.1.0`), `specifications/GRABLAB-SPEC-002.md` (`v0.2.0`), `specifications/GRABLAB-SPEC-003.md` (`v0.3.0`), `specifications/GRABLAB-SPEC-004.md` (`v0.4.0`), `specifications/GRABLAB-SPEC-100.md` (`v1.0.0` freeze), `specifications/GRABLAB-SPEC-110.md` (`v1.1.0` Revision 2), and `specifications/GRABLAB-SPEC-140.md` (`v1.4.0` / `v1.4.1` patch) **Approved & Frozen — Complete** (Stage 2 & Stage 4 Sign-Off `PASS`).
 
 ---
 
-## Pending Tasks
+## Future backlog (outside v1.5.0)
 - **Re-Slotted Prior `v1.1.0` Scope (SEO Redirect Manager + Groxy SEO Assist; version slot TBD by owner — `v1.1.0` shipped E-Commerce Core):**
   - **SEO Redirect Manager (`/admin/redirects` & `/api/admin/redirects`):** Inspect automatic `slug_history` `301` redirects and manage manual `301` / `302` redirects with cycle/loop prevention, reserved path protection, RBAC + CSRF, and `use cache` invalidation.
   - **Built-In Per-Entry & Per-Image Groxy AI SEO Assist (`groxy_assist_enabled`):** Native toggle in all content type editors and Media Library image items. When ON, clicking **Publish** opens a **Pre-Publish SEO & Performance Grade Review Screen** (`A+`–`F` / `0–100` across On-Page SEO, Content & WCAG Accessibility, Performance & Clean DOM, and Off-Page / Internal Linking Readiness) with **"Make This Live"** or **🚀 "Let Groxy Boost This"** (side-by-side diff + refreshed grades requiring explicit **"Approve & Make This Live"** confirmation before going public).
@@ -17,6 +19,10 @@
   - **Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`):** Exposes read-only live schema & dependency inspection (`SCHEMA-CONTEXT.md`, row counts, active `ForEach` Query Loops, `slug_history` redirects, and order ledger references) to **Groxy AI** (`v1.5.0`), gating any schema/data adjustments behind single-use `approval_token` + `X-CSRF-Token` + automatic pre-migration snapshots.
 
 ---
+
+## v1.5.0 release decision
+
+**Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off (`PASS`).** The owner approved the live Light and Dark designs, six vertical tabs and the Posts/Pages header-icon exception on 2026-11-19. All seven Python suites, three DOM audits, both platform checks and byte parity on 20 sources passed. Gate coverage includes the 20-way checkout race and 10-way author import. Profile data is account-scoped and password rotation checks the verified hash during the update. No pending v1.5.0 milestone tasks.
 
 ## Handoff History
 - **2026-11-18 (`v1.4.0` Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off `PASS` & Dual-Remote `stable` Promotion):** Completed Stage 4 verification on `Orchestrator (Argon)`: `grab check` (`grab.platform.json` + `deploy/grab.platform.commerce.json`), canonical byte-for-byte `grab format` across all 20 `.grab` files, `node tests/author_dom_audit.mjs` (`divCount: 0`, `innerHTMLWriteCount: 0`, `contrastPairsVerified: 12`, `auditAccessibilityPassed: true`, `keyboardFocusRestored: true`), `node tests/commerce_dom_audit.mjs` (`divCount: 0`, `innerHTMLWriteCount: 0`, `contrastPairsVerified: 21`, `auditAccessibilityPassed: true`), `tests/author_test.py` (10/10), `tests/release_v140_test.py` (5/5), `tests/commerce_test.py` (9/9), `tests/release_v110_test.py` (5/5), `tests/integration_test.py` (13/13), `tests/release_v100_test.py` (5/5), and clean `git status --short` across all 10 sibling repositories. Generated `docs/releases/pdf/GrabLab-CMS-v1.4.0-Guide.pdf` (`Complete`), `docs/releases/pdf/GrabLab-CMS-v1.4.0-RELEASE-NOTES.md` (with mandatory SemVer summary & Ecosystem Compatibility Matrix), `dist/grablab-cms-v1.4.0-bundle.zip`, and `dist/SHA256SUMS.txt`; tagged annotated `v1.4.0`, promoted `main` and `v1.4.0` to both `origin` (`urbanspress/grablab-cms.progress`) and `stable` (`urbanspress/grablab-cms.stable`), and published synchronized GitHub Releases (`grablab-cms-v1.4.0-bundle.zip`, `SHA256SUMS.txt`, `GrabLab-CMS-v1.4.0-Guide.pdf`). Also queued Milestone `v1.9.0` (SEMrush-Parity Site Spider, Auto-Internal-Linker & Free Bing/Common-Crawl Competitor Gap Analyzer) in `C:\Development\groxy-ai\docs\ROADMAP.md` (`origin/main` only, keeping `groxy-ai` `stable` untouched at `v1.8.0`).

@@ -2,6 +2,12 @@
 
 All notable releases of **GrabLab CMS** (`urbanspress/grablab-cms`) are documented in this file.
 
+## `[v1.5.0]` — 2026-11-19
+
+- Added the six-tab User Profile Studio for all authenticated roles. Users can edit their display name, choose a local portrait, change their password, revoke other sessions and export their account details.
+- Updated the two-tier admin header, Posts and Pages navigation, local Urbanist typography, Light/Dark themes and expandable profile cards.
+- Verified both GRAB platform profiles, the DOM and regression suites, and concurrent checkout and author import. Existing databases and adjacent ecosystem layers need no upgrade.
+
 ## `[v1.4.1]` — 2026-11-18 (PostgreSQL 18 Taxonomy Query Compatibility Patch)
 
 ### Fixed

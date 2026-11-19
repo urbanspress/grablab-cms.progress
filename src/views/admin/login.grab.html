@@ -8,16 +8,18 @@
   <title>Sign In — {site_title}</title>
   <link rel="stylesheet" href="{tokens_css_url}">
   <link rel="stylesheet" href="{admin_css_url}">
+  <link rel="stylesheet" href="/static/admin/admin-ui.css?v=1.5.1">
+  <script src="/static/admin/theme-init.js?v=1.5.0"></script>
 </head>
 <body class="cms-admin-body">
   <main class="cms-auth-shell" data-admin-page="login">
     <header class="cms-auth-header">
       <a class="cms-brand" href="/">{site_title}</a>
-      <span class="cms-badge">GrabLab CMS v1.4.0</span>
+      <span class="cms-badge">GrabLab CMS v1.5.0</span>
     </header>
     <section class="cms-auth-card" aria-labelledby="login-heading">
       <h1 id="login-heading">Sign in to GrabLab</h1>
-      <p class="cms-muted">Enter your administrator, editor, or author credentials.</p>
+      <p class="cms-muted">Enter your account credentials.</p>
       <section id="login-form-mount" aria-label="Sign in form"></section>
       <!-- @slot:social_login -->
       <p class="cms-auth-footer"><a href="/">Return to public site</a></p>

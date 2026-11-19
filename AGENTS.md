@@ -1,7 +1,7 @@
 # GrabLab CMS Engineering Instructions (`AGENTS.md`)
 
 **Repositories:** `urbanspress/grablab-cms.progress` (active development) / `urbanspress/grablab-cms.stable` (verified releases) (`C:\Development\grablab-cms`)  
-**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS (`v1.4.0` current) built on **GRAB `v1.1.0`** and **Grex JS `v1.0.0`**.
+**Role:** Step 2 of the GRAB Post-1.0 Ecosystem — Flagship Savvy CMS (`v1.5.0` Admin UI & Universal Profile Studio) built on **GRAB `v1.1.0`** and **Grex JS `v1.0.0`**.
 
 ---
 
@@ -29,11 +29,33 @@ Advise the project owner which Antigravity model and effort level to select for 
 
 ---
 
+### Codex Model + Effort Tiers
+
+End every Codex turn with **Recommended Next Model & Effort Tier**. Name one exact model and effort level from the row for the next task and give the reason in one sentence. Use the second option when the first is unavailable.
+
+| Next task | Preferred Codex tier | Alternate Codex tier |
+|---|---|---|
+| Stage 1, pre-implementation specifications (`*-SPEC-*.md`) and roadmaps | GPT-6.2 Sol (Medium) | GPT-6.1 Sol (Medium) |
+| Stages 2 and 4, cross-layer security and contract audits and pre-release sign-offs | GPT-6.2 Astra (High) | |
+| Stage 3, core multi-file implementation and unit or DOM suites | GPT-6.2 Sol (High) | GPT-6.1 Terra (High) |
+| Quick UI tweaks, packaging and snapshot syncs | GPT-6 Luna (Medium) | GPT-6.1 Sol (Medium) |
+
+---
+
 ## Mandatory Verification Gate
 NEVER mark a milestone or implementation task complete until:
 1. `grab check` passes on all `.grab` and `.grab.html` files with zero errors.
 2. `grab format --write` (or `--check`) confirms canonical formatting.
-3. All automated integration tests (routing, 301 slug history, `use data` SQLite/MariaDB/PostgreSQL contracts, `use cache` invalidation, exclusive theme switching, CSRF/XSS security) pass **100%**.
+3. All automated DOM/WCAG AA audits (`commerce_dom_audit.mjs`, `author_dom_audit.mjs`, `profile_dom_audit.mjs`) and integration/release test suites (`integration_test.py`, `commerce_test.py`, `author_test.py`, `release_v100_test.py`, `release_v110_test.py`, `release_v140_test.py`, `release_v150_test.py`) pass **100%**.
+4. For any frontend/UI design milestone, the project owner has inspected live preview / Light & Dark screenshots and given explicit **Visual Approval** before any `git commit`, `git tag`, or `git push`.
+
+---
+
+## Frontend & UI Design Standards (`ADR-027c`)
+- **Universal profile.** All four authenticated roles share six vertical tabs on `/admin/profile`: My Profile, Security, Notifications, Billing & Subscriptions, Data Export, and Delete Account. Each selected panel uses the responsive card grid. The two-tier admin header stays sticky. The cards expand in place without an internal scrollbar.
+- **Header navigation.** Keep visible text on every menu link. Posts and Pages are the two owner-approved exceptions with decorative WordPress-style SVGs. The viewer menu contains only the text link to Profile.
+- **Strict Pure `Grex JS v1.0.0` & WCAG AA Lock:** Zero `div`, zero `innerHTML` writes, zero `eval()`, zero React/Tailwind bloat, full keyboard navigation (`Tab`, `Enter`, `Space`, `Arrow` keys, `Escape` focus restoration), ARIA roles, and Light + Dark WCAG AA `>= 4.5:1` contrast.
+- **SemVer Tier & Human Visual Approval Gate:** Every frontend/UI design release MUST ship as a **`MINOR` (`1.x.0`)** SemVer release (`ADR-027c`) and MUST pause for **Owner Visual Approval** before permanent commit, tag, or push to `origin` or `stable`.
 
 ---
 

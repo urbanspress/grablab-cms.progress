@@ -511,7 +511,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
         st, _, _, _, pm = http_req(port, "GET", "/api/menus/primary")
         assert st == 200 and pm["menu"]["items"][1]["url"] == "/catalog/v1-production-showcase", pm
         st, _, _, home_html, _ = http_req(port, "GET", "/")
-        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.4.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
+        assert st == 200 and 'href="/catalog/v1-production-showcase"' in home_html and 'content="GrabLab CMS v1.5.0 (default-starter)"' in home_html and "<div" not in home_html.lower()
 
         # 6) Query Loop + `use cache` hit & invalidation on entry update
         q_url = "/api/query?content_type=catalog_item&taxonomy=category&term_slug=guides&include_children=true"
@@ -533,7 +533,7 @@ def verify_full_lifecycle(tmp_dir, seq_db, seq_cfg):
             {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
             headers={"Authorization": f"Bearer {mcp_tok}"},
         )
-        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.4.0", rpc_init
+        assert st == 200 and rpc_init["result"]["serverInfo"]["version"] == "1.5.0", rpc_init
 
         st, _, _, _, rpc_tools = http_req(
             port,

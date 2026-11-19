@@ -8,6 +8,7 @@
  */
 
 import {
+  effect,
   signal,
   setSafeText,
   isExactGrabWireString,
@@ -55,8 +56,12 @@ function makeAlert(msgSig, ok = false) {
       p.className = ok ? "cms-alert-ok" : "cms-alert-error";
     }
   };
-  msgSig.subscribe(render);
-  render();
+  if (typeof msgSig.subscribe === "function") {
+    msgSig.subscribe(render);
+    render();
+  } else {
+    effect(render);
+  }
   return p;
 }
 
@@ -67,6 +72,7 @@ export function buildStoreSubnav(activeSection, canSettings) {
     { key: "store_products", href: "/admin/store/products", label: "Products" },
     { key: "store_orders", href: "/admin/store/orders", label: "Orders" },
     { key: "store_coupons", href: "/admin/store/coupons", label: "Coupons" },
+    { key: "store_shoppers", href: "/admin/store/shoppers", label: "Shoppers" },
     { key: "store_customers", href: "/admin/store/customers", label: "Customers" },
   ];
   if (canSettings) {
@@ -134,8 +140,10 @@ async function mountOverviewSection(root, api) {
     const data = await api.get("/api/admin/commerce/overview");
     clearEl(mount);
     mount.appendChild(createStoreDashboardSpec(data));
+    mount.appendChild(buildSimulatedShoppersCard());
   } catch (err) {
     errSig.set(err && err.message ? err.message : "Failed to load commerce overview.");
+    mount.appendChild(buildSimulatedShoppersCard());
   }
 }
 
@@ -155,7 +163,7 @@ async function mountProductsSection(root, api) {
     parent: listMount,
     items: productsSig,
     key: (p) => p.id,
-    empty: () => node("li", { class: "cms-muted" }, "No products created yet."),
+    empty: () => ({ element: node("li", { class: "cms-muted" }, "No products created yet.") }),
     render: (pSig) => {
       const p = pSig.peek();
       const li = node("li", { class: "cms-list-row" });
@@ -172,7 +180,7 @@ async function mountProductsSection(root, api) {
         }
       });
       li.appendChild(toggleBtn);
-      return li;
+      return { element: li };
     },
   });
 
@@ -338,7 +346,7 @@ async function mountOrdersSection(root, api) {
     parent: listMount,
     items: ordersSig,
     key: (o) => o.id,
-    empty: () => node("li", { class: "cms-muted" }, "No orders placed yet."),
+    empty: () => ({ element: node("li", { class: "cms-muted" }, "No orders placed yet.") }),
     render: (oSig) => {
       const o = oSig.peek();
       const li = node("li", { class: "cms-list-row" });
@@ -346,7 +354,7 @@ async function mountOrdersSection(root, api) {
       const viewBtn = node("button", { type: "button", class: "cms-btn-secondary" }, "Inspect");
       viewBtn.addEventListener("click", () => loadDetail(o.id));
       li.appendChild(viewBtn);
-      return li;
+      return { element: li };
     },
   });
 
@@ -376,7 +384,7 @@ async function mountCouponsSection(root, api) {
     parent: listMount,
     items: couponsSig,
     key: (c) => c.id,
-    empty: () => node("li", { class: "cms-muted" }, "No coupons created yet."),
+    empty: () => ({ element: node("li", { class: "cms-muted" }, "No coupons created yet.") }),
     render: (cSig) => {
       const c = cSig.peek();
       const li = node("li", { class: "cms-list-row" });
@@ -394,7 +402,7 @@ async function mountCouponsSection(root, api) {
         }
       });
       li.appendChild(toggle);
-      return li;
+      return { element: li };
     },
   });
 
@@ -460,14 +468,65 @@ async function mountCouponsSection(root, api) {
   await loadCoupons().catch((e) => errSig.set(e.message));
 }
 
-async function mountCustomersSection(root, api) {
+const SHOPPER_AVATARS = Object.freeze([
+  "/static/admin/avatars/avatar-01.png",
+  "/static/admin/avatars/avatar-02.png",
+  "/static/admin/avatars/avatar-03.png",
+  "/static/admin/avatars/avatar-04.png",
+  "/static/admin/avatars/avatar-05.png",
+  "/static/admin/avatars/avatar-06.png",
+]);
+
+const SIMULATED_SHOPPERS = Object.freeze([
+  { id: 101, name: "Maya Chen", email: "maya.chen@example.com", location: "Atlanta, GA", joined: "Oct 12, 2026", orders: "4 orders", tier: "Repeat Shopper", avatar: SHOPPER_AVATARS[0] },
+  { id: 102, name: "Sofia Alvarez", email: "sofia.alvarez@example.com", location: "Austin, TX", joined: "Oct 24, 2026", orders: "2 orders", tier: "Verified Member", avatar: SHOPPER_AVATARS[1] },
+  { id: 103, name: "Claire Brooks", email: "claire.brooks@example.com", location: "Savannah, GA", joined: "Nov 02, 2026", orders: "7 orders", tier: "VIP Reader", avatar: SHOPPER_AVATARS[2] },
+  { id: 104, name: "Hannah Kim", email: "hannah.kim@example.com", location: "Seattle, WA", joined: "Nov 08, 2026", orders: "1 order", tier: "New Shopper", avatar: SHOPPER_AVATARS[3] },
+  { id: 105, name: "Marcus Rivera", email: "marcus.rivera@example.com", location: "Miami, FL", joined: "Nov 14, 2026", orders: "3 orders", tier: "Verified Member", avatar: SHOPPER_AVATARS[4] },
+  { id: 106, name: "Daniel Grant", email: "daniel.grant@example.com", location: "Denver, CO", joined: "Nov 18, 2026", orders: "5 orders", tier: "VIP Reader", avatar: SHOPPER_AVATARS[5] },
+]);
+
+function makeShopperAvatarImg(src) {
+  return node("img", {
+    src,
+    alt: "",
+    "aria-hidden": "true",
+    width: "48",
+    height: "48",
+    class: "cms-shopper-avatar",
+  });
+}
+
+function buildSimulatedShoppersCard() {
+  const dirCard = node("section", { class: "cms-card cms-profile-card", id: "commerce-shoppers-list" });
+  dirCard.appendChild(node("h2", {}, "Shoppers List"));
+  dirCard.appendChild(node("p", { class: "cms-muted" }, "Sample shopper directory using local portrait avatars (avatar-01.png through avatar-06.png)."));
+  const grid = node("ul", { class: "cms-shoppers-grid", role: "list", "aria-label": "Shoppers list" });
+  for (const s of SIMULATED_SHOPPERS) {
+    const item = node("li", { class: "cms-shopper-card" });
+    const head = node("header", { class: "cms-shopper-head" });
+    head.appendChild(makeShopperAvatarImg(s.avatar));
+    const copy = node("span", { class: "cms-shopper-copy" });
+    copy.appendChild(node("strong", { class: "cms-shopper-name" }, s.name));
+    copy.appendChild(node("small", { class: "cms-shopper-email" }, s.email));
+    head.appendChild(copy);
+    head.appendChild(node("span", { class: "cms-pill" }, s.tier));
+    item.appendChild(head);
+    item.appendChild(node("p", { class: "cms-shopper-meta" }, `${s.location} · ${s.orders} · Joined ${s.joined}`));
+    grid.appendChild(item);
+  }
+  dirCard.appendChild(grid);
+  return dirCard;
+}
+
+async function mountCustomersSection(root, api, showSimulatedPreview = false) {
   const errSig = signal("");
   const okSig = signal("");
   root.appendChild(makeAlert(errSig, false));
   root.appendChild(makeAlert(okSig, true));
 
   const card = node("section", { class: "cms-card" });
-  card.appendChild(node("h2", {}, "Customers & GDPR Privacy Tools"));
+  card.appendChild(node("h2", {}, showSimulatedPreview ? "Registered Storefront Shoppers" : "Customers & GDPR Privacy Tools"));
   const listMount = node("ul", { class: "cms-list", role: "list" });
   card.appendChild(listMount);
 
@@ -496,7 +555,7 @@ async function mountCustomersSection(root, api) {
             errSig.set(err.message);
           }
         });
-        return confirmBtn;
+        return { element: confirmBtn };
       })(),
     ],
   });
@@ -506,11 +565,15 @@ async function mountCustomersSection(root, api) {
     parent: listMount,
     items: custSig,
     key: (c) => c.id,
-    empty: () => node("li", { class: "cms-muted" }, "No customer records yet."),
+    empty: () => ({ element: node("li", { class: "cms-muted" }, "No live checkout customer records yet.") }),
     render: (cSig) => {
       const c = cSig.peek();
       const li = node("li", { class: "cms-list-row" });
-      li.appendChild(node("span", {}, "#" + String(c.id) + " " + c.email_masked + " | Marketing opt-in: " + (c.marketing_consent ? "Yes" : "No")));
+      const ident = node("span", { class: "cms-shopper-inline" });
+      const avatarSrc = SHOPPER_AVATARS[Math.abs(Number(c.id || 1) - 1) % SHOPPER_AVATARS.length];
+      ident.appendChild(makeShopperAvatarImg(avatarSrc));
+      ident.appendChild(node("span", {}, "#" + String(c.id) + " " + c.email_masked + " | Marketing opt-in: " + (c.marketing_consent ? "Yes" : "No")));
+      li.appendChild(ident);
       const expBtn = node("button", { type: "button", class: "cms-btn-secondary" }, "Export JSON");
       expBtn.addEventListener("click", async () => {
         try {
@@ -529,13 +592,17 @@ async function mountCustomersSection(root, api) {
       actions.appendChild(expBtn);
       actions.appendChild(delBtn);
       li.appendChild(actions);
-      return li;
+      return { element: li };
     },
   });
 
   async function loadCustomers() {
     const data = await api.get("/api/admin/commerce/customers");
     custSig.set(Array.isArray(data.customers) ? data.customers : []);
+  }
+
+  if (showSimulatedPreview) {
+    root.appendChild(buildSimulatedShoppersCard());
   }
 
   root.appendChild(card);
@@ -649,8 +716,10 @@ export async function mountCommerce(root, api, page, role) {
     await mountOrdersSection(root, api);
   } else if (page === "store_coupons") {
     await mountCouponsSection(root, api);
+  } else if (page === "store_shoppers") {
+    await mountCustomersSection(root, api, true);
   } else if (page === "store_customers") {
-    await mountCustomersSection(root, api);
+    await mountCustomersSection(root, api, false);
   } else if (page === "store_settings") {
     await mountSettingsSection(root, api);
   }

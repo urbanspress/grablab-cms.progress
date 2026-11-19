@@ -1,0 +1,4 @@
+*.pdf binary
+*.zip binary
+*.grab text eol=lf
+docs/releases/pdf/*-RELEASE-NOTES.md text eol=lf

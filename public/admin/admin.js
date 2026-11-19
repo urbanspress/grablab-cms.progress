@@ -15,6 +15,9 @@ import {
   effect,
   setSafeText,
 } from "../grex/grex.js";
+import { mountHorizontalNav, mountUtilityActions } from "./nav.js";
+import { initAdminTheme, wireThemeToggle } from "./theme.js";
+import { mountProfile, readStoredAvatar, syncHeaderAvatar } from "./profile.js";
 
 function getMeta(name) {
   const el = document.querySelector(`meta[name="${name}"]`);
@@ -51,27 +54,6 @@ function makeAlert(msgSignal, isOk = false) {
     }
   });
   return box;
-}
-
-function applyAdminTheme() {
-  const theme = createTheme({
-    colors: {
-      bg: "#0b0e13",
-      surface: "#11151d",
-      ink: "#f8fafc",
-      muted: "#94a3b8",
-      accent: "#f43f5e",
-      "accent-ink": "#ffffff",
-    },
-    radii: { radius: "14px" },
-  });
-  theme.applyTo(document.documentElement);
-
-  const cm = createClassManager({ prefix: "cms-grex-" });
-  cm.registerClass("panel", {
-    background: "#11151d",
-    borderRadius: "14px",
-  });
 }
 
 function createApiClient() {
@@ -118,7 +100,7 @@ function mountLogin(api) {
             errSig.set(data.error || "Sign in failed.");
             return;
           }
-          window.location.assign("/admin");
+          window.location.assign(data && data.user && data.user.role === "viewer" ? "/admin/profile" : "/admin");
         } catch (err) {
           errSig.set(err && err.message ? err.message : "Network error during sign in.");
         }
@@ -182,391 +164,12 @@ function mountSetup() {
   mount.appendChild(form.element);
 }
 
-function mountSidebarNav(activePath, role, api) {
-  const mount = document.getElementById("admin-nav-mount");
-  if (!mount) return;
-
-  const renderNav = (authorEnabled) => {
-    while (mount.firstChild) {
-      mount.removeChild(mount.firstChild);
-    }
-
-    const sections = [
-      {
-        title: "OVERVIEW",
-        items: [
-          {
-            href: "/admin",
-            text: "Dashboard",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
-            active: activePath === "/admin" || activePath === "/admin/",
-          },
-        ],
-      },
-      {
-        title: "WORKSPACE",
-        items: [
-          {
-            href: "/admin/entries",
-            text: "Agents",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`,
-            active: activePath.startsWith("/admin/entries"),
-          },
-          {
-            href: "/admin/media",
-            text: "Builder",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
-            active: activePath.startsWith("/admin/media"),
-          },
-          {
-            href: "/admin/author",
-            text: "Executions",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
-            active: activePath.startsWith("/admin/author"),
-          },
-          {
-            href: "/admin/store",
-            text: "Integrations",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6"/><path d="M9 2v6"/><path d="M15 2v6"/><rect x="6" y="8" width="12" height="6" rx="2"/><path d="M12 14v8"/></svg>`,
-            active: activePath.startsWith("/admin/store"),
-          },
-        ],
-      },
-      {
-        title: "DEVELOPER",
-        items: [
-          {
-            href: "/admin/types",
-            text: "Components",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
-            active: activePath.startsWith("/admin/types"),
-          },
-          {
-            href: "/admin/themes",
-            text: "Documentation",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-            active: activePath.startsWith("/admin/themes"),
-          },
-        ],
-      },
-      {
-        title: "ACCOUNT",
-        items: [
-          {
-            href: "/admin/settings",
-            text: "Account",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
-            active: activePath === "/admin/settings",
-          },
-          {
-            href: "/admin/settings",
-            text: "Profile",
-            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-            active: false,
-          },
-        ],
-      },
-    ];
-
-    const navWrap = document.createElement("nav");
-    navWrap.className = "agentflow-sidebar-nav";
-
-    for (const sec of sections) {
-      const secEl = document.createElement("div");
-      secEl.className = "agentflow-nav-section";
-
-      const titleEl = document.createElement("div");
-      titleEl.className = "agentflow-nav-section-title";
-      titleEl.textContent = sec.title;
-      secEl.appendChild(titleEl);
-
-      const ulEl = document.createElement("ul");
-      ulEl.className = "agentflow-nav-list";
-
-      for (const item of sec.items) {
-        const liEl = document.createElement("li");
-        liEl.className = "agentflow-nav-item";
-
-        const aEl = document.createElement("a");
-        aEl.href = item.href;
-        if (item.active) aEl.className = "active";
-
-        const iconSpan = document.createElement("span");
-        iconSpan.className = "agentflow-nav-icon";
-        iconSpan.innerHTML = item.icon;
-
-        const textSpan = document.createElement("span");
-        textSpan.textContent = item.text;
-
-        aEl.appendChild(iconSpan);
-        aEl.appendChild(textSpan);
-        liEl.appendChild(aEl);
-        ulEl.appendChild(liEl);
-      }
-      secEl.appendChild(ulEl);
-      navWrap.appendChild(secEl);
-    }
-
-    // Upgrade to Pro Card
-    const upgradeCard = document.createElement("div");
-    upgradeCard.className = "agentflow-upgrade-card";
-    upgradeCard.innerHTML = `
-      <div class="agentflow-upgrade-title">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6.4-4.8-6.4 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
-        <span>Upgrade to Pro</span>
-      </div>
-      <div class="agentflow-upgrade-desc">Unlock unlimited agents, advanced analytics & priority support.</div>
-      <button type="button" class="agentflow-upgrade-btn">Upgrade</button>
-    `;
-    navWrap.appendChild(upgradeCard);
-
-    // User Profile Card at Sidebar Bottom
-    const userName = getMeta("grablab-user-name") || "Alex";
-    const userEmail = getMeta("grablab-user-email") || "m@example.com";
-    const userCard = document.createElement("div");
-    userCard.className = "agentflow-user-card";
-    userCard.innerHTML = `
-      <div class="agentflow-user-info">
-        <div class="agentflow-avatar">${userName.charAt(0).toUpperCase()}</div>
-        <div class="agentflow-user-names">
-          <div class="agentflow-user-name">${userName}</div>
-          <div class="agentflow-user-email">${userEmail}</div>
-        </div>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
-    `;
-    navWrap.appendChild(userCard);
-
-    mount.appendChild(navWrap);
-  };
-
-  renderNav(activePath.startsWith("/admin/author"));
-  if (api && (role === "admin" || role === "editor" || role === "author")) {
-    api.get("/api/admin/author/status")
-      .then((res) => {
-        renderNav(Boolean(res && res.enabled));
-      })
-      .catch(() => {});
-  }
-}
-
 function mountOverview(root, api) {
   const errSig = signal("");
   const overviewQuery = useQuery(api, "/api/admin/overview", { tags: ["overview"] });
   root.appendChild(makeAlert(errSig, false));
 
-  // 1. Top 3 KPI Cards
-  const kpiGrid = document.createElement("section");
-  kpiGrid.className = "agentflow-kpi-grid";
-  kpiGrid.innerHTML = `
-    <!-- Card 1: Active Agents -->
-    <div class="agentflow-card">
-      <div class="agentflow-card-head">
-        <span class="agentflow-card-title">Active Agents</span>
-        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
-      </div>
-      <div class="agentflow-stat-row">
-        <span class="agentflow-stat-val">12</span>
-        <span class="agentflow-trend-pill">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
-          +3 Increased vs last week
-        </span>
-      </div>
-      <div class="agentflow-chart-wrap">
-        <svg class="agentflow-sparkline-svg" viewBox="0 0 300 60" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="glow-grad-agents" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.25"/>
-              <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0"/>
-            </linearGradient>
-          </defs>
-          <path d="M 0 42 Q 50 44 90 36 T 180 32 T 250 26 T 300 30 L 300 60 L 0 60 Z" fill="url(#glow-grad-agents)"/>
-          <path class="agentflow-sparkline-path" d="M 0 42 Q 50 44 90 36 T 180 32 T 250 26 T 300 30"/>
-        </svg>
-        <div class="agentflow-days-row">
-          <span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 2: Weekly Runs -->
-    <div class="agentflow-card">
-      <div class="agentflow-card-head">
-        <span class="agentflow-card-title">Weekly Runs</span>
-        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
-      </div>
-      <div class="agentflow-stat-row">
-        <span class="agentflow-stat-val">1,284</span>
-        <span class="agentflow-trend-pill">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
-          +12% Increased vs last week
-        </span>
-      </div>
-      <div class="agentflow-chart-wrap">
-        <div class="agentflow-mini-bars">
-          <div class="agentflow-mini-bar" style="height: 14px;"></div>
-          <div class="agentflow-mini-bar" style="height: 24px;"></div>
-          <div class="agentflow-mini-bar agentflow-mini-bar-active" style="height: 52px;"></div>
-          <div class="agentflow-mini-bar" style="height: 32px;"></div>
-          <div class="agentflow-mini-bar" style="height: 18px;"></div>
-          <div class="agentflow-mini-bar" style="height: 20px;"></div>
-        </div>
-        <div class="agentflow-days-row">
-          <span>Mon</span><span>Thu</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Mon</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 3: Tokens Used -->
-    <div class="agentflow-card">
-      <div class="agentflow-card-head">
-        <span class="agentflow-card-title">Tokens Used</span>
-        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
-      </div>
-      <div class="agentflow-stat-row">
-        <span class="agentflow-stat-val">26.4K</span>
-        <span class="agentflow-trend-pill">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
-          +8% Increased vs last week
-        </span>
-      </div>
-      <div class="agentflow-chart-wrap">
-        <svg class="agentflow-sparkline-svg" viewBox="0 0 300 60" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="glow-grad-tokens" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.30"/>
-              <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0"/>
-            </linearGradient>
-          </defs>
-          <path d="M 0 36 C 45 36, 75 22, 120 25 C 165 28, 195 4, 225 6 C 255 8, 265 42, 300 36 L 300 60 L 0 60 Z" fill="url(#glow-grad-tokens)"/>
-          <path class="agentflow-sparkline-path" d="M 0 36 C 45 36, 75 22, 120 25 C 165 28, 195 4, 225 6 C 255 8, 265 42, 300 36"/>
-        </svg>
-        <div class="agentflow-days-row">
-          <span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-        </div>
-      </div>
-    </div>
-  `;
-  root.appendChild(kpiGrid);
-
-  // 2. Middle Row: 2 Large Cards (Token Usage + Executions)
-  const mainGrid = document.createElement("section");
-  mainGrid.className = "agentflow-main-grid";
-  mainGrid.innerHTML = `
-    <!-- Card 4: Token Usage -->
-    <div class="agentflow-card agentflow-usage-card">
-      <div class="agentflow-usage-head">
-        <span class="agentflow-card-title" style="color: #ffffff; font-size: 15px;">Token Usage</span>
-        <div class="agentflow-pill-group">
-          <button type="button" class="agentflow-pill-btn">Days</button>
-          <button type="button" class="agentflow-pill-btn active">Week</button>
-          <button type="button" class="agentflow-pill-btn">Month</button>
-        </div>
-      </div>
-      <div class="agentflow-usage-chart-wrap">
-        <div class="agentflow-y-axis">
-          <span>$28K</span>
-          <span>$21K</span>
-          <span>$14K</span>
-          <span>$7K</span>
-          <span>$0K</span>
-        </div>
-        <div class="agentflow-chart-area">
-          <div class="agentflow-grid-lines">
-            <div class="agentflow-grid-line"></div>
-            <div class="agentflow-grid-line"></div>
-            <div class="agentflow-grid-line"></div>
-            <div class="agentflow-grid-line"></div>
-            <div class="agentflow-grid-line"></div>
-          </div>
-          <div class="agentflow-month-bars">
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 52%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 60%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 68%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 62%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar active" style="height: 98%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 40%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 48%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 56%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 64%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 54%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 58%;"></div></div>
-            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 65%;"></div></div>
-          </div>
-          <div class="agentflow-x-axis">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span style="color: #ffffff; font-weight: 700;">May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 5: Executions Heatmap -->
-    <div class="agentflow-card">
-      <div class="agentflow-card-head agentflow-exec-head">
-        <span class="agentflow-card-title" style="color: #ffffff; font-size: 15px;">Executions</span>
-      </div>
-      <div class="agentflow-heatmap-table">
-        <div class="agentflow-heat-cols">
-          <span></span>
-          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-        </div>
-        <div class="agentflow-heat-row">
-          <span class="agentflow-week-lbl">W1</span>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l4"></div>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l1"></div>
-        </div>
-        <div class="agentflow-heat-row">
-          <span class="agentflow-week-lbl">W2</span>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l4"></div>
-          <div class="agentflow-heat-cell l4"></div>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l1"></div>
-        </div>
-        <div class="agentflow-heat-row">
-          <span class="agentflow-week-lbl">W3</span>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l4"></div>
-          <div class="agentflow-heat-cell l5"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l1"></div>
-        </div>
-        <div class="agentflow-heat-row">
-          <span class="agentflow-week-lbl">W4</span>
-          <div class="agentflow-heat-cell l2"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l4"></div>
-          <div class="agentflow-heat-cell l5"></div>
-          <div class="agentflow-heat-cell l3"></div>
-          <div class="agentflow-heat-cell l2"></div>
-        </div>
-      </div>
-      <div class="agentflow-legend">
-        <span>Less</span>
-        <div class="agentflow-legend-dots">
-          <div class="agentflow-legend-dot" style="background: #33141d;"></div>
-          <div class="agentflow-legend-dot" style="background: #4a1725;"></div>
-          <div class="agentflow-legend-dot" style="background: #751b34;"></div>
-          <div class="agentflow-legend-dot" style="background: #ba214a;"></div>
-          <div class="agentflow-legend-dot" style="background: #f43f5e;"></div>
-        </div>
-        <span>More</span>
-      </div>
-    </div>
-  `;
-  root.appendChild(mainGrid);
-
-  // 3. Bottom Row: Recent Entries (CMS functionality preserved)
+  const statsGrid = el("section", { class: "cms-grid-stats" });
   const recentCard = el("section", { class: "cms-card" });
   recentCard.appendChild(el("h2", {}, "Recent Entries"));
   const listMount = el("ul", { class: "cms-list" });
@@ -604,13 +207,30 @@ function mountOverview(root, api) {
     }
     const data = overviewQuery.data.get();
     if (!data) return;
+    while (statsGrid.firstChild) statsGrid.removeChild(statsGrid.firstChild);
+    const cards = [
+      { label: "Total Entries", value: String(data.entry_count ?? 0) },
+      { label: "Content Types", value: String(data.type_count ?? 0) },
+      { label: "Active Theme", value: `${data.active_theme_slug} (${data.active_theme_mode})` },
+      { label: "301 Redirects", value: String(data.redirect_count ?? 0) },
+    ];
+    for (const c of cards) {
+      const art = el("article", { class: "cms-card" });
+      art.appendChild(el("span", { class: "cms-muted" }, c.label));
+      art.appendChild(el("p", { class: "cms-stat-num" }, c.value));
+      statsGrid.appendChild(art);
+    }
     itemsSig.set(data.recent_entries || []);
   });
 
+  root.appendChild(statsGrid);
   root.appendChild(recentCard);
 }
 
-function mountEntries(root, api, role) {
+function mountEntries(root, api, role, pageMode = "entries") {
+  const isPostPage = pageMode === "posts";
+  const isPagePage = pageMode === "pages";
+  const defaultType = isPagePage ? "page" : "post";
   const errSig = signal("");
   const okSig = signal("");
   const statusFilter = signal("all");
@@ -632,7 +252,7 @@ function mountEntries(root, api, role) {
       label: "Content Type",
       options: () =>
         (typesQuery.data.get()?.content_types || []).map((t) => ({ value: t.slug, label: `${t.label_singular} (${t.permalink_pattern})` })),
-      value: signal("post"),
+      value: signal(defaultType),
     },
   });
   const statusOptions =
@@ -658,14 +278,16 @@ function mountEntries(root, api, role) {
     props: { name: "term_ids", label: "Term IDs (comma-separated, optional)", placeholder: "e.g. 1, 2" },
   });
 
-  const submitLabel = signal("Create Entry");
+  const defaultSubmitText = isPostPage ? "Create Post" : (isPagePage ? "Create Page" : "Create Entry");
+  const submitLabel = signal(defaultSubmitText);
   const submitBtn = el("button", { type: "submit" }, "Create Entry");
   effect(() => setSafeText(submitBtn, submitLabel.get()));
 
   const cancelBtn = el("button", { type: "button", class: "cms-btn-secondary" }, "Reset Form");
   cancelBtn.addEventListener("click", () => {
     editingId.set(null);
-    submitLabel.set("Create Entry");
+    submitLabel.set(defaultSubmitText);
+    typeSelect.value.set(defaultType);
     titleInput.value.set("");
     slugInput.value.set("");
     bodyInput.value.set("");
@@ -725,10 +347,11 @@ function mountEntries(root, api, role) {
               custom_fields: cfObj,
               term_ids: termIds,
             });
-            okSig.set("Entry created.");
+            okSig.set(isPostPage ? "Post created." : (isPagePage ? "Page created." : "Entry created."));
           }
           editingId.set(null);
-          submitLabel.set("Create Entry");
+          submitLabel.set(defaultSubmitText);
+          typeSelect.value.set(defaultType);
           termIdsInput.value.set("");
           invalidateQueries(["entries", "redirects", "overview"]);
         } catch (err) {
@@ -752,7 +375,7 @@ function mountEntries(root, api, role) {
   editorForm.element.lastChild.appendChild(cancelBtn);
 
   const editorCard = el("section", { class: "cms-card" });
-  editorCard.appendChild(el("h2", {}, "Entry Editor"));
+  editorCard.appendChild(el("h2", {}, isPostPage ? "Post Editor" : (isPagePage ? "Page Editor" : "Entry Editor")));
   editorCard.appendChild(editorForm.element);
 
   const filterSelect = Select({
@@ -771,14 +394,19 @@ function mountEntries(root, api, role) {
   });
 
   const listCard = el("section", { class: "cms-card" });
-  listCard.appendChild(el("h2", {}, "Entries"));
+  listCard.appendChild(el("h2", {}, isPostPage ? "Posts" : (isPagePage ? "Pages" : "Entries")));
   listCard.appendChild(filterSelect.element);
   const ul = el("ul", { class: "cms-list" });
   listCard.appendChild(ul);
 
   const filteredItems = signal([]);
   effect(() => {
-    const all = entriesQuery.data.get()?.entries || [];
+    let all = entriesQuery.data.get()?.entries || [];
+    if (isPostPage) {
+      all = all.filter((e) => e.content_type_slug === "post");
+    } else if (isPagePage) {
+      all = all.filter((e) => e.content_type_slug === "page");
+    }
     const st = statusFilter.get();
     filteredItems.set(st === "all" ? all : all.filter((e) => e.status === st));
   });
@@ -2164,6 +1792,31 @@ function mountTaxonomies(root, api) {
   root.appendChild(stack);
 }
 
+function wireAvatarMenu() {
+  const btn = document.getElementById("cms-avatar-btn");
+  const drop = document.getElementById("cms-avatar-dropdown");
+  if (!btn || !drop) return { close: () => {} };
+  const setOpen = (open, restoreFocus = false) => {
+    drop.classList.toggle("open", open);
+    drop.setAttribute("aria-hidden", open ? "false" : "true");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (!open && restoreFocus) btn.focus();
+  };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setOpen(!drop.classList.contains("open"));
+  });
+  document.addEventListener("click", (e) => {
+    if (!drop.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drop.classList.contains("open")) {
+      setOpen(false, true);
+    }
+  });
+  return { close: () => setOpen(false) };
+}
+
 function wireLogout(api) {
   const btn = document.getElementById("admin-logout-btn");
   if (!btn) return;
@@ -2177,32 +1830,84 @@ function wireLogout(api) {
   });
 }
 
-function boot() {
-  applyAdminTheme();
-  const page = getMeta("grablab-page");
-  const api = createApiClient();
-
-  if (page === "login") {
-    mountLogin(api);
-    return;
+function resolveAdminRoute(pathname) {
+  const clean = (pathname || "/admin").replace(/\/+$/, "") || "/admin";
+  if (clean === "/admin") {
+    return { page: "overview", title: "Dashboard", subtitle: "Site overview and active theme status" };
   }
-  if (page === "setup") {
-    mountSetup();
-    return;
+  if (clean === "/admin/profile") {
+    return { page: "profile", title: "My Profile", subtitle: "Account identity, security, and personal preferences" };
   }
+  if (clean === "/admin/posts") {
+    return { page: "posts", title: "Posts", subtitle: "Create, edit, publish, and manage blog posts" };
+  }
+  if (clean === "/admin/pages") {
+    return { page: "pages", title: "Pages", subtitle: "Create, edit, publish, and manage site pages" };
+  }
+  if (clean === "/admin/entries") {
+    return { page: "entries", title: "Entries", subtitle: "Create, edit, publish, and manage content entries" };
+  }
+  if (clean === "/admin/media") {
+    return { page: "media", title: "Media Library", subtitle: "Upload, audit accessibility metadata, and manage approved media assets" };
+  }
+  if (clean === "/admin/menus") {
+    return { page: "menus", title: "Navigation Menus", subtitle: "Manage theme navigation slots, nested hierarchy, and dynamic entry links" };
+  }
+  if (clean === "/admin/taxonomies") {
+    return { page: "taxonomies", title: "Taxonomies & Terms", subtitle: "Organize content types with categories, tags, and custom taxonomies" };
+  }
+  if (clean === "/admin/types") {
+    return { page: "types", title: "Content Types", subtitle: "Define structured content types and custom fields" };
+  }
+  if (clean === "/admin/themes") {
+    return { page: "themes", title: "Themes", subtitle: "Exclusive active theme switching and validation" };
+  }
+  if (clean === "/admin/settings") {
+    return { page: "settings", title: "Settings & Users", subtitle: "Site configuration, optional OAuth2/PKCE social login, and user roles" };
+  }
+  if (clean === "/admin/store" || clean === "/admin/commerce") {
+    return { page: "store", title: "Store Overview", subtitle: "Manage products, orders, coupons, customers, and payment settings" };
+  }
+  if (clean.startsWith("/admin/store/") || clean.startsWith("/admin/commerce/")) {
+    const parts = clean.split("/");
+    const sec = parts[3] || "overview";
+    if (sec === "shoppers") {
+      return { page: "store_shoppers", title: "Shoppers", subtitle: "Customer directory, shopper avatars, and privacy tools" };
+    }
+    return { page: `store_${sec}`, title: "Store Management", subtitle: "Zero-plugin e-commerce products, orders, coupons, and settings" };
+  }
+  if (clean === "/admin/author") {
+    return { page: "author", title: "Author Studio", subtitle: "Manage books, series reading order, chapters, and Bestseller Radar drafts" };
+  }
+  if (clean.startsWith("/admin/author/")) {
+    const parts = clean.split("/");
+    const sec = parts[3] || "overview";
+    return { page: `author_${sec}`, title: "Author Studio", subtitle: "Manage books, series reading order, chapters, and Bestseller Radar drafts" };
+  }
+  return null;
+}
 
-  const role = getMeta("grablab-role");
-  const activePath = window.location.pathname;
-  mountSidebarNav(activePath, role, api);
-  wireLogout(api);
+let activeViewDispose = null;
 
-  const root = document.getElementById("admin-app");
-  if (!root) return;
-
-  if (page === "overview") {
+function mountAdminView(page, root, api, role) {
+  if (activeViewDispose) {
+    try {
+      activeViewDispose();
+    } catch {
+      // view teardown is best-effort
+    }
+    activeViewDispose = null;
+  }
+  while (root.firstChild) {
+    root.removeChild(root.firstChild);
+  }
+  if (page === "profile") {
+    const view = mountProfile(root, api);
+    activeViewDispose = () => view.tabs.dispose();
+  } else if (page === "overview") {
     mountOverview(root, api);
-  } else if (page === "entries") {
-    mountEntries(root, api, role);
+  } else if (page === "entries" || page === "posts" || page === "pages") {
+    mountEntries(root, api, role, page);
   } else if (page === "media") {
     mountMedia(root, api, role);
   } else if (page === "menus") {
@@ -2220,6 +1925,124 @@ function boot() {
   } else if (page === "author" || page.startsWith("author_")) {
     import("./author.js").then((mod) => mod.mountAuthor(root, api, page, role));
   }
+}
+
+function boot() {
+  initAdminTheme();
+  const initialPage = getMeta("grablab-page");
+  const api = createApiClient();
+
+  if (initialPage === "login") {
+    mountLogin(api);
+    return;
+  }
+  if (initialPage === "setup") {
+    mountSetup();
+    return;
+  }
+
+  const role = getMeta("grablab-role");
+  const siteTitle = getMeta("grablab-site-title") || "GrabLab CMS";
+  const navCtrl = mountHorizontalNav(window.location.pathname, role, api);
+  syncHeaderAvatar(readStoredAvatar());
+  const avatarMenuCtrl = wireAvatarMenu();
+  wireThemeToggle(document.getElementById("cms-theme-toggle"));
+  wireLogout(api);
+
+  const root = document.getElementById("admin-app");
+  const mainEl = document.getElementById("admin-main");
+  const titleEl = document.getElementById("admin-page-title");
+  const subtitleEl = document.getElementById("admin-page-subtitle");
+  if (!root || !mainEl) return;
+
+  mountAdminView(initialPage, root, api, role);
+
+  let navSeq = 0;
+  let utilityCtrl = { close: () => {} };
+  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const navigateSmoothly = (targetPath, pushHistory) => {
+    const route = resolveAdminRoute(targetPath);
+    if (!route) {
+      window.location.assign(targetPath);
+      return;
+    }
+
+    const seq = ++navSeq;
+    navCtrl.setActivePath(targetPath);
+    navCtrl.closeMenus();
+    avatarMenuCtrl.close();
+    utilityCtrl.close();
+
+    if (pushHistory && window.location.pathname !== targetPath) {
+      window.history.pushState({ path: targetPath }, "", targetPath);
+    }
+
+    const commitSwap = () => {
+      if (seq !== navSeq) return;
+      if (titleEl) setSafeText(titleEl, route.title);
+      if (subtitleEl) setSafeText(subtitleEl, route.subtitle);
+      document.title = `${route.title} — ${siteTitle} Admin`;
+      mainEl.setAttribute("data-admin-page", route.page);
+      const metaPage = document.querySelector('meta[name="grablab-page"]');
+      if (metaPage) metaPage.setAttribute("content", route.page);
+
+      mountAdminView(route.page, root, api, role);
+      window.scrollTo({ top: 0, behavior: "instant" });
+
+      if (prefersReducedMotion) {
+        mainEl.classList.remove("is-transitioning-out", "is-entering");
+        return;
+      }
+
+      mainEl.classList.remove("is-transitioning-out");
+      mainEl.classList.add("is-entering");
+      // Force layout flush so the transition from .is-entering -> default state always plays
+      void mainEl.offsetHeight;
+      requestAnimationFrame(() => {
+        if (seq !== navSeq) return;
+        mainEl.classList.remove("is-entering");
+      });
+    };
+
+    if (prefersReducedMotion) {
+      commitSwap();
+      return;
+    }
+
+    mainEl.classList.add("is-transitioning-out");
+    window.setTimeout(commitSwap, 130);
+  };
+
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const anchor = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    if (!anchor) return;
+    if (anchor.getAttribute("target") === "_blank" || anchor.hasAttribute("download")) return;
+    let url;
+    try {
+      url = new URL(anchor.href, window.location.origin);
+    } catch {
+      return;
+    }
+    if (url.origin !== window.location.origin) return;
+    if (!url.pathname.startsWith("/admin")) return;
+
+    const targetPath = url.pathname.replace(/\/+$/, "") || "/admin";
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/admin";
+    e.preventDefault();
+    if (targetPath === currentPath) {
+      navCtrl.closeMenus();
+      return;
+    }
+    navigateSmoothly(targetPath, true);
+  });
+
+  utilityCtrl = mountUtilityActions(role, navigateSmoothly);
+
+  window.addEventListener("popstate", () => {
+    navigateSmoothly(window.location.pathname, false);
+  });
 }
 
 boot();

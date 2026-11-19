@@ -135,3 +135,14 @@ Scope:
 - **Embedded Bestseller Radar & Genre Profit Panel (`Groxy AI v1.7.0` + `v1.8.0` Bridge):** Native `/admin/author/radar` view embedding `Groxy AI v1.8.0`'s Bestseller Radar (`POST /api/groxy/research/bestseller-radar`) and `Groxy AI v1.7.0`'s Multi-Genre Storytelling Brain + Hemingway Readability Auditor (`POST /api/groxy/author/generate` & `/readability-audit`) over `GRAB-E402` allowlisted origins so browser CMS authors can research high-margin genres, evaluate unit economics, and import draft `Series`/`Book`/`Chapter` outlines (`status: "draft"`) in one click.
 - **Pure `Grex JS v1.0.0` Author & Reader Views:** Zero wrapper-`<div>` (`divCount === 0`, `innerHTMLWriteCount === 0`), Light & Dark WCAG AA (`>= 4.5:1`) admin dashboard + distraction-free Web Reader.
 - **`v1.4.1` PostgreSQL 18 Query Compatibility Patch:** Rewrote `stmt_query_entries_by_term` (`src/app.grab`) using `WHERE EXISTS (...)` instead of `SELECT DISTINCT ... ORDER BY COALESCE(...)` for strict PostgreSQL 18 execution parity alongside SQLite and MariaDB, backed by multi-term deduplication tests in `tests/release_v140_test.py`.
+
+---
+
+## `v1.5.0` — Admin UI Polish & Universal User Profile Studio
+
+**Approved & Frozen — Complete** · backwards-compatible MINOR · 2026-11-19. [Specification](../specifications/GRABLAB-SPEC-150.md) · [Owner walkthrough](releases/pdf/GrabLab-CMS-v1.5.0-Guide.pdf)
+
+- **Header navigation.** Keep visible text on every menu link. Posts and Pages are the two owner-approved exceptions with decorative WordPress-style SVGs. The viewer menu contains only the text link to Profile.
+- **Universal profile.** All four authenticated roles share six vertical tabs on `/admin/profile`: My Profile, Security, Notifications, Billing & Subscriptions, Data Export, and Delete Account. Each selected panel uses the responsive card grid. The two-tier admin header stays sticky. The cards expand in place without an internal scrollbar.
+- The dark `.cms-fleetyu-header` uses the gold-to-plum gradient. Urbanist and the six selectable portraits ship locally. Profile cards share `.cms-profile-grid` and expand smoothly with keyboard or pointer input.
+- The owner approved Light and Dark mode and the six-tab design. Stage 4 Pre-Release Cross-Layer Security & Contract Sign-Off (`PASS`). All static, DOM and Python gates passed.
