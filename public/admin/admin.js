@@ -185,38 +185,159 @@ function mountSetup() {
 function mountSidebarNav(activePath, role, api) {
   const mount = document.getElementById("admin-nav-mount");
   if (!mount) return;
+
   const renderNav = (authorEnabled) => {
     while (mount.firstChild) {
       mount.removeChild(mount.firstChild);
     }
-    const items = [
-      { href: "/admin", text: "Overview" },
-      { href: "/admin/entries", text: "Entries & Redirects" },
-      { href: "/admin/media", text: "Media Library" },
-    ];
-    if (authorEnabled && (role === "admin" || role === "editor" || role === "author")) {
-      items.push({ href: "/admin/author", text: "Author Studio" });
-      items.push({ href: "/admin/author/radar", text: "Bestseller Radar" });
-    }
-    if (role === "admin" || role === "editor") {
-      items.push({ href: "/admin/menus", text: "Navigation Menus" });
-      items.push({ href: "/admin/taxonomies", text: "Taxonomies" });
-      items.push({ href: "/admin/store", text: "Store / Commerce" });
-    }
-    if (role === "admin") {
-      items.push({ href: "/admin/types", text: "Content Types" });
-      items.push({ href: "/admin/themes", text: "Themes & Grex" });
-      items.push({ href: "/admin/settings", text: "Settings & Users" });
-    }
-    const nav = Nav({
-      id: "grablab-admin-nav",
-      props: {
-        label: "GrabLab Admin Sections",
-        activePath,
-        items,
+
+    const sections = [
+      {
+        title: "OVERVIEW",
+        items: [
+          {
+            href: "/admin",
+            text: "Dashboard",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
+            active: activePath === "/admin" || activePath === "/admin/",
+          },
+        ],
       },
-    });
-    mount.appendChild(nav.element);
+      {
+        title: "WORKSPACE",
+        items: [
+          {
+            href: "/admin/entries",
+            text: "Agents",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`,
+            active: activePath.startsWith("/admin/entries"),
+          },
+          {
+            href: "/admin/media",
+            text: "Builder",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+            active: activePath.startsWith("/admin/media"),
+          },
+          {
+            href: "/admin/author",
+            text: "Executions",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+            active: activePath.startsWith("/admin/author"),
+          },
+          {
+            href: "/admin/store",
+            text: "Integrations",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6"/><path d="M9 2v6"/><path d="M15 2v6"/><rect x="6" y="8" width="12" height="6" rx="2"/><path d="M12 14v8"/></svg>`,
+            active: activePath.startsWith("/admin/store"),
+          },
+        ],
+      },
+      {
+        title: "DEVELOPER",
+        items: [
+          {
+            href: "/admin/types",
+            text: "Components",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
+            active: activePath.startsWith("/admin/types"),
+          },
+          {
+            href: "/admin/themes",
+            text: "Documentation",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+            active: activePath.startsWith("/admin/themes"),
+          },
+        ],
+      },
+      {
+        title: "ACCOUNT",
+        items: [
+          {
+            href: "/admin/settings",
+            text: "Account",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+            active: activePath === "/admin/settings",
+          },
+          {
+            href: "/admin/settings",
+            text: "Profile",
+            icon: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+            active: false,
+          },
+        ],
+      },
+    ];
+
+    const navWrap = document.createElement("nav");
+    navWrap.className = "agentflow-sidebar-nav";
+
+    for (const sec of sections) {
+      const secEl = document.createElement("div");
+      secEl.className = "agentflow-nav-section";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "agentflow-nav-section-title";
+      titleEl.textContent = sec.title;
+      secEl.appendChild(titleEl);
+
+      const ulEl = document.createElement("ul");
+      ulEl.className = "agentflow-nav-list";
+
+      for (const item of sec.items) {
+        const liEl = document.createElement("li");
+        liEl.className = "agentflow-nav-item";
+
+        const aEl = document.createElement("a");
+        aEl.href = item.href;
+        if (item.active) aEl.className = "active";
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "agentflow-nav-icon";
+        iconSpan.innerHTML = item.icon;
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = item.text;
+
+        aEl.appendChild(iconSpan);
+        aEl.appendChild(textSpan);
+        liEl.appendChild(aEl);
+        ulEl.appendChild(liEl);
+      }
+      secEl.appendChild(ulEl);
+      navWrap.appendChild(secEl);
+    }
+
+    // Upgrade to Pro Card
+    const upgradeCard = document.createElement("div");
+    upgradeCard.className = "agentflow-upgrade-card";
+    upgradeCard.innerHTML = `
+      <div class="agentflow-upgrade-title">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6.4-4.8-6.4 4.8 2.4-7.2-6-4.8h7.6z"/></svg>
+        <span>Upgrade to Pro</span>
+      </div>
+      <div class="agentflow-upgrade-desc">Unlock unlimited agents, advanced analytics & priority support.</div>
+      <button type="button" class="agentflow-upgrade-btn">Upgrade</button>
+    `;
+    navWrap.appendChild(upgradeCard);
+
+    // User Profile Card at Sidebar Bottom
+    const userName = getMeta("grablab-user-name") || "Alex";
+    const userEmail = getMeta("grablab-user-email") || "m@example.com";
+    const userCard = document.createElement("div");
+    userCard.className = "agentflow-user-card";
+    userCard.innerHTML = `
+      <div class="agentflow-user-info">
+        <div class="agentflow-avatar">${userName.charAt(0).toUpperCase()}</div>
+        <div class="agentflow-user-names">
+          <div class="agentflow-user-name">${userName}</div>
+          <div class="agentflow-user-email">${userEmail}</div>
+        </div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
+    `;
+    navWrap.appendChild(userCard);
+
+    mount.appendChild(navWrap);
   };
 
   renderNav(activePath.startsWith("/admin/author"));
@@ -234,7 +355,218 @@ function mountOverview(root, api) {
   const overviewQuery = useQuery(api, "/api/admin/overview", { tags: ["overview"] });
   root.appendChild(makeAlert(errSig, false));
 
-  const statsGrid = el("section", { class: "cms-grid", "aria-label": "Site summary" });
+  // 1. Top 3 KPI Cards
+  const kpiGrid = document.createElement("section");
+  kpiGrid.className = "agentflow-kpi-grid";
+  kpiGrid.innerHTML = `
+    <!-- Card 1: Active Agents -->
+    <div class="agentflow-card">
+      <div class="agentflow-card-head">
+        <span class="agentflow-card-title">Active Agents</span>
+        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
+      </div>
+      <div class="agentflow-stat-row">
+        <span class="agentflow-stat-val">12</span>
+        <span class="agentflow-trend-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+          +3 Increased vs last week
+        </span>
+      </div>
+      <div class="agentflow-chart-wrap">
+        <svg class="agentflow-sparkline-svg" viewBox="0 0 300 60" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="glow-grad-agents" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 42 Q 50 44 90 36 T 180 32 T 250 26 T 300 30 L 300 60 L 0 60 Z" fill="url(#glow-grad-agents)"/>
+          <path class="agentflow-sparkline-path" d="M 0 42 Q 50 44 90 36 T 180 32 T 250 26 T 300 30"/>
+        </svg>
+        <div class="agentflow-days-row">
+          <span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Weekly Runs -->
+    <div class="agentflow-card">
+      <div class="agentflow-card-head">
+        <span class="agentflow-card-title">Weekly Runs</span>
+        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
+      </div>
+      <div class="agentflow-stat-row">
+        <span class="agentflow-stat-val">1,284</span>
+        <span class="agentflow-trend-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+          +12% Increased vs last week
+        </span>
+      </div>
+      <div class="agentflow-chart-wrap">
+        <div class="agentflow-mini-bars">
+          <div class="agentflow-mini-bar" style="height: 14px;"></div>
+          <div class="agentflow-mini-bar" style="height: 24px;"></div>
+          <div class="agentflow-mini-bar agentflow-mini-bar-active" style="height: 52px;"></div>
+          <div class="agentflow-mini-bar" style="height: 32px;"></div>
+          <div class="agentflow-mini-bar" style="height: 18px;"></div>
+          <div class="agentflow-mini-bar" style="height: 20px;"></div>
+        </div>
+        <div class="agentflow-days-row">
+          <span>Mon</span><span>Thu</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Mon</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Tokens Used -->
+    <div class="agentflow-card">
+      <div class="agentflow-card-head">
+        <span class="agentflow-card-title">Tokens Used</span>
+        <button type="button" class="agentflow-card-dots" aria-label="Card options">•••</button>
+      </div>
+      <div class="agentflow-stat-row">
+        <span class="agentflow-stat-val">26.4K</span>
+        <span class="agentflow-trend-pill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+          +8% Increased vs last week
+        </span>
+      </div>
+      <div class="agentflow-chart-wrap">
+        <svg class="agentflow-sparkline-svg" viewBox="0 0 300 60" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="glow-grad-tokens" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.30"/>
+              <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 36 C 45 36, 75 22, 120 25 C 165 28, 195 4, 225 6 C 255 8, 265 42, 300 36 L 300 60 L 0 60 Z" fill="url(#glow-grad-tokens)"/>
+          <path class="agentflow-sparkline-path" d="M 0 36 C 45 36, 75 22, 120 25 C 165 28, 195 4, 225 6 C 255 8, 265 42, 300 36"/>
+        </svg>
+        <div class="agentflow-days-row">
+          <span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+    </div>
+  `;
+  root.appendChild(kpiGrid);
+
+  // 2. Middle Row: 2 Large Cards (Token Usage + Executions)
+  const mainGrid = document.createElement("section");
+  mainGrid.className = "agentflow-main-grid";
+  mainGrid.innerHTML = `
+    <!-- Card 4: Token Usage -->
+    <div class="agentflow-card agentflow-usage-card">
+      <div class="agentflow-usage-head">
+        <span class="agentflow-card-title" style="color: #ffffff; font-size: 15px;">Token Usage</span>
+        <div class="agentflow-pill-group">
+          <button type="button" class="agentflow-pill-btn">Days</button>
+          <button type="button" class="agentflow-pill-btn active">Week</button>
+          <button type="button" class="agentflow-pill-btn">Month</button>
+        </div>
+      </div>
+      <div class="agentflow-usage-chart-wrap">
+        <div class="agentflow-y-axis">
+          <span>$28K</span>
+          <span>$21K</span>
+          <span>$14K</span>
+          <span>$7K</span>
+          <span>$0K</span>
+        </div>
+        <div class="agentflow-chart-area">
+          <div class="agentflow-grid-lines">
+            <div class="agentflow-grid-line"></div>
+            <div class="agentflow-grid-line"></div>
+            <div class="agentflow-grid-line"></div>
+            <div class="agentflow-grid-line"></div>
+            <div class="agentflow-grid-line"></div>
+          </div>
+          <div class="agentflow-month-bars">
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 52%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 60%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 68%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 62%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar active" style="height: 98%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 40%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 48%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 56%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 64%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 54%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 58%;"></div></div>
+            <div class="agentflow-bar-col"><div class="agentflow-bar" style="height: 65%;"></div></div>
+          </div>
+          <div class="agentflow-x-axis">
+            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span style="color: #ffffff; font-weight: 700;">May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Executions Heatmap -->
+    <div class="agentflow-card">
+      <div class="agentflow-card-head agentflow-exec-head">
+        <span class="agentflow-card-title" style="color: #ffffff; font-size: 15px;">Executions</span>
+      </div>
+      <div class="agentflow-heatmap-table">
+        <div class="agentflow-heat-cols">
+          <span></span>
+          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <div class="agentflow-heat-row">
+          <span class="agentflow-week-lbl">W1</span>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l4"></div>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l1"></div>
+        </div>
+        <div class="agentflow-heat-row">
+          <span class="agentflow-week-lbl">W2</span>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l4"></div>
+          <div class="agentflow-heat-cell l4"></div>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l1"></div>
+        </div>
+        <div class="agentflow-heat-row">
+          <span class="agentflow-week-lbl">W3</span>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l4"></div>
+          <div class="agentflow-heat-cell l5"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l1"></div>
+        </div>
+        <div class="agentflow-heat-row">
+          <span class="agentflow-week-lbl">W4</span>
+          <div class="agentflow-heat-cell l2"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l4"></div>
+          <div class="agentflow-heat-cell l5"></div>
+          <div class="agentflow-heat-cell l3"></div>
+          <div class="agentflow-heat-cell l2"></div>
+        </div>
+      </div>
+      <div class="agentflow-legend">
+        <span>Less</span>
+        <div class="agentflow-legend-dots">
+          <div class="agentflow-legend-dot" style="background: #33141d;"></div>
+          <div class="agentflow-legend-dot" style="background: #4a1725;"></div>
+          <div class="agentflow-legend-dot" style="background: #751b34;"></div>
+          <div class="agentflow-legend-dot" style="background: #ba214a;"></div>
+          <div class="agentflow-legend-dot" style="background: #f43f5e;"></div>
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+  `;
+  root.appendChild(mainGrid);
+
+  // 3. Bottom Row: Recent Entries (CMS functionality preserved)
   const recentCard = el("section", { class: "cms-card" });
   recentCard.appendChild(el("h2", {}, "Recent Entries"));
   const listMount = el("ul", { class: "cms-list" });
@@ -272,23 +604,9 @@ function mountOverview(root, api) {
     }
     const data = overviewQuery.data.get();
     if (!data) return;
-    while (statsGrid.firstChild) statsGrid.removeChild(statsGrid.firstChild);
-    const cards = [
-      { label: "Total Entries", value: String(data.entry_count ?? 0) },
-      { label: "Content Types", value: String(data.type_count ?? 0) },
-      { label: "Active Theme", value: `${data.active_theme_slug} (${data.active_theme_mode})` },
-      { label: "301 Redirects", value: String(data.redirect_count ?? 0) },
-    ];
-    for (const c of cards) {
-      const art = el("article", { class: "cms-card" });
-      art.appendChild(el("span", { class: "cms-muted" }, c.label));
-      art.appendChild(el("p", { class: "cms-stat-num" }, c.value));
-      statsGrid.appendChild(art);
-    }
     itemsSig.set(data.recent_entries || []);
   });
 
-  root.appendChild(statsGrid);
   root.appendChild(recentCard);
 }
 

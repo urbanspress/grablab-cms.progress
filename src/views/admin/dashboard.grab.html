@@ -18,10 +18,32 @@
 <body class="cms-admin-body">
   <header class="cms-admin-topbar">
     <section class="cms-topbar-left">
-      <a class="cms-brand" href="/admin">{site_title}</a>
-      <span class="cms-badge">Active Theme: {active_theme_slug}</span>
+      <a class="cms-brand" href="/admin">
+        <span class="cms-brand-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </span>
+        <span>{site_title}</span>
+      </a>
+      <div class="cms-search-pill">
+        <svg class="cms-search-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        <input type="text" placeholder="Search..." aria-label="Search" class="cms-search-input">
+        <span class="cms-search-kbd">⌘K</span>
+      </div>
     </section>
     <section class="cms-topbar-right">
+      <div class="cms-env-pill">
+        <span class="cms-env-dot"></span>
+        <span>Production</span>
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+      </div>
+      <button type="button" class="cms-btn-new-run">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>New Run</span>
+      </button>
+      <button type="button" class="cms-icon-btn cms-notif-btn" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span class="cms-notif-dot"></span>
+      </button>
       <span class="cms-user-chip">{user_name} ({user_role})</span>
       <a class="cms-btn-link" href="/">View Site</a>
       <button type="button" id="admin-logout-btn" class="cms-btn-secondary">Sign Out</button>
@@ -32,8 +54,16 @@
     <aside class="cms-admin-sidebar" id="admin-nav-mount" aria-label="Admin navigation"></aside>
     <main class="cms-admin-main" id="admin-main" data-admin-page="{admin_page}" data-user-role="{user_role}" data-active-theme="{active_theme_slug}">
       <header class="cms-page-head">
-        <h1>{page_title}</h1>
-        <p class="cms-muted">{page_subtitle}</p>
+        <div class="cms-page-head-left">
+          <h1>{page_title}</h1>
+          <p class="cms-muted">Overview of your automation platform</p>
+        </div>
+        <div class="cms-page-head-right">
+          <div class="cms-date-range-pill">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Mar 1, 2026 – Mar 18, 2026</span>
+          </div>
+        </div>
       </header>
       <section id="admin-app" aria-live="polite"></section>
     </main>
