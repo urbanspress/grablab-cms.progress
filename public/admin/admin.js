@@ -56,21 +56,21 @@ function makeAlert(msgSignal, isOk = false) {
 function applyAdminTheme() {
   const theme = createTheme({
     colors: {
-      bg: "#f8fafc",
-      surface: "#ffffff",
-      ink: "#0f172a",
-      muted: "#475569",
-      accent: "#0d9488",
+      bg: "#0b0e13",
+      surface: "#11151d",
+      ink: "#f8fafc",
+      muted: "#94a3b8",
+      accent: "#f43f5e",
       "accent-ink": "#ffffff",
     },
-    radii: { radius: "12px" },
+    radii: { radius: "14px" },
   });
   theme.applyTo(document.documentElement);
 
   const cm = createClassManager({ prefix: "cms-grex-" });
   cm.registerClass("panel", {
-    background: "#ffffff",
-    borderRadius: "12px",
+    background: "#11151d",
+    borderRadius: "14px",
   });
 }
 
@@ -124,7 +124,7 @@ function mountLogin(api) {
         }
       },
     },
-    children: [makeAlert(errSig, false), emailInput.element, passInput.element, submitBtn],
+    children: [makeAlert(errSig, false), emailInput.element, passInput.element, { element: submitBtn }],
   });
   mount.appendChild(form.element);
 }
@@ -177,7 +177,7 @@ function mountSetup() {
         }
       },
     },
-    children: [makeAlert(errSig, false), nameInput.element, emailInput.element, passInput.element, submitBtn],
+    children: [makeAlert(errSig, false), nameInput.element, emailInput.element, passInput.element, { element: submitBtn }],
   });
   mount.appendChild(form.element);
 }
@@ -245,7 +245,7 @@ function mountOverview(root, api) {
     parent: listMount,
     items: itemsSig,
     key: (item) => item.id,
-    empty: () => el("li", { class: "cms-muted" }, "No entries created yet."),
+    empty: () => ({ element: el("li", { class: "cms-muted" }, "No entries created yet.") }),
     render: (itemSig) => {
       const li = el("li", { class: "cms-row" });
       const left = el("section");
@@ -261,7 +261,7 @@ function mountOverview(root, api) {
       });
       li.appendChild(left);
       li.appendChild(link);
-      return li;
+      return { element: li };
     },
   });
 
@@ -469,7 +469,7 @@ function mountEntries(root, api, role) {
     parent: ul,
     items: filteredItems,
     key: (item) => item.id,
-    empty: () => el("li", { class: "cms-muted" }, "No matching entries."),
+    empty: () => ({ element: el("li", { class: "cms-muted" }, "No matching entries.") }),
     render: (itemSig) => {
       const li = el("li", { class: "cms-card" });
       const row = el("section", { class: "cms-row" });
@@ -520,7 +520,7 @@ function mountEntries(root, api, role) {
       row.appendChild(info);
       row.appendChild(actions);
       li.appendChild(row);
-      return li;
+      return { element: li };
     },
   });
 
@@ -534,14 +534,14 @@ function mountEntries(root, api, role) {
     parent: redirUl,
     items: redirItems,
     key: (r) => r.id,
-    empty: () => el("li", { class: "cms-muted" }, "No 301 redirects recorded yet."),
+    empty: () => ({ element: el("li", { class: "cms-muted" }, "No 301 redirects recorded yet.") }),
     render: (rSig) => {
       const li = el("li");
       effect(() => {
         const r = rSig.get();
         setSafeText(li, `${r.old_path} -> ${r.target_path} (301)`);
       });
-      return li;
+      return { element: li };
     },
   });
 
@@ -595,7 +595,7 @@ function mountTypes(root, api) {
         }
       },
     },
-    children: [slugIn.element, singIn.element, plurIn.element, patIn.element, archIn.element, el("button", { type: "submit" }, "Create Type"), closeBtn],
+    children: [slugIn.element, singIn.element, plurIn.element, patIn.element, archIn.element, { element: el("button", { type: "submit" }, "Create Type") }, { element: closeBtn }],
   });
 
   const modal = Modal({
@@ -631,7 +631,7 @@ function mountTypes(root, api) {
       });
       li.appendChild(title);
       li.appendChild(meta);
-      return li;
+      return { element: li };
     },
   });
 
@@ -688,7 +688,7 @@ function mountTypes(root, api) {
         }
       },
     },
-    children: [targetTypeSel.element, fkIn.element, flIn.element, ftSel.element, el("button", { type: "submit" }, "Add Field")],
+    children: [targetTypeSel.element, fkIn.element, flIn.element, ftSel.element, { element: el("button", { type: "submit" }, "Add Field") }],
   });
   fieldCard.appendChild(fieldForm.element);
 
@@ -724,7 +724,7 @@ function mountThemes(root, api) {
         }
       },
     },
-    children: [regSlug.element, el("button", { type: "submit" }, "Validate & Register Theme")],
+    children: [regSlug.element, { element: el("button", { type: "submit" }, "Validate & Register Theme") }],
   });
   const regCard = el("section", { class: "cms-card" });
   regCard.appendChild(el("h2", {}, "Install / Register Validated Theme"));
@@ -793,7 +793,7 @@ function mountThemes(root, api) {
       row.appendChild(info);
       row.appendChild(activateBtn);
       li.appendChild(row);
-      return li;
+      return { element: li };
     },
   });
 
@@ -836,7 +836,7 @@ function mountSettings(root, api) {
         }
       },
     },
-    children: [siteTitleIn.element, siteTaglineIn.element, homeEntryIn.element, el("button", { type: "submit" }, "Save General Settings")],
+    children: [siteTitleIn.element, siteTaglineIn.element, homeEntryIn.element, { element: el("button", { type: "submit" }, "Save General Settings") }],
   });
 
   // Tab 2: Social Login (OAuth2/PKCE)
@@ -894,7 +894,7 @@ function mountSettings(root, api) {
     providerControls[p.key] = { enabledSel, cidIn, secIn, domIn, hintP, hosts: p.hosts };
     oauthChildren.push(card);
   }
-  oauthChildren.push(el("button", { type: "submit" }, "Save Social Login Settings"));
+  oauthChildren.push({ element: el("button", { type: "submit" }, "Save Social Login Settings") });
 
   const oauthForm = Form({
     props: {
@@ -999,7 +999,7 @@ function mountSettings(root, api) {
         }
       },
     },
-    children: [uEmail.element, uName.element, uRole.element, uPass.element, el("button", { type: "submit" }, "Create User"), uCancel],
+    children: [uEmail.element, uName.element, uRole.element, uPass.element, { element: el("button", { type: "submit" }, "Create User") }, { element: uCancel }],
   });
 
   const userModal = Modal({
@@ -1050,7 +1050,7 @@ function mountSettings(root, api) {
       row.appendChild(info);
       row.appendChild(toggleBtn);
       li.appendChild(row);
-      return li;
+      return { element: li };
     },
   });
 
@@ -1101,7 +1101,7 @@ function mountSettings(root, api) {
         }
       },
     },
-    children: [authorEnSel.element, groxyOriginIn.element, el("button", { type: "submit" }, "Save Author Mode Settings")],
+    children: [authorEnSel.element, groxyOriginIn.element, { element: el("button", { type: "submit" }, "Save Author Mode Settings") }],
   });
   api.get("/api/admin/author/settings")
     .then((as) => {
@@ -1291,7 +1291,7 @@ function mountMedia(root, api, role) {
     parent: gridUl,
     items: filteredItems,
     key: (m) => m.id,
-    empty: () => el("li", { class: "cms-muted" }, "No media assets uploaded yet."),
+    empty: () => ({ element: el("li", { class: "cms-muted" }, "No media assets uploaded yet.") }),
     render: (mSig) => {
       const li = el("li", { class: "cms-card" });
       const titleEl = el("h3");
@@ -1349,7 +1349,7 @@ function mountMedia(root, api, role) {
       li.appendChild(altBadge);
       li.appendChild(urlCode);
       li.appendChild(actRow);
-      return li;
+      return { element: li };
     },
   });
 
@@ -1448,7 +1448,7 @@ function mountMenus(root, api) {
         }
       },
     },
-    children: [newSlugIn.element, newNameIn.element, newLocSel.element, el("button", { type: "submit" }, "Create Menu")],
+    children: [newSlugIn.element, newNameIn.element, newLocSel.element, { element: el("button", { type: "submit" }, "Create Menu") }],
   });
 
   const createCard = el("section", { class: "cms-card" });
@@ -1738,7 +1738,7 @@ function mountTaxonomies(root, api) {
         }
       },
     },
-    children: [tSlugIn.element, tSingIn.element, tPlurIn.element, tArchIn.element, tHierLbl, tCtsIn.element, el("button", { type: "submit" }, "Create Taxonomy")],
+    children: [tSlugIn.element, tSingIn.element, tPlurIn.element, tArchIn.element, tHierLbl, tCtsIn.element, { element: el("button", { type: "submit" }, "Create Taxonomy") }],
   });
 
   const taxSelect = Select({
@@ -1798,7 +1798,7 @@ function mountTaxonomies(root, api) {
         }
       },
     },
-    children: [taxSelect.element, termSlugIn.element, termNameIn.element, termParentSel.element, termDescIn.element, el("button", { type: "submit" }, "Add Term")],
+    children: [taxSelect.element, termSlugIn.element, termNameIn.element, termParentSel.element, termDescIn.element, { element: el("button", { type: "submit" }, "Add Term") }],
   });
 
   const taxUl = el("ul", { class: "cms-list" });
@@ -1823,7 +1823,7 @@ function mountTaxonomies(root, api) {
       li.appendChild(title);
       li.appendChild(meta);
       li.appendChild(termList);
-      return li;
+      return { element: li };
     },
   });
 
